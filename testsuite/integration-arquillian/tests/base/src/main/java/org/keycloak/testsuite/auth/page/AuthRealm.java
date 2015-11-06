@@ -60,4 +60,8 @@ public class AuthRealm extends AuthServer implements PageWithLoginUrl {
                 .build(getAuthRealm());
     }
 
+    public URI getOIDCTokenUrl() {
+        return OIDCLoginProtocolService.tokenUrl(UriBuilder.fromPath(getAuthRoot()))
+                .build(getAuthRealm());
+    }
 }

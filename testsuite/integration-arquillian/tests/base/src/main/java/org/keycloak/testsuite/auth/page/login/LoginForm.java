@@ -19,17 +19,21 @@ package org.keycloak.testsuite.auth.page.login;
 
 import org.jboss.arquillian.graphene.page.Page;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.testsuite.auth.page.login.idp.AbstractIdentityProvider;
 import org.keycloak.testsuite.page.Form;
 import static org.keycloak.testsuite.admin.Users.getPasswordOf;
 import org.keycloak.testsuite.auth.page.account.AccountFields;
 import org.keycloak.testsuite.auth.page.account.PasswordFields;
 import static org.keycloak.testsuite.util.WaitUtils.*;
+
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 
 /**
  *
  * @author tkyjovsk
+ * @author Vaclav Muzikar
  */
 public class LoginForm extends Form {
 
@@ -120,6 +124,13 @@ public class LoginForm extends Form {
     
     public void waitForLoginButtonPresent() {
         waitGuiForElement(loginButton);
+    }
+
+    public void loginWithIdp(AbstractIdentityProvider idp) {
+        WebElement loginBtn = driver.findElement(By.id("zocial-" + idp.getProvider()));
+        loginBtn.click();
+
+        idp.login();
     }
 
 }

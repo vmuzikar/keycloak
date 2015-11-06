@@ -18,48 +18,177 @@
 package org.keycloak.testsuite.console.idp;
 
 import org.jboss.arquillian.graphene.page.Page;
-import static org.junit.Assert.*;
-import org.junit.Ignore;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
-import org.keycloak.testsuite.console.page.idp.IdentityProviderSettings;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.testsuite.auth.page.AuthRealm;
+import org.keycloak.testsuite.auth.page.login.OIDCLogin;
+import org.keycloak.testsuite.auth.page.login.idp.AbstractIdentityProvider;
+import org.keycloak.testsuite.auth.page.login.idp.Facebook;
+import org.keycloak.testsuite.auth.page.login.idp.OIDC;
 import org.keycloak.testsuite.console.AbstractConsoleTest;
-import org.keycloak.testsuite.model.Provider;
-import org.keycloak.testsuite.model.SocialProvider;
+import org.keycloak.testsuite.console.page.clients.Client;
+import org.keycloak.testsuite.console.page.clients.ClientCredentials;
+import org.keycloak.testsuite.console.page.clients.Clients;
+import org.keycloak.testsuite.console.page.clients.CreateClient;
+import org.keycloak.testsuite.console.page.idp.IdentityProviders;
+import org.keycloak.testsuite.console.page.idp.IdpForm;
+import org.keycloak.testsuite.console.page.idp.OIDCForm;
+import org.keycloak.testsuite.console.page.users.Users;
+import java.util.Collections;
+import java.util.List;
+import static org.keycloak.testsuite.admin.Users.setPasswordFor;
+import static org.keycloak.representations.idm.CredentialRepresentation.PASSWORD;
+import static org.keycloak.testsuite.util.URLAssert.assertCurrentUrlStartsWith;
+import static org.keycloak.testsuite.admin.ApiUtil.*;
 
 /**
- *
- * @author Petr Mensik
+ * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class IdentityProviderTest extends AbstractConsoleTest {
-    
+    public static final String OIDC_REALM = "OIDC-provider";
+    public static final String OIDC_PROVIDER_NAME = "OpenID Connect v1.0";
+    public static final String OIDC_CLIENT_NAME = "oidc-test-client";
+    public static final String FACEBOOK_PROVIDER_NAME = "Facebook";
+
     @Page
-    private IdentityProviderSettings idpSettingsPage;
+    private IdentityProviders identityProvidersPage;
 
-//	@Test
-    public void testAddNewProvider() {
-        idpSettingsPage.addNewProvider(new Provider(SocialProvider.FACEBOOK, "klic", "secret"));
-        flashMessage.waitUntilPresent();
-        assertTrue("Success message should be displayed", flashMessage.isSuccess());
+    /**
+     * Common form for managing IDPs
+     */
+    @Page
+    private IdpForm baseIdpForm;
+
+    /**
+     * Form for managing OIDC IDP
+     */
+    @Page
+    private OIDCForm oidcIdpForm;
+
+    /**
+     * Page for loggin in to IDP
+     */
+    @Page
+    private OIDC oidcIdpLogin;
+
+    /**
+     * Page for lggin in to Facebook
+     */
+    @Page
+    private Facebook facebookIdpLogin;
+
+    @Page
+    private Clients clientsPage;
+
+    @Page
+    private Client clientPage;
+
+    @Page
+    private CreateClient createClientPage;
+
+    @Page
+    private ClientCredentials clientCredentialsPage;
+
+    @Page
+    private Users usersPage;
+
+    @Page
+    private AuthRealm oidcRealmPage;
+
+    @Page
+    private OIDCLogin oidcProviderLoginPage;
+
+    @Before
+    public void beforeIdpTest() {
+        accountPage.setAuthRealm(AuthRealm.TEST);
+        identityProvidersPage.navigateTo();
     }
 
-//	@Test(expected = NoSuchElementException.class)
-    public void testDuplicitProvider() {
-        idpSettingsPage.addNewProvider(new Provider(SocialProvider.FACEBOOK, "a", "b"));
+    @Override
+    public void addTestRealms(List<RealmRepresentation> testRealms) {
+        super.addTestRealms(testRealms);
+        RealmRepresentation oidcRealm = new RealmRepresentation();
+        oidcRealm.setRealm(OIDC_REALM);
+        oidcRealm.setEnabled(true);
+        testRealms.add(oidcRealm);
     }
 
-//	@Test
-//    public void testEditProvider() {
-//        page.goToPage(SETTINGS_SOCIAL);
-//        page.editProvider(SocialProvider.FACEBOOK, new Provider(SocialProvider.FACEBOOK, "abc", "def"));
-//    }
+    private void tryToLogin(AbstractIdentityProvider identityProvider, String newUserName) {
+        logoutFromMasterRealmConsole();
 
-//	@Test
-    public void testDeleteProvider() {
+        accountPage.navigateTo();
+        testRealmLoginPage.form().loginWithIdp(identityProvider);
+        assertCurrentUrlStartsWith(accountPage);
 
+        deleteAllCookiesForMasterRealm();
+        deleteAllCookiesForTestRealm();
+        loginToMasterRealmAdminConsoleAs(adminUser);
+
+        // Try to find the new user in admin console
+        usersPage.navigateTo();
+        Assert.assertNotNull(usersPage.table().findUser(newUserName));
+    }
+
+    //FIXME: "Element is no longer attached to the DOM" exception might appear
+    @Test
+    public void testOIDC() throws InterruptedException {
+        // Set the new realm which will act as an OIDC Provider
+        oidcRealmPage.setAuthRealm(OIDC_REALM);
+        oidcProviderLoginPage.setAuthRealm(OIDC_REALM);
+        RealmResource oidcProviderRealmResource = adminClient.realm(oidcRealmPage.getAuthRealm());
+
+        // Create a new user in the new realm
+        UserRepresentation oidcUser = createUserRepresentation("oidc-test", "oidc@email.test", "oidc", "test", true);
+        setPasswordFor(oidcUser, PASSWORD);
+        String userId = createUserAndResetPasswordWithAdminClient(oidcProviderRealmResource, oidcUser, PASSWORD);
+        oidcUser.setId(userId);
+        assignClientRoles(oidcProviderRealmResource, userId, "realm-management", "view-realm");
+
+        identityProvidersPage.table().addProvider(OIDC_PROVIDER_NAME);
+        String redirectUri = oidcIdpForm.getRedirectUrl();
+
+        // Create client in the OIDC realm
+        clientsPage.setConsoleRealm(OIDC_REALM);
+        clientsPage.navigateTo();
+        clientsPage.table().createClient();
+        createClientPage.form().setClientId(OIDC_CLIENT_NAME);
+        createClientPage.form().setRedirectUris(Collections.singletonList(redirectUri));
+        createClientPage.form().save();
+        assertFlashMessageSuccess();
+
+        clientPage.tabs().credentials();
+        String clientSecret = clientCredentialsPage.getSecret();
+
+        // Create IDP in standard Test realm
+        identityProvidersPage.navigateTo();
+        identityProvidersPage.table().addProvider(OIDC_PROVIDER_NAME);
+        oidcIdpForm.setAuthorizationUrl(oidcProviderLoginPage.getOIDCLoginUrl().toString());
+        oidcIdpForm.setTokenUrl(oidcProviderLoginPage.getOIDCTokenUrl().toString());
+        oidcIdpForm.setClientId(OIDC_CLIENT_NAME);
+        oidcIdpForm.setClientSecret(clientSecret);
+        oidcIdpForm.setUpdateProfileFirstLoginMode(IdpForm.UPDATE_PROFILE_OFF);
+        oidcIdpForm.save();
+        assertFlashMessageSuccess();
+
+        // Login to standard test realm using OIDC realm
+        oidcIdpLogin.setUser(oidcUser);
+        tryToLogin(oidcIdpLogin, oidcIdpLogin.getProvider() + "." + oidcUser.getUsername());
     }
 
     @Test
-    @Ignore
-    public void testAddMultipleProviders() {
+    public void testFacebook() {
+        identityProvidersPage.table().addProvider(FACEBOOK_PROVIDER_NAME);
+
+        baseIdpForm.setClientId(Facebook.CLIENT_ID);
+        baseIdpForm.setClientSecret(Facebook.SECRET);
+        baseIdpForm.setUpdateProfileFirstLoginMode(IdpForm.UPDATE_PROFILE_OFF);
+        baseIdpForm.save();
+        assertFlashMessageSuccess();
+
+        tryToLogin(facebookIdpLogin, "facebook." + Facebook.EMAIL);
     }
 }

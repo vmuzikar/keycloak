@@ -57,6 +57,8 @@ public class Client extends Clients {
 
         @FindBy(linkText = "Settings")
         private WebElement settingsLink;
+        @FindBy(linkText = "Credentials")
+        private WebElement credentialsLink;
         @FindBy(linkText = "Roles")
         private WebElement rolesLink;
         @FindBy(linkText = "Mappers")
@@ -72,6 +74,10 @@ public class Client extends Clients {
 
         public void settings() {
             settingsLink.click();
+        }
+
+        public void credentials() {
+            credentialsLink.click();
         }
 
         public void roles() {

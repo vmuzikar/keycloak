@@ -9,9 +9,7 @@ import org.openqa.selenium.support.ui.Select;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class IdpForm extends Form {
-    public static final String UPDATE_PROFILE_OFF = "Off";
-    public static final String UPDATE_PROFILE_ON = "On";
-    public static final String UPDATE_PROFILE_MISSING_INFO = "On missing info";
+    public static final String FIRST_BROKER_LOGIN = "first broker login";
 
     @FindBy(id = "redirectUri")
     private WebElement redirectUrl;
@@ -22,8 +20,8 @@ public class IdpForm extends Form {
     @FindBy(id = "clientSecret")
     private WebElement clientSecretInput;
 
-    @FindBy(id = "updateProfileFirstLoginMode")
-    private Select updateProfileFirstLoginModeSelect;
+    @FindBy(id = "firstBrokerLoginFlowAlias")
+    private Select firstLoginFlowSelect;
 
     public String getRedirectUrl() {
         return getInputValue(redirectUrl);
@@ -45,11 +43,11 @@ public class IdpForm extends Form {
         setInputValue(clientSecretInput, value);
     }
 
-    public String getUpdateProfileFirstLoginMode() {
-        return updateProfileFirstLoginModeSelect.getFirstSelectedOption().getText();
+    public String getFirstLoginFlow() {
+        return firstLoginFlowSelect.getFirstSelectedOption().getText();
     }
 
-    public void setUpdateProfileFirstLoginMode(String value) {
-        updateProfileFirstLoginModeSelect.selectByVisibleText(value);
+    public void setFirstLoginFlow(String value) {
+        firstLoginFlowSelect.selectByVisibleText(value);
     }
 }

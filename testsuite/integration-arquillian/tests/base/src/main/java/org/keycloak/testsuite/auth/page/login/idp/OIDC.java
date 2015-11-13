@@ -19,12 +19,30 @@ public class OIDC extends AbstractIdentityProvider {
 
     @Override
     public void login() {
+        loginForm.login(getUser());
+    }
 
+    public UserRepresentation getUser() {
         if (user == null) {throw new IllegalStateException("User is not set");}
-        loginForm.login(user);
+        return user;
     }
 
     public void setUser(UserRepresentation user) {
         this.user = user;
+    }
+
+    @Override
+    public String getEmail() {
+        return getUser().getEmail();
+    }
+
+    @Override
+    public String getFirstName() {
+        return getUser().getFirstName();
+    }
+
+    @Override
+    public String getLastName() {
+        return getUser().getLastName();
     }
 }

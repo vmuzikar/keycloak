@@ -12,6 +12,8 @@ public class Facebook extends AbstractIdentityProvider {
 
     public static final String EMAIL = "keycloak_rdbpcee_qe@tfbnw.net";
     public static final String PASSWORD = "keycloak1";
+    public static final String FIRST_NAME = "Keycloak";
+    public static final String LAST_NAME = "QE";
 
     @FindBy(id = "email")
     private WebElement emailInput;
@@ -31,5 +33,20 @@ public class Facebook extends AbstractIdentityProvider {
         emailInput.sendKeys(EMAIL);
         passwordInput.sendKeys(PASSWORD);
         loginButton.click();
+    }
+
+    @Override
+    public String getEmail() {
+        return EMAIL;
+    }
+
+    @Override
+    public String getFirstName() {
+        return FIRST_NAME;
+    }
+
+    @Override
+    public String getLastName() {
+        return LAST_NAME;
     }
 }

@@ -22,4 +22,10 @@ public abstract class AbstractIdentityProvider {
     }
 
     public abstract void login();
+
+    public abstract String getEmail();
+
+    public abstract String getFirstName();
+
+    public abstract String getLastName();
 }

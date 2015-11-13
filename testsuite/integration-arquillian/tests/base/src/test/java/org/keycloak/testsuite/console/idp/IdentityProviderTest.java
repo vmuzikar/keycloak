@@ -58,25 +58,25 @@ public class IdentityProviderTest extends AbstractConsoleTest {
     private IdentityProviders identityProvidersPage;
 
     /**
-     * Common form for managing IDPs
+     * Generic form for managing IDPs
      */
     @Page
-    private IdpForm baseIdpForm;
+    private IdpForm genericIdpForm;
 
     /**
-     * Form for managing OIDC IDP
+     * Specific form for managing OIDC IDP
      */
     @Page
     private OIDCForm oidcIdpForm;
 
     /**
-     * Page for loggin in to IDP
+     * Page for loggin using OIDC
      */
     @Page
     private OIDC oidcIdpLogin;
 
     /**
-     * Page for lggin in to Facebook
+     * Page for loggin using Facebook
      */
     @Page
     private Facebook facebookIdpLogin;
@@ -117,7 +117,16 @@ public class IdentityProviderTest extends AbstractConsoleTest {
         testRealms.add(oidcRealm);
     }
 
-    private void tryToLogin(AbstractIdentityProvider identityProvider, String newUserName) {
+    private void addGenericIdp(String providerName, String clientId, String clientSecret) {
+        identityProvidersPage.table().addProvider(providerName);
+        genericIdpForm.setClientId(clientId);
+        genericIdpForm.setClientSecret(clientSecret);
+        genericIdpForm.setFirstLoginFlow(IdpForm.FIRST_BROKER_LOGIN);
+        genericIdpForm.save();
+        assertFlashMessageSuccess();
+    }
+
+    private void tryToLoginWithIdp(AbstractIdentityProvider identityProvider, String newUserName) {
         logoutFromMasterRealmConsole();
 
         accountPage.navigateTo();
@@ -130,7 +139,11 @@ public class IdentityProviderTest extends AbstractConsoleTest {
 
         // Try to find the new user in admin console
         usersPage.navigateTo();
-        Assert.assertNotNull(usersPage.table().findUser(newUserName));
+        UserRepresentation user = usersPage.table().findUser(newUserName);
+        Assert.assertNotNull(user);
+        Assert.assertEquals(identityProvider.getEmail(), user.getEmail());
+        Assert.assertEquals(identityProvider.getFirstName(), user.getFirstName());
+        Assert.assertEquals(identityProvider.getLastName(), user.getLastName());
     }
 
     //FIXME: "Element is no longer attached to the DOM" exception might appear
@@ -170,25 +183,18 @@ public class IdentityProviderTest extends AbstractConsoleTest {
         oidcIdpForm.setTokenUrl(oidcProviderLoginPage.getOIDCTokenUrl().toString());
         oidcIdpForm.setClientId(OIDC_CLIENT_NAME);
         oidcIdpForm.setClientSecret(clientSecret);
-        oidcIdpForm.setUpdateProfileFirstLoginMode(IdpForm.UPDATE_PROFILE_OFF);
+        oidcIdpForm.setFirstLoginFlow(IdpForm.FIRST_BROKER_LOGIN);
         oidcIdpForm.save();
         assertFlashMessageSuccess();
 
         // Login to standard test realm using OIDC realm
         oidcIdpLogin.setUser(oidcUser);
-        tryToLogin(oidcIdpLogin, oidcIdpLogin.getProvider() + "." + oidcUser.getUsername());
+        tryToLoginWithIdp(oidcIdpLogin, oidcIdpLogin.getProvider() + "." + oidcUser.getUsername());
     }
 
     @Test
     public void testFacebook() {
-        identityProvidersPage.table().addProvider(FACEBOOK_PROVIDER_NAME);
-
-        baseIdpForm.setClientId(Facebook.CLIENT_ID);
-        baseIdpForm.setClientSecret(Facebook.SECRET);
-        baseIdpForm.setUpdateProfileFirstLoginMode(IdpForm.UPDATE_PROFILE_OFF);
-        baseIdpForm.save();
-        assertFlashMessageSuccess();
-
-        tryToLogin(facebookIdpLogin, "facebook." + Facebook.EMAIL);
+        addGenericIdp(FACEBOOK_PROVIDER_NAME, Facebook.CLIENT_ID, Facebook.SECRET);
+        tryToLoginWithIdp(facebookIdpLogin, "facebook." + Facebook.EMAIL);
     }
 }

@@ -481,6 +481,30 @@ public class RealmAdapter implements RealmModel {
      }
 
     @Override
+    public List<GroupModel> getDefaultGroups() {
+        List<GroupModel> defaultGroups = new LinkedList<>();
+        for (String id : cached.getDefaultGroups()) {
+            defaultGroups.add(cacheSession.getGroupById(id, this));
+        }
+        return defaultGroups;
+
+    }
+
+    @Override
+    public void addDefaultGroup(GroupModel group) {
+        getDelegateForUpdate();
+        updated.addDefaultGroup(group);
+
+    }
+
+    @Override
+    public void removeDefaultGroup(GroupModel group) {
+        getDelegateForUpdate();
+        updated.removeDefaultGroup(group);
+
+    }
+
+    @Override
     public List<String> getDefaultRoles() {
         if (updated != null) return updated.getDefaultRoles();
         return cached.getDefaultRoles();
@@ -1305,6 +1329,12 @@ public class RealmAdapter implements RealmModel {
     public GroupModel createGroup(String name) {
         getDelegateForUpdate();
         return updated.createGroup(name);
+    }
+
+    @Override
+    public GroupModel createGroup(String id, String name) {
+        getDelegateForUpdate();
+        return updated.createGroup(id, name);
     }
 
     @Override

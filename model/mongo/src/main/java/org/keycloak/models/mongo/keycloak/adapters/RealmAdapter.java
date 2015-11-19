@@ -611,8 +611,15 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
 
     @Override
     public GroupModel createGroup(String name) {
+        String id = KeycloakModelUtils.generateId();
+        return createGroup(id, name);
+    }
+
+    @Override
+    public GroupModel createGroup(String id, String name) {
+        if (id == null) id = KeycloakModelUtils.generateId();
         MongoGroupEntity group = new MongoGroupEntity();
-        group.setId(KeycloakModelUtils.generateId());
+        group.setId(id);
         group.setName(name);
         group.setRealmId(getId());
 
@@ -653,7 +660,7 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
 
         if (groups == null) return result;
         for (MongoGroupEntity group : groups) {
-            result.add(new GroupAdapter(session, this, group, invocationContext));
+            result.add(model.getGroupById(group.getId(), this));
         }
 
         return result;
@@ -665,7 +672,7 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
         Iterator<GroupModel> it = all.iterator();
         while (it.hasNext()) {
             GroupModel group = it.next();
-            if (group.getParent() != null) {
+            if (group.getParentId() != null) {
                 it.remove();
             }
         }
@@ -674,6 +681,9 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
 
     @Override
     public boolean removeGroup(GroupModel group) {
+        if (realm.getDefaultGroups() != null) {
+            getMongoStore().pullItemFromList(realm, "defaultGroups", group.getId(), invocationContext);
+        }
         for (GroupModel subGroup : group.getSubGroups()) {
             removeGroup(subGroup);
         }
@@ -681,6 +691,8 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
         moveGroup(group, null);
         return getMongoStore().removeEntity(MongoGroupEntity.class, group.getId(), invocationContext);
     }
+
+
 
     @Override
     public List<String> getDefaultRoles() {
@@ -711,6 +723,27 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
 
         realm.setDefaultRoles(roleNames);
         updateRealm();
+    }
+
+    @Override
+    public List<GroupModel> getDefaultGroups() {
+        List<GroupModel> defaultGroups = new LinkedList<>();
+        for (String id : realm.getDefaultGroups()) {
+            defaultGroups.add(session.realms().getGroupById(id, this));
+        }
+        return defaultGroups;
+    }
+
+    @Override
+    public void addDefaultGroup(GroupModel group) {
+        getMongoStore().pushItemToList(realm, "defaultGroups", group.getId(), true, invocationContext);
+
+    }
+
+    @Override
+    public void removeDefaultGroup(GroupModel group) {
+        getMongoStore().pullItemFromList(realm, "defaultGroups", group.getId(), invocationContext);
+
     }
 
     @Override

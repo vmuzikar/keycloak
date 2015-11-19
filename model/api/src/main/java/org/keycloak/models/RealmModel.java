@@ -165,6 +165,12 @@ public interface RealmModel extends RoleContainerModel {
 
     void updateDefaultRoles(String[] defaultRoles);
 
+    List<GroupModel> getDefaultGroups();
+
+    void addDefaultGroup(GroupModel group);
+
+    void removeDefaultGroup(GroupModel group);
+
     // Key is clientId
     Map<String, ClientModel> getClientNameMap();
 
@@ -330,6 +336,7 @@ public interface RealmModel extends RoleContainerModel {
     void setDefaultLocale(String locale);
 
     GroupModel createGroup(String name);
+    GroupModel createGroup(String id, String name);
 
     /**
      * Move Group to top realm level.  Basically just sets group parent to null.  You need to call this though

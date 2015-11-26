@@ -8,7 +8,7 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.common.ClientConnection;
 import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.email.EmailException;
-import org.keycloak.email.EmailProvider;
+import org.keycloak.email.EmailTemplateProvider;
 import org.keycloak.events.Details;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.events.EventType;
@@ -23,7 +23,6 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.ModelReadOnlyException;
 import org.keycloak.models.RealmModel;
-import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserConsentModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
@@ -34,18 +33,14 @@ import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.protocol.oidc.utils.RedirectUtils;
 import org.keycloak.provider.ProviderFactory;
-import org.keycloak.representations.idm.ClientMappingsRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.FederatedIdentityRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.MappingsRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserConsentRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.UserSessionRepresentation;
 import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.managers.ClientSessionCode;
-import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.managers.UserManager;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.Urls;
@@ -148,7 +143,7 @@ public class UsersResource {
                 attrsToRemove = Collections.emptySet();
             }
 
-            if (rep.isEnabled()) {
+            if (rep.isEnabled() != null && rep.isEnabled()) {
                 UsernameLoginFailureModel failureModel = session.sessions().getUserLoginFailure(realm, rep.getUsername());
                 if (failureModel != null) {
                     failureModel.clearFailures();
@@ -219,9 +214,9 @@ public class UsersResource {
         user.setFirstName(rep.getFirstName());
         user.setLastName(rep.getLastName());
 
-        user.setEnabled(rep.isEnabled());
-        user.setOtpEnabled(rep.isTotp());
-        user.setEmailVerified(rep.isEmailVerified());
+        if (rep.isEnabled() != null) user.setEnabled(rep.isEnabled());
+        if (rep.isTotp() != null) user.setOtpEnabled(rep.isTotp());
+        if (rep.isEmailVerified() != null) user.setEmailVerified(rep.isEmailVerified());
 
         List<String> reqActions = rep.getRequiredActions();
 
@@ -708,7 +703,7 @@ public class UsersResource {
         } catch (ModelReadOnlyException mre) {
             throw new BadRequestException("Can't reset password as account is read only");
         }
-        if (pass.isTemporary()) user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
+        if (pass.isTemporary() != null && pass.isTemporary()) user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
 
         adminEvent.operation(OperationType.ACTION).resourcePath(uriInfo).success();
     }
@@ -804,7 +799,7 @@ public class UsersResource {
             String link = builder.build(realm.getName()).toString();
             long expiration = TimeUnit.SECONDS.toMinutes(realm.getAccessCodeLifespanUserAction());
 
-            this.session.getProvider(EmailProvider.class).setRealm(realm).setUser(user).sendExecuteActions(link, expiration);
+            this.session.getProvider(EmailTemplateProvider.class).setRealm(realm).setUser(user).sendExecuteActions(link, expiration);
 
             //audit.user(user).detail(Details.EMAIL, user.getEmail()).detail(Details.CODE_ID, accessCode.getCodeId()).success();
 
@@ -856,7 +851,7 @@ public class UsersResource {
             String link = builder.build(realm.getName()).toString();
             long expiration = TimeUnit.SECONDS.toMinutes(realm.getAccessCodeLifespanUserAction());
 
-            this.session.getProvider(EmailProvider.class).setRealm(realm).setUser(user).sendVerifyEmail(link, expiration);
+            this.session.getProvider(EmailTemplateProvider.class).setRealm(realm).setUser(user).sendVerifyEmail(link, expiration);
 
             //audit.user(user).detail(Details.EMAIL, user.getEmail()).detail(Details.CODE_ID, accessCode.getCodeId()).success();
 

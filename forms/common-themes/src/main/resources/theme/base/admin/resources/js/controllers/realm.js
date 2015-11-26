@@ -327,6 +327,8 @@ module.controller('RealmLoginSettingsCtrl', function($scope, Current, Realm, rea
 });
 
 module.controller('RealmOtpPolicyCtrl', function($scope, Current, Realm, realm, serverInfo, $http, $location, Dialog, Notifications) {
+    $scope.optionsDigits = [ 6, 8 ];
+
     genericRealmUpdate($scope, Current, Realm, realm, serverInfo, $http, $location, Dialog, Notifications, "/realms/" + realm.realm + "/authentication/otp-policy");
 });
 
@@ -337,7 +339,7 @@ module.controller('RealmThemeCtrl', function($scope, Current, Realm, realm, serv
     $scope.supportedLocalesOptions = {
         'multiple' : true,
         'simple_tags' : true,
-        'tags' : ['en', 'de', 'pt-BR', 'it', 'es']
+        'tags' : ['en', 'de', 'pt-BR', 'it', 'es', 'ca']
     };
 
     $scope.$watch('realm.supportedLocales', function(oldVal, newVal) {
@@ -1193,7 +1195,7 @@ module.controller('RealmSMTPSettingsCtrl', function($scope, Current, Realm, real
             }
         }
 
-        obj['port'] = obj['port'].toString();
+        obj['port'] = obj['port'] && obj['port'].toString();
 
         return obj;
     }

@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.keycloak</groupId>
         <artifactId>distribution-pom</artifactId>
-        <version>1.7.0.Final-SNAPSHOT</version>
+        <version>1.8.0.CR1-SNAPSHOT</version>
     </parent>
 
     <artifactId>keycloak-dist-downloads</artifactId>
@@ -239,12 +239,12 @@
 
                                 <artifactItem>
                                     <groupId>org.keycloak</groupId>
-                                    <artifactId>keycloak-wf9-adapter-dist</artifactId>
+                                    <artifactId>keycloak-wildfly-adapter-dist</artifactId>
                                     <type>zip</type>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.keycloak</groupId>
-                                    <artifactId>keycloak-wf9-adapter-dist</artifactId>
+                                    <artifactId>keycloak-wildfly-adapter-dist</artifactId>
                                     <type>tar.gz</type>
                                 </artifactItem>
                             </artifactItems>
@@ -338,12 +338,12 @@
 
                                <artifactItem>
                                     <groupId>org.keycloak</groupId>
-                                    <artifactId>keycloak-saml-wf9-adapter-dist</artifactId>
+                                    <artifactId>keycloak-saml-wildfly-adapter-dist</artifactId>
                                     <type>zip</type>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.keycloak</groupId>
-                                    <artifactId>keycloak-saml-wf9-adapter-dist</artifactId>
+                                    <artifactId>keycloak-saml-wildfly-adapter-dist</artifactId>
                                     <type>tar.gz</type>
                                 </artifactItem>
                             </artifactItems>

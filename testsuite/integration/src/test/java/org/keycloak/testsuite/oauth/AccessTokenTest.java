@@ -38,6 +38,7 @@ import org.keycloak.events.Details;
 import org.keycloak.events.Errors;
 import org.keycloak.events.Event;
 import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ProtocolMapperModel;
@@ -91,7 +92,14 @@ import static org.junit.Assert.*;
 public class AccessTokenTest {
 
     @ClassRule
-    public static KeycloakRule keycloakRule = new KeycloakRule();
+    public static KeycloakRule keycloakRule = new KeycloakRule(new KeycloakRule.KeycloakSetup() {
+
+        @Override
+        public void config(RealmManager manager, RealmModel adminstrationRealm, RealmModel appRealm) {
+            appRealm.getClientByClientId("test-app").setDirectAccessGrantsEnabled(true);
+        }
+
+    });
 
     @Rule
     public WebRule webRule = new WebRule(this);
@@ -806,26 +814,15 @@ public class AccessTokenTest {
         }
     }
 
-    private IDToken getIdToken(org.keycloak.representations.AccessTokenResponse tokenResponse) throws VerificationException {
+    private IDToken getIdToken(org.keycloak.representations.AccessTokenResponse tokenResponse) throws JWSInputException {
         JWSInput input = new JWSInput(tokenResponse.getIdToken());
-        IDToken idToken = null;
-        try {
-            idToken = input.readJsonContent(IDToken.class);
-        } catch (IOException e) {
-            throw new VerificationException();
-        }
-        return idToken;
+        return input.readJsonContent(IDToken.class);
     }
 
-    private AccessToken getAccessToken(org.keycloak.representations.AccessTokenResponse tokenResponse) throws VerificationException {
+    private AccessToken getAccessToken(org.keycloak.representations.AccessTokenResponse tokenResponse) throws JWSInputException {
         JWSInput input = new JWSInput(tokenResponse.getToken());
-        AccessToken idToken = null;
-        try {
-            idToken = input.readJsonContent(AccessToken.class);
-        } catch (IOException e) {
-            throw new VerificationException();
-        }
-        return idToken;
+        return input.readJsonContent(AccessToken.class);
+
     }
 
     protected Response executeGrantAccessTokenRequest(WebTarget grantTarget) {

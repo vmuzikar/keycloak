@@ -8,6 +8,7 @@ import org.keycloak.OAuth2Constants;
  */
 public interface Constants {
     String ADMIN_CONSOLE_CLIENT_ID = "security-admin-console";
+    String ADMIN_CLI_CLIENT_ID = "admin-cli";
 
     String ACCOUNT_MANAGEMENT_CLIENT_ID = "account";
     String IMPERSONATION_SERVICE_CLIENT_ID = "impersonation";
@@ -20,9 +21,14 @@ public interface Constants {
     String[] BROKER_SERVICE_ROLES = {READ_TOKEN_ROLE};
     String OFFLINE_ACCESS_ROLE = OAuth2Constants.OFFLINE_ACCESS;
 
+    // 15 minutes
+    int DEFAULT_ACCESS_TOKEN_LIFESPAN_FOR_IMPLICIT_FLOW_TIMEOUT = 900;
     // 30 days
     int DEFAULT_OFFLINE_SESSION_IDLE_TIMEOUT = 2592000;
 
     String VERIFY_EMAIL_KEY = "VERIFY_EMAIL_KEY";
     String KEY = "key";
+
+    // Prefix for user attributes used in various "context"data maps
+    public static final String USER_ATTRIBUTES_PREFIX = "user.attributes.";
 }

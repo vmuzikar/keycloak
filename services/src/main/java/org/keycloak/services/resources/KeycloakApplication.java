@@ -9,10 +9,7 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.Config;
 import org.keycloak.exportimport.ExportImportManager;
 import org.keycloak.migration.MigrationModelManager;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.KeycloakSessionFactory;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.UserModel;
+import org.keycloak.models.*;
 import org.keycloak.models.utils.PostMigrationEvent;
 import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -141,8 +138,10 @@ public class KeycloakApplication extends Application {
 
             if (node == null) {
                 URL resource = Thread.currentThread().getContextClassLoader().getResource("META-INF/keycloak-server.json");
-                log.info("Load config from " + resource);
-                node = new ObjectMapper().readTree(resource);
+                if (resource != null) {
+                    log.info("Load config from " + resource);
+                    node = new ObjectMapper().readTree(resource);
+                }
             }
 
             if (node != null) {
@@ -150,7 +149,7 @@ public class KeycloakApplication extends Application {
                 Config.init(new JsonConfigProvider(node, properties));
                 return;
             } else {
-                log.warn("Config 'keycloak-server.json' not found");
+                throw new RuntimeException("Config 'keycloak-server.json' not found");
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to load config", e);
@@ -261,32 +260,46 @@ public class KeycloakApplication extends Application {
             if (addUserFile.isFile()) {
                 log.info("Importing users from '" + addUserFile + "'");
 
-                KeycloakSession session = sessionFactory.create();
+                List<RealmRepresentation> realms;
                 try {
-                    session.getTransaction().begin();
+                    realms = JsonSerialization.readValue(new FileInputStream(addUserFile), new TypeReference<List<RealmRepresentation>>() {
+                    });
+                } catch (IOException e) {
+                    log.errorv("Failed to load 'keycloak-add-user.json': {0}", e.getMessage());
+                    return;
+                }
 
-                    List<RealmRepresentation> realms = JsonSerialization.readValue(new FileInputStream(addUserFile), new TypeReference<List<RealmRepresentation>>() {});
-                    for (RealmRepresentation r : realms) {
-                        RealmModel realm = session.realms().getRealmByName(r.getRealm());
-                        if (realm == null) {
-                            throw new Exception("Realm '" + r.getRealm() + "' not found");
-                        }
+                for (RealmRepresentation realmRep : realms) {
+                    for (UserRepresentation userRep : realmRep.getUsers()) {
+                        KeycloakSession session = sessionFactory.create();
+                        try {
+                            session.getTransaction().begin();
 
-                        for (UserRepresentation u : r.getUsers()) {
-                            RepresentationToModel.createUser(session, realm, u, realm.getClientNameMap());
+                            RealmModel realm = session.realms().getRealmByName(realmRep.getRealm());
+                            if (realm == null) {
+                                log.errorv("Failed to add user ''{0}'' to realm ''{1}'': realm not found", userRep.getUsername(), realmRep.getRealm());
+                            } else {
+                                UserModel user = session.users().addUser(realm, userRep.getUsername());
+                                user.setEnabled(userRep.isEnabled());
+                                RepresentationToModel.createCredentials(userRep, user);
+                                RepresentationToModel.createRoleMappings(userRep, user, realm);
+                            }
+
+                            session.getTransaction().commit();
+                            log.infov("Added user ''{0}'' to realm ''{1}''", userRep.getUsername(), realmRep.getRealm());
+                        } catch (ModelDuplicateException e) {
+                            log.errorv("Failed to add user ''{0}'' to realm ''{1}'': user with username exists", userRep.getUsername(), realmRep.getRealm());
+                        } catch (Throwable t) {
+                            session.getTransaction().rollback();
+                            log.errorv("Failed to add user ''{0}'' to realm ''{1}'': {2}", userRep.getUsername(), realmRep.getRealm(), t.getMessage());
+                        } finally {
+                            session.close();
                         }
                     }
+                }
 
-                    session.getTransaction().commit();
-
-                    if (!addUserFile.delete()) {
-                        log.error("Failed to delete '" + addUserFile + "'");
-                    }
-                } catch (Throwable t) {
-                    session.getTransaction().rollback();
-                    log.error("Failed to import users from '" + addUserFile + "'", t);
-                } finally {
-                    session.close();
+                if (!addUserFile.delete()) {
+                    log.errorv("Failed to delete '{0}'", addUserFile.getAbsolutePath());
                 }
             }
         }

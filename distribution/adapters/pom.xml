@@ -3,7 +3,7 @@
     <parent>
         <artifactId>keycloak-parent</artifactId>
         <groupId>org.keycloak</groupId>
-        <version>1.7.0.Final-SNAPSHOT</version>
+        <version>1.8.0.CR1-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -25,6 +25,6 @@
         <module>tomcat7-adapter-zip</module>
         <module>tomcat8-adapter-zip</module>
         <module>wf8-adapter</module>
-        <module>wf9-adapter</module>
+        <module>wildfly-adapter</module>
     </modules>
 </project>

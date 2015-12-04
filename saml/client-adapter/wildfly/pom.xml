@@ -3,7 +3,7 @@
     <parent>
         <artifactId>keycloak-parent</artifactId>
         <groupId>org.keycloak</groupId>
-        <version>1.7.0.Final-SNAPSHOT</version>
+        <version>1.8.0.CR1-SNAPSHOT</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
     <name>Keycloak SAML Wildfly Integration</name>
@@ -15,6 +15,6 @@
 
     <modules>
         <module>wildfly-adapter</module>
-        <module>wildfly9-subsystem</module>
+        <module>wildfly-subsystem</module>
     </modules>
 </project>

@@ -105,6 +105,9 @@ public class RepresentationToModel {
         if (rep.getAccessTokenLifespan() != null) newRealm.setAccessTokenLifespan(rep.getAccessTokenLifespan());
         else newRealm.setAccessTokenLifespan(300);
 
+        if (rep.getAccessTokenLifespanForImplicitFlow() != null) newRealm.setAccessTokenLifespanForImplicitFlow(rep.getAccessTokenLifespanForImplicitFlow());
+        else newRealm.setAccessTokenLifespanForImplicitFlow(Constants.DEFAULT_ACCESS_TOKEN_LIFESPAN_FOR_IMPLICIT_FLOW_TIMEOUT);
+
         if (rep.getSsoSessionIdleTimeout() != null) newRealm.setSsoSessionIdleTimeout(rep.getSsoSessionIdleTimeout());
         else newRealm.setSsoSessionIdleTimeout(1800);
         if (rep.getSsoSessionMaxLifespan() != null) newRealm.setSsoSessionMaxLifespan(rep.getSsoSessionMaxLifespan());
@@ -457,6 +460,10 @@ public class RepresentationToModel {
             newRealm.setClientAuthenticationFlow(newRealm.getFlowByAlias(rep.getClientAuthenticationFlow()));
         }
 
+        // Added in 1.7
+        if (newRealm.getFlowByAlias(DefaultAuthenticationFlows.FIRST_BROKER_LOGIN_FLOW) == null) {
+            DefaultAuthenticationFlows.firstBrokerLoginFlow(newRealm, true);
+        }
     }
 
     private static void convertDeprecatedSocialProviders(RealmRepresentation rep) {
@@ -603,6 +610,7 @@ public class RepresentationToModel {
         if (rep.getNotBefore() != null) realm.setNotBefore(rep.getNotBefore());
         if (rep.getRevokeRefreshToken() != null) realm.setRevokeRefreshToken(rep.getRevokeRefreshToken());
         if (rep.getAccessTokenLifespan() != null) realm.setAccessTokenLifespan(rep.getAccessTokenLifespan());
+        if (rep.getAccessTokenLifespanForImplicitFlow() != null) realm.setAccessTokenLifespanForImplicitFlow(rep.getAccessTokenLifespanForImplicitFlow());
         if (rep.getSsoSessionIdleTimeout() != null) realm.setSsoSessionIdleTimeout(rep.getSsoSessionIdleTimeout());
         if (rep.getSsoSessionMaxLifespan() != null) realm.setSsoSessionMaxLifespan(rep.getSsoSessionMaxLifespan());
         if (rep.getOfflineSessionIdleTimeout() != null) realm.setOfflineSessionIdleTimeout(rep.getOfflineSessionIdleTimeout());
@@ -772,8 +780,19 @@ public class RepresentationToModel {
         if (resourceRep.getBaseUrl() != null) client.setBaseUrl(resourceRep.getBaseUrl());
         if (resourceRep.isBearerOnly() != null) client.setBearerOnly(resourceRep.isBearerOnly());
         if (resourceRep.isConsentRequired() != null) client.setConsentRequired(resourceRep.isConsentRequired());
+
+        // Backwards compatibility only
+        if (resourceRep.isDirectGrantsOnly() != null) {
+            logger.warn("Using deprecated 'directGrantsOnly' configuration in JSON representation. It will be removed in future versions");
+            client.setStandardFlowEnabled(!resourceRep.isDirectGrantsOnly());
+            client.setDirectAccessGrantsEnabled(resourceRep.isDirectGrantsOnly());
+        }
+
+        if (resourceRep.isStandardFlowEnabled() != null) client.setStandardFlowEnabled(resourceRep.isStandardFlowEnabled());
+        if (resourceRep.isImplicitFlowEnabled() != null) client.setImplicitFlowEnabled(resourceRep.isImplicitFlowEnabled());
+        if (resourceRep.isDirectAccessGrantsEnabled() != null) client.setDirectAccessGrantsEnabled(resourceRep.isDirectAccessGrantsEnabled());
         if (resourceRep.isServiceAccountsEnabled() != null) client.setServiceAccountsEnabled(resourceRep.isServiceAccountsEnabled());
-        if (resourceRep.isDirectGrantsOnly() != null) client.setDirectGrantsOnly(resourceRep.isDirectGrantsOnly());
+
         if (resourceRep.isPublicClient() != null) client.setPublicClient(resourceRep.isPublicClient());
         if (resourceRep.isFrontchannelLogout() != null) client.setFrontchannelLogout(resourceRep.isFrontchannelLogout());
         if (resourceRep.getProtocol() != null) client.setProtocol(resourceRep.getProtocol());
@@ -869,8 +888,10 @@ public class RepresentationToModel {
         if (rep.isEnabled() != null) resource.setEnabled(rep.isEnabled());
         if (rep.isBearerOnly() != null) resource.setBearerOnly(rep.isBearerOnly());
         if (rep.isConsentRequired() != null) resource.setConsentRequired(rep.isConsentRequired());
+        if (rep.isStandardFlowEnabled() != null) resource.setStandardFlowEnabled(rep.isStandardFlowEnabled());
+        if (rep.isImplicitFlowEnabled() != null) resource.setImplicitFlowEnabled(rep.isImplicitFlowEnabled());
+        if (rep.isDirectAccessGrantsEnabled() != null) resource.setDirectAccessGrantsEnabled(rep.isDirectAccessGrantsEnabled());
         if (rep.isServiceAccountsEnabled() != null) resource.setServiceAccountsEnabled(rep.isServiceAccountsEnabled());
-        if (rep.isDirectGrantsOnly() != null) resource.setDirectGrantsOnly(rep.isDirectGrantsOnly());
         if (rep.isPublicClient() != null) resource.setPublicClient(rep.isPublicClient());
         if (rep.isFullScopeAllowed() != null) resource.setFullScopeAllowed(rep.isFullScopeAllowed());
         if (rep.isFrontchannelLogout() != null) resource.setFrontchannelLogout(rep.isFrontchannelLogout());
@@ -1023,35 +1044,14 @@ public class RepresentationToModel {
                 user.addRequiredAction(UserModel.RequiredAction.valueOf(requiredAction));
             }
         }
-        if (userRep.getCredentials() != null) {
-            for (CredentialRepresentation cred : userRep.getCredentials()) {
-                updateCredential(user, cred);
-            }
-        }
+        createCredentials(userRep, user);
         if (userRep.getFederatedIdentities() != null) {
             for (FederatedIdentityRepresentation identity : userRep.getFederatedIdentities()) {
                 FederatedIdentityModel mappingModel = new FederatedIdentityModel(identity.getIdentityProvider(), identity.getUserId(), identity.getUserName());
                 session.users().addFederatedIdentity(newRealm, user, mappingModel);
             }
         }
-        if (userRep.getRealmRoles() != null) {
-            for (String roleString : userRep.getRealmRoles()) {
-                RoleModel role = newRealm.getRole(roleString.trim());
-                if (role == null) {
-                    role = newRealm.addRole(roleString.trim());
-                }
-                user.grantRole(role);
-            }
-        }
-        if (userRep.getClientRoles() != null) {
-            for (Map.Entry<String, List<String>> entry : userRep.getClientRoles().entrySet()) {
-                ClientModel client = clientMap.get(entry.getKey());
-                if (client == null) {
-                    throw new RuntimeException("Unable to find client role mappings for client: " + entry.getKey());
-                }
-                createClientRoleMappings(client, user, entry.getValue());
-            }
-        }
+        createRoleMappings(userRep, user, newRealm);
         if (userRep.getClientConsents() != null) {
             for (UserConsentRepresentation consentRep : userRep.getClientConsents()) {
                 UserConsentModel consentModel = toModel(newRealm, consentRep);
@@ -1077,6 +1077,14 @@ public class RepresentationToModel {
             }
         }
         return user;
+    }
+
+    public static void createCredentials(UserRepresentation userRep, UserModel user) {
+        if (userRep.getCredentials() != null) {
+            for (CredentialRepresentation cred : userRep.getCredentials()) {
+                updateCredential(user, cred);
+            }
+        }
     }
 
     // Detect if it is "plain-text" or "hashed" representation and update model according to it
@@ -1120,6 +1128,28 @@ public class RepresentationToModel {
     }
 
     // Role mappings
+
+    public static void createRoleMappings(UserRepresentation userRep, UserModel user, RealmModel realm) {
+        if (userRep.getRealmRoles() != null) {
+            for (String roleString : userRep.getRealmRoles()) {
+                RoleModel role = realm.getRole(roleString.trim());
+                if (role == null) {
+                    role = realm.addRole(roleString.trim());
+                }
+                user.grantRole(role);
+            }
+        }
+        if (userRep.getClientRoles() != null) {
+            Map<String, ClientModel> clientMap = realm.getClientNameMap();
+            for (Map.Entry<String, List<String>> entry : userRep.getClientRoles().entrySet()) {
+                ClientModel client = clientMap.get(entry.getKey());
+                if (client == null) {
+                    throw new RuntimeException("Unable to find client role mappings for client: " + entry.getKey());
+                }
+                createClientRoleMappings(client, user, entry.getValue());
+            }
+        }
+    }
 
     public static void createClientRoleMappings(ClientModel clientModel, UserModel user, List<String> roleNames) {
         if (user == null) {

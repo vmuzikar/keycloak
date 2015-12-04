@@ -30,8 +30,10 @@ public class ClientEntity extends AbstractIdentifiableEntity {
     private String baseUrl;
     private boolean bearerOnly;
     private boolean consentRequired;
+    private boolean standardFlowEnabled;
+    private boolean implicitFlowEnabled;
+    private boolean directAccessGrantsEnabled;
     private boolean serviceAccountsEnabled;
-    private boolean directGrantsOnly;
     private int nodeReRegistrationTimeout;
 
     // We are using names of defaultRoles (not ids)
@@ -243,20 +245,36 @@ public class ClientEntity extends AbstractIdentifiableEntity {
         this.consentRequired = consentRequired;
     }
 
+    public boolean isStandardFlowEnabled() {
+        return standardFlowEnabled;
+    }
+
+    public void setStandardFlowEnabled(boolean standardFlowEnabled) {
+        this.standardFlowEnabled = standardFlowEnabled;
+    }
+
+    public boolean isImplicitFlowEnabled() {
+        return implicitFlowEnabled;
+    }
+
+    public void setImplicitFlowEnabled(boolean implicitFlowEnabled) {
+        this.implicitFlowEnabled = implicitFlowEnabled;
+    }
+
+    public boolean isDirectAccessGrantsEnabled() {
+        return directAccessGrantsEnabled;
+    }
+
+    public void setDirectAccessGrantsEnabled(boolean directAccessGrantsEnabled) {
+        this.directAccessGrantsEnabled = directAccessGrantsEnabled;
+    }
+
     public boolean isServiceAccountsEnabled() {
         return serviceAccountsEnabled;
     }
 
     public void setServiceAccountsEnabled(boolean serviceAccountsEnabled) {
         this.serviceAccountsEnabled = serviceAccountsEnabled;
-    }
-
-    public boolean isDirectGrantsOnly() {
-        return directGrantsOnly;
-    }
-
-    public void setDirectGrantsOnly(boolean directGrantsOnly) {
-        this.directGrantsOnly = directGrantsOnly;
     }
 
     public List<String> getDefaultRoles() {

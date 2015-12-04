@@ -71,7 +71,14 @@ import static org.junit.Assert.assertNull;
 public class RefreshTokenTest {
 
     @ClassRule
-    public static KeycloakRule keycloakRule = new KeycloakRule();
+    public static KeycloakRule keycloakRule = new KeycloakRule(new KeycloakRule.KeycloakSetup() {
+
+        @Override
+        public void config(RealmManager manager, RealmModel adminstrationRealm, RealmModel appRealm) {
+            appRealm.getClientByClientId("test-app").setDirectAccessGrantsEnabled(true);
+        }
+
+    });
 
     @Rule
     public WebRule webRule = new WebRule(this);
@@ -113,6 +120,14 @@ public class RefreshTokenTest {
         events.clear();
 
 
+    }
+
+    @Test
+    public void invalidRefreshToken() throws Exception {
+        AccessTokenResponse response = oauth.doRefreshTokenRequest("invalid", "password");
+        Assert.assertEquals(400, response.getStatusCode());
+        Assert.assertEquals("invalid_grant", response.getError());
+        events.clear();
     }
 
     @Test

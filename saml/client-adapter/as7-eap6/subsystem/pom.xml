@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-parent</artifactId>
-        <version>1.7.0.Final-SNAPSHOT</version>
+        <version>1.8.0.CR1-SNAPSHOT</version>
         <relativePath>../../../../pom.xml</relativePath>
     </parent>
 
@@ -101,9 +101,9 @@ projects that depend on this project.-->
         </dependency>
 
         <dependency>
-            <groupId>org.jboss.msc</groupId>
-            <artifactId>jboss-msc</artifactId>
-            <version>1.0.2.GA</version>
+            <groupId>org.jboss.as</groupId>
+            <artifactId>jboss-as-controller</artifactId>
+            <version>${jboss.version}</version>
         </dependency>
 
         <dependency>

@@ -62,32 +62,32 @@ public class Clients extends AdminConsoleRealm {
         }
 
         public void createClient() {
-            waitAjaxForBody();
+            waitForBody();
             clickHeaderLink(CREATE);
         }
 
         public void importClient() {
-            waitAjaxForBody();
+            waitForBody();
             clickHeaderLink(IMPORT);
         }
 
         public void clickClient(ClientRepresentation client) {
-            waitAjaxForBody();
+            waitForBody();
             clickClient(client.getClientId());
         }
 
         public void clickClient(String clientId) {
-            waitAjaxForBody();
+            waitForBody();
             body().findElement(linkText(clientId)).click();
         }
 
         public void editClient(String clientId) {
-            waitAjaxForBody();
+            waitForBody();
             clickRowActionButton(getRowByLinkText(clientId), EDIT);
         }
 
         public void deleteClient(String clientId) {
-            waitAjaxForBody();
+            waitForBody();
             clickRowActionButton(getRowByLinkText(clientId), DELETE);
         }
 
@@ -124,11 +124,6 @@ public class Clients extends AdminConsoleRealm {
             }
             return client;
         }
-    }
-
-    public void deleteClient(String clientId) {
-        clientsTable.searchClients(clientId);
-        clientsTable.deleteClient(clientId);
     }
 
     public ClientsResource clientsResource() {

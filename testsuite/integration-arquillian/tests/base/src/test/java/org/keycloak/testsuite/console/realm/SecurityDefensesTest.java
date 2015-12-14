@@ -82,7 +82,7 @@ public class SecurityDefensesTest extends AbstractRealmTest {
         bruteForceDetectionPage.form().setWaitIncrementInput(String.valueOf(secondsToWait));
         bruteForceDetectionPage.form().setQuickLoginCheckInput("1");
         bruteForceDetectionPage.form().save();
-        assertFlashMessageSuccess();
+        assertAlertSuccess();
 
         tryToLogin(secondsToWait * (ATTEMPTS_BAD_PWD + ATTEMPTS_GOOD_PWD) / maxLoginFailures);
     }
@@ -97,7 +97,7 @@ public class SecurityDefensesTest extends AbstractRealmTest {
         bruteForceDetectionPage.form().setMinQuickLoginWaitSelect(BruteForceDetection.TimeSelectValues.SECONDS);
         bruteForceDetectionPage.form().setMinQuickLoginWaitInput(String.valueOf(secondsToWait));
         bruteForceDetectionPage.form().save();
-        assertFlashMessageSuccess();
+        assertAlertSuccess();
 
         tryToLogin(secondsToWait);
     }
@@ -129,7 +129,7 @@ public class SecurityDefensesTest extends AbstractRealmTest {
         bruteForceDetectionPage.form().setFailureResetTimeSelect(BruteForceDetection.TimeSelectValues.SECONDS);
         bruteForceDetectionPage.form().setFailureResetTimeInput(String.valueOf(failureResetTime));
         bruteForceDetectionPage.form().save();
-        assertFlashMessageSuccess();
+        assertAlertSuccess();
 
         tryToLogin(failureResetTime, false);
 
@@ -149,7 +149,7 @@ public class SecurityDefensesTest extends AbstractRealmTest {
         bruteForceDetectionPage.form().setWaitIncrementSelect(BruteForceDetection.TimeSelectValues.MINUTES);
         bruteForceDetectionPage.form().setWaitIncrementInput("10");
         bruteForceDetectionPage.form().save();
-        assertFlashMessageSuccess();
+        assertAlertSuccess();
 
         testRealmAccountPage.navigateTo();
 
@@ -173,7 +173,7 @@ public class SecurityDefensesTest extends AbstractRealmTest {
     }
 
     private void assertFeedbackText(String text) {
-        waitGuiForElement(feedbackTextElement);
+        waitUntilElement(feedbackTextElement);
         assertEquals(text, feedbackTextElement.getText());
     }
 

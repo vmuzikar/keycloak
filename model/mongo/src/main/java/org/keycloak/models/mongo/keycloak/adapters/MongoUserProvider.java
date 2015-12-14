@@ -435,7 +435,7 @@ public class MongoUserProvider implements UserProvider {
     }
 
     @Override
-    public void preRemove(ClientModel client, ProtocolMapperModel protocolMapper) {
+    public void preRemove(ProtocolMapperModel protocolMapper) {
         // Remove this protocol mapper from all consents, which has it
         DBObject query = new QueryBuilder()
                 .and("grantedProtocolMappers").is(protocolMapper.getId())
@@ -474,17 +474,17 @@ public class MongoUserProvider implements UserProvider {
     }
 
     @Override
-    public boolean validCredentials(RealmModel realm, UserModel user, List<UserCredentialModel> input) {
-        return CredentialValidation.validCredentials(realm, user, input);
+    public boolean validCredentials(KeycloakSession session, RealmModel realm, UserModel user, List<UserCredentialModel> input) {
+        return CredentialValidation.validCredentials(session, realm, user, input);
     }
 
     @Override
-    public boolean validCredentials(RealmModel realm, UserModel user, UserCredentialModel... input) {
-        return CredentialValidation.validCredentials(realm, user, input);
+    public boolean validCredentials(KeycloakSession session, RealmModel realm, UserModel user, UserCredentialModel... input) {
+        return CredentialValidation.validCredentials(session, realm, user, input);
     }
 
     @Override
-    public CredentialValidationOutput validCredentials(RealmModel realm, UserCredentialModel... input) {
+    public CredentialValidationOutput validCredentials(KeycloakSession session, RealmModel realm, UserCredentialModel... input) {
         // Not supported yet
         return null;
     }

@@ -46,7 +46,7 @@ public abstract class DataTableExt<DataRepresentationType> extends DataTable {
 
     public void clickItem(String id, boolean searchFirst) {
         if (searchFirst) {search(id);}
-        waitAjaxForBody();
+        waitForBody();
         body().findElement(linkText(id)).click();
     }
 
@@ -64,7 +64,7 @@ public abstract class DataTableExt<DataRepresentationType> extends DataTable {
 
     public void clickItemActionButton(String id, String buttonLabel, boolean searchFirst) {
         if (searchFirst) {search(id);}
-        waitAjaxForBody();
+        waitForBody();
         clickRowActionButton(getRowByLinkText(id), buttonLabel);
     }
 

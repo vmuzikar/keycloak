@@ -309,6 +309,18 @@ module.factory('ClientProtocolMapper', function($resource) {
     });
 });
 
+module.factory('ClientTemplateProtocolMapper', function($resource) {
+    return $resource(authUrl + '/admin/realms/:realm/client-templates/:template/protocol-mappers/models/:id', {
+        realm : '@realm',
+        template: '@template',
+        id : "@id"
+    }, {
+        update : {
+            method : 'PUT'
+        }
+    });
+});
+
 module.factory('User', function($resource) {
     return $resource(authUrl + '/admin/realms/:realm/users/:userId', {
         realm : '@realm',
@@ -828,6 +840,14 @@ module.factory('ClientProtocolMappersByProtocol', function($resource) {
     });
 });
 
+module.factory('ClientTemplateProtocolMappersByProtocol', function($resource) {
+    return $resource(authUrl + '/admin/realms/:realm/client-templates/:template/protocol-mappers/protocol/:protocol', {
+        realm : '@realm',
+        template : "@template",
+        protocol : "@protocol"
+    });
+});
+
 module.factory('ClientSessionStats', function($resource) {
     return $resource(authUrl + '/admin/realms/:realm/clients/:client/session-stats', {
         realm : '@realm',
@@ -955,6 +975,18 @@ module.factory('Client', function($resource) {
         }
     });
 });
+
+module.factory('ClientTemplate', function($resource) {
+    return $resource(authUrl + '/admin/realms/:realm/client-templates/:template', {
+        realm : '@realm',
+        template : '@template'
+    },  {
+        update : {
+            method : 'PUT'
+        }
+    });
+});
+
 
 module.factory('ClientDescriptionConverter', function($resource) {
     return $resource(authUrl + '/admin/realms/:realm/client-description-converter', {
@@ -1103,6 +1135,7 @@ module.factory('PasswordPolicy', function() {
     var p = {};
 
     p.policyMessages = {
+        hashAlgorithm: 	"Default hashing algorithm.  Default is 'pbkdf2'.",
         hashIterations: 	"Number of hashing iterations.  Default is 1.  Recommended is 50000.",
         length:         	"Minimal password length (integer type). Default value is 8.",
         digits:         	"Minimal number (integer type) of digits in password. Default value is 1.",
@@ -1116,6 +1149,7 @@ module.factory('PasswordPolicy', function() {
     }
 
     p.allPolicies = [
+        { name: 'hashAlgorithm', value: 'pbkdf2' },
         { name: 'hashIterations', value: 1 },
         { name: 'length', value: 8 },
         { name: 'digits', value: 1 },

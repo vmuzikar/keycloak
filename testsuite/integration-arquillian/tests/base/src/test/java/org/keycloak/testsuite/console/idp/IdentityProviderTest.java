@@ -123,7 +123,7 @@ public class IdentityProviderTest extends AbstractConsoleTest {
         genericIdpForm.setClientSecret(clientSecret);
         genericIdpForm.setFirstLoginFlow(IdpForm.FIRST_BROKER_LOGIN);
         genericIdpForm.save();
-        assertFlashMessageSuccess();
+        assertAlertSuccess();
     }
 
     private void tryToLoginWithIdp(AbstractIdentityProvider identityProvider, String newUserName) {
@@ -171,7 +171,7 @@ public class IdentityProviderTest extends AbstractConsoleTest {
         createClientPage.form().setClientId(OIDC_CLIENT_NAME);
         createClientPage.form().setRedirectUris(Collections.singletonList(redirectUri));
         createClientPage.form().save();
-        assertFlashMessageSuccess();
+        assertAlertSuccess();
 
         clientPage.tabs().credentials();
         String clientSecret = clientCredentialsPage.getSecret();
@@ -185,7 +185,7 @@ public class IdentityProviderTest extends AbstractConsoleTest {
         oidcIdpForm.setClientSecret(clientSecret);
         oidcIdpForm.setFirstLoginFlow(IdpForm.FIRST_BROKER_LOGIN);
         oidcIdpForm.save();
-        assertFlashMessageSuccess();
+        assertAlertSuccess();
 
         // Login to standard test realm using OIDC realm
         oidcIdpLogin.setUser(oidcUser);

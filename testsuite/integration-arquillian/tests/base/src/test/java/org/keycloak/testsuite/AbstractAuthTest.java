@@ -17,23 +17,24 @@
  */
 package org.keycloak.testsuite;
 
-import java.text.MessageFormat;
-import java.util.List;
-import org.jboss.arquillian.graphene.findby.FindByJQuery;
 import org.jboss.arquillian.graphene.page.Page;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.keycloak.admin.client.resource.RealmResource;
-import static org.keycloak.representations.idm.CredentialRepresentation.PASSWORD;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import static org.keycloak.testsuite.admin.ApiUtil.*;
-import static org.keycloak.testsuite.admin.Users.setPasswordFor;
 import org.keycloak.testsuite.auth.page.AuthRealm;
-import static org.keycloak.testsuite.auth.page.AuthRealm.TEST;
 import org.keycloak.testsuite.auth.page.login.OIDCLogin;
-import org.keycloak.testsuite.console.page.fragment.FlashMessage;
+import org.keycloak.testsuite.auth.page.login.SAMLLogin;
 import org.openqa.selenium.Cookie;
+
+import java.text.MessageFormat;
+import java.util.List;
+
+import static org.keycloak.representations.idm.CredentialRepresentation.PASSWORD;
+import static org.keycloak.testsuite.admin.ApiUtil.assignClientRoles;
+import static org.keycloak.testsuite.admin.ApiUtil.createUserAndResetPasswordWithAdminClient;
+import static org.keycloak.testsuite.admin.Users.setPasswordFor;
+import static org.keycloak.testsuite.auth.page.AuthRealm.TEST;
 
 /**
  *
@@ -46,10 +47,12 @@ public abstract class AbstractAuthTest extends AbstractKeycloakTest {
     @Page
     protected OIDCLogin testRealmLoginPage;
 
+    @Page
+    protected SAMLLogin testRealmSAMLLoginPage;
+
     protected UserRepresentation testUser;
 
-    @FindByJQuery(".alert")
-    protected FlashMessage flashMessage;
+    protected UserRepresentation bburkeUser;
 
     @Override
     public void addTestRealms(List<RealmRepresentation> testRealms) {
@@ -66,14 +69,17 @@ public abstract class AbstractAuthTest extends AbstractKeycloakTest {
         testUser = createUserRepresentation("test", "test@email.test", "test", "user", true);
         setPasswordFor(testUser, PASSWORD);
 
+        bburkeUser = createUserRepresentation("bburke", "bburke@redhat.com", "Bill", "Burke", true);
+        setPasswordFor(bburkeUser, PASSWORD);
+
         deleteAllCookiesForTestRealm();
     }
-    
+
     public void createTestUserWithAdminClient() {
         log.debug("creating test user");
         String id = createUserAndResetPasswordWithAdminClient(testRealmResource(), testUser, PASSWORD);
         testUser.setId(id);
-        
+
         assignClientRoles(testRealmResource(), id, "realm-management", "view-realm");
     }
 
@@ -99,21 +105,6 @@ public abstract class AbstractAuthTest extends AbstractKeycloakTest {
             log.info(MessageFormat.format(" {1} {2} {0}",
                     c.getName(), c.getDomain(), c.getPath(), c.getValue()));
         }
-    }
-
-    public void assertFlashMessageSuccess() {
-        flashMessage.waitUntilPresent();
-        assertTrue(flashMessage.getText(), flashMessage.isSuccess());
-    }
-
-    public void assertFlashMessageDanger() {
-        flashMessage.waitUntilPresent();
-        assertTrue(flashMessage.getText(), flashMessage.isDanger());
-    }
-
-    public void assertFlashMessageError() {
-        flashMessage.waitUntilPresent();
-        assertTrue(flashMessage.getText(), flashMessage.isError());
     }
 
     public RealmResource testRealmResource() {

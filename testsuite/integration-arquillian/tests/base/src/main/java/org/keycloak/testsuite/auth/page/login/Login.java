@@ -17,13 +17,14 @@
  */
 package org.keycloak.testsuite.auth.page.login;
 
-import javax.ws.rs.core.UriBuilder;
 import org.jboss.arquillian.graphene.page.Page;
 import org.keycloak.testsuite.auth.page.AuthRealm;
-import static org.keycloak.testsuite.util.WaitUtils.waitGuiForElement;
-import static org.keycloak.testsuite.util.WaitUtils.waitGuiForElementNotPresent;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
+
+import javax.ws.rs.core.UriBuilder;
+
+import static org.keycloak.testsuite.util.WaitUtils.waitUntilElement;
 
 /**
  *
@@ -36,11 +37,10 @@ public abstract class Login extends AuthRealm {
     public static final String OIDC = "openid-connect";
     public static final String SAML = "saml";
 
-
     @Override
     public UriBuilder createUriBuilder() {
         return super.createUriBuilder()
-                .path("protocol/{" + PROTOCOL + "}/auth");
+                .path("protocol/{" + PROTOCOL + "}" + (getProtocol().equals(OIDC) ? "/auth" : ""));
     }
     
     public void setProtocol(String protocol) {
@@ -62,11 +62,11 @@ public abstract class Login extends AuthRealm {
     private WebElement keycloakTheme;
 
     public void waitForKeycloakThemeNotPresent() {
-        waitGuiForElementNotPresent(keycloakTheme);
+        waitUntilElement(keycloakTheme).is().not().present();
     }
 
     public void waitForKeycloakThemePresent() {
-        waitGuiForElement(keycloakTheme);
+        waitUntilElement(keycloakTheme).is().present();
     }
 
 }

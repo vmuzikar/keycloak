@@ -20,6 +20,7 @@ package org.keycloak.testsuite.console.idp;
 import org.jboss.arquillian.graphene.page.Page;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -48,6 +49,7 @@ import static org.keycloak.testsuite.admin.ApiUtil.*;
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
+@Ignore
 public class IdentityProviderTest extends AbstractConsoleTest {
     public static final String OIDC_REALM = "OIDC-provider";
     public static final String OIDC_PROVIDER_NAME = "OpenID Connect v1.0";

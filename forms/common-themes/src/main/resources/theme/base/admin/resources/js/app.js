@@ -61,7 +61,11 @@ angular.element(document).ready(function () {
             module.factory('Auth', function() {
                 return auth;
             });
-            angular.bootstrap(document, ["keycloak"]);
+            var injector = angular.bootstrap(document, ["keycloak"]);
+
+            injector.get('$translate')('consoleTitle').then(function(consoleTitle) {
+                document.title=consoleTitle;
+            });
         }, function() {
             window.location.reload();
         });
@@ -1128,7 +1132,7 @@ module.config([ '$routeProvider', function($routeProvider) {
             controller : 'UserRoleMappingCtrl'
         })
         .when('/create/client/:realm', {
-            templateUrl : resourceUrl + '/partials/client-detail.html',
+            templateUrl : resourceUrl + '/partials/create-client.html',
             resolve : {
                 realm : function(RealmLoader) {
                     return RealmLoader();
@@ -1146,7 +1150,7 @@ module.config([ '$routeProvider', function($routeProvider) {
                     return ServerInfoLoader();
                 }
             },
-            controller : 'ClientDetailCtrl'
+            controller : 'CreateClientCtrl'
         })
         .when('/realms/:realm/clients/:client', {
             templateUrl : resourceUrl + '/partials/client-detail.html',

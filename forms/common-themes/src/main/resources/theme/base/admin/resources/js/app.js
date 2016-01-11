@@ -406,6 +406,16 @@ module.config([ '$routeProvider', function($routeProvider) {
             },
             controller : 'RealmEventsConfigCtrl'
         })
+        .when('/realms/:realm/partial-import', {
+            templateUrl : resourceUrl + '/partials/partial-import.html',
+            resolve : {
+                resourceName : function() { return 'users'},
+                realm : function(RealmLoader) {
+                    return RealmLoader();
+                }
+            },
+            controller : 'RealmImportCtrl'
+        })
         .when('/create/user/:realm', {
             templateUrl : resourceUrl + '/partials/user-detail.html',
             resolve : {
@@ -1109,6 +1119,9 @@ module.config([ '$routeProvider', function($routeProvider) {
                 },
                 client : function(ClientLoader) {
                     return ClientLoader();
+                },
+                serverInfo : function(ServerInfoLoader) {
+                    return ServerInfoLoader();
                 }
             },
             controller : 'ClientInstallationCtrl'
@@ -2370,6 +2383,34 @@ module.filter('capitalize', function() {
         };
         return splittedWords.join(" ");
     };
+});
+
+/*
+ * Guarantees a deterministic property iteration order.
+ * See: http://www.2ality.com/2015/10/property-traversal-order-es6.html
+ */
+module.filter('toOrderedMapSortedByKey', function(){
+   return function(input){
+
+       if(!input){
+           return input;
+       }
+
+       var keys = Object.keys(input);
+
+       if(keys.length <= 1){
+           return input;
+       }
+
+       keys.sort();
+
+       var result = {};
+       for (var i = 0; i < keys.length; i++) {
+           result[keys[i]] = input[keys[i]];
+       }
+
+       return result;
+   };
 });
 
 module.directive('kcSidebarResize', function ($window) {

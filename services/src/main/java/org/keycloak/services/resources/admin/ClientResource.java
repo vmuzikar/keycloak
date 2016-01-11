@@ -17,6 +17,7 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
+import org.keycloak.protocol.ClientInstallationProvider;
 import org.keycloak.representations.adapters.action.GlobalRequestResult;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -67,7 +68,7 @@ public class ClientResource {
     private AdminEventBuilder adminEvent;
     protected ClientModel client;
     protected KeycloakSession session;
-    
+
     @Context
     protected UriInfo uriInfo;
 
@@ -106,11 +107,7 @@ public class ClientResource {
         auth.requireManage();
 
         try {
-            if (TRUE.equals(rep.isServiceAccountsEnabled()) && !client.isServiceAccountsEnabled()) {
-                new ClientManager(new RealmManager(session)).enableServiceAccount(client);;
-            }
-
-            RepresentationToModel.updateClient(rep, client);
+            updateClientFromRep(rep, client, session);
             adminEvent.operation(OperationType.UPDATE).resourcePath(uriInfo).representation(rep).success();
             return Response.noContent().build();
         } catch (ModelDuplicateException e) {
@@ -118,6 +115,13 @@ public class ClientResource {
         }
     }
 
+    public static void updateClientFromRep(ClientRepresentation rep, ClientModel client, KeycloakSession session) throws ModelDuplicateException {
+        if (TRUE.equals(rep.isServiceAccountsEnabled()) && !client.isServiceAccountsEnabled()) {
+            new ClientManager(new RealmManager(session)).enableServiceAccount(client);
+        }
+
+        RepresentationToModel.updateClient(rep, client);
+    }
 
     /**
      * Get representation of the client
@@ -143,15 +147,27 @@ public class ClientResource {
         return new ClientAttributeCertificateResource(realm, auth, client, session, attributePrefix, adminEvent);
     }
 
+    @GET
+    @NoCache
+    @Path("installation/providers/{providerId}")
+    public Response getInstallationProvider(@PathParam("providerId") String providerId) {
+        ClientInstallationProvider provider = session.getProvider(ClientInstallationProvider.class, providerId);
+        if (provider == null) throw new NotFoundException("Unknown Provider");
+        return provider.generateInstallation(session, realm, client, keycloak.getBaseUri(uriInfo));
+    }
+
 
     /**
      * Get keycloak.json file
+     *
+     * this method is deprecated, see getInstallationProvider
      *
      * Returns a keycloak.json file to be used to configure the adapter of the specified client.
      *
      * @return
      * @throws IOException
      */
+    @Deprecated
     @GET
     @NoCache
     @Path("installation/json")
@@ -169,11 +185,14 @@ public class ClientResource {
     /**
      * Get adapter configuration XML for JBoss / Wildfly Keycloak subsystem
      *
+     * this method is deprecated, see getInstallationProvider
+     *
      * Returns XML that can be included in the JBoss / Wildfly Keycloak subsystem to configure the adapter of that client.
      *
      * @return
      * @throws IOException
      */
+    @Deprecated
     @GET
     @NoCache
     @Path("installation/jboss")
@@ -365,9 +384,9 @@ public class ClientResource {
         auth.requireManage();
         adminEvent.operation(OperationType.ACTION).resourcePath(uriInfo).success();
         return new ResourceAdminManager(session).pushClientRevocationPolicy(uriInfo.getRequestUri(), realm, client);
-    
+
     }
-    
+
     /**
      * Get application session count
      *
@@ -383,9 +402,9 @@ public class ClientResource {
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
-    public Map<String, Integer> getApplicationSessionCount() {
+    public Map<String, Long> getApplicationSessionCount() {
         auth.requireView();
-        Map<String, Integer> map = new HashMap<String, Integer>();
+        Map<String, Long> map = new HashMap<>();
         map.put("count", session.sessions().getActiveUserSessions(client.getRealm(), client));
         return map;
     }
@@ -430,9 +449,9 @@ public class ClientResource {
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
-    public Map<String, Integer> getOfflineSessionCount() {
+    public Map<String, Long> getOfflineSessionCount() {
         auth.requireView();
-        Map<String, Integer> map = new HashMap<String, Integer>();
+        Map<String, Long> map = new HashMap<>();
         map.put("count", session.sessions().getOfflineSessionsCount(client.getRealm(), client));
         return map;
     }

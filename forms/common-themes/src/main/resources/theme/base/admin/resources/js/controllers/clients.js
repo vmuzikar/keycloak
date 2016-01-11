@@ -685,7 +685,7 @@ module.controller('ClientListCtrl', function($scope, realm, clients, Client, ser
     };
 });
 
-module.controller('ClientInstallationCtrl', function($scope, realm, client, ClientInstallation,ClientInstallationJBoss, $http, $routeParams) {
+module.controller('ClientInstallationCtrl', function($scope, realm, client, serverInfo, ClientInstallation,$http, $routeParams) {
     $scope.realm = realm;
     $scope.client = client;
     $scope.installation = null;
@@ -693,36 +693,24 @@ module.controller('ClientInstallationCtrl', function($scope, realm, client, Clie
     $scope.configFormat = null;
     $scope.filename = null;
 
-    $scope.configFormats = [
-        "Keycloak JSON",
-        "Wildfly/EAP Subsystem XML"
-    ];
+    var protocol = client.protocol;
+    if (!protocol) protocol = 'openid-connect';
+    $scope.configFormats = serverInfo.clientInstallations[protocol];
+    console.log('configFormats.length: ' + $scope.configFormats.length);
 
     $scope.changeFormat = function() {
-        if ($scope.configFormat == "Keycloak JSON") {
-            $scope.filename = 'keycloak.json';
-
-            var url = ClientInstallation.url({ realm: $routeParams.realm, client: $routeParams.client });
-            $http.get(url).success(function(data) {
-                var tmp = angular.fromJson(data);
-                $scope.installation = angular.toJson(tmp, true);
-                $scope.type = 'application/json';
-            })
-        } else if ($scope.configFormat == "Wildfly/EAP Subsystem XML") {
-            $scope.filename = 'keycloak.xml';
-
-            var url = ClientInstallationJBoss.url({ realm: $routeParams.realm, client: $routeParams.client });
-            $http.get(url).success(function(data) {
-                $scope.installation = data;
-                $scope.type = 'text/xml';
-            })
-        }
-
-        console.debug($scope.filename);
+        var url = ClientInstallation.url({ realm: $routeParams.realm, client: $routeParams.client, provider: $scope.configFormat.id });
+        $http.get(url).success(function(data) {
+            var installation = data;
+            if ($scope.configFormat.mediaType == 'application/json') {
+                installation = angular.fromJson(data);
+                installation = angular.toJson(installation, true);
+            }
+            $scope.installation = installation;
+        })
     };
-
     $scope.download = function() {
-        saveAs(new Blob([$scope.installation], { type: $scope.type }), $scope.filename);
+        saveAs(new Blob([$scope.installation], { type: $scope.configFormat.mediaType }), $scope.configFormat.filename);
     }
 });
 
@@ -1065,10 +1053,12 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, templates,
 module.controller('CreateClientCtrl', function($scope, realm, client, templates, $route, serverInfo, Client, ClientDescriptionConverter, $location, $modal, Dialog, Notifications) {
     $scope.protocols = ['openid-connect',
         'saml'];//Object.keys(serverInfo.providers['login-protocol'].providers).sort();
-
+    $scope.create = true;
     $scope.templates = [ {name:'NONE'}];
+    var templateNameMap = new Object();
     for (var i = 0; i < templates.length; i++) {
         var template = templates[i];
+        templateNameMap[template.name] = template;
         $scope.templates.push(template);
     }
 
@@ -1108,6 +1098,18 @@ module.controller('CreateClientCtrl', function($scope, realm, client, templates,
         $scope.changed = true;
     }
 
+    $scope.changeTemplate = function() {
+        if ($scope.client.clientTemplate == 'NONE') {
+            $scope.protocol = 'openid-connect';
+            $scope.client.protocol = 'openid-connect';
+            $scope.client.clientTemplate = null;
+
+        } else {
+            var template = templateNameMap[$scope.client.clientTemplate];
+            $scope.protocol = template.protocol;
+            $scope.client.protocol = template.protocol;
+        }
+    }
     $scope.changeProtocol = function() {
         if ($scope.protocol == "openid-connect") {
             $scope.client.protocol = "openid-connect";
@@ -1627,7 +1629,7 @@ module.controller('ClientProtocolMapperCtrl', function($scope, realm, serverInfo
     };
 
     $scope.remove = function() {
-        Dialog.confirmDelete($scope.mapper.name, 'mapper', function() {
+        Dialog.confirmDelete($scope.model.mapper.name, 'mapper', function() {
             ClientProtocolMapper.remove({ realm: realm.realm, client: client.id, id : $scope.model.mapper.id }, function() {
                 Notifications.success("The mapper has been deleted.");
                 $location.url("/realms/" + realm.realm + '/clients/' + client.id + "/mappers");

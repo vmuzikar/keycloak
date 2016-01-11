@@ -1,5 +1,6 @@
 package org.keycloak.models.utils;
 
+import org.keycloak.Config;
 import org.keycloak.models.ClientTemplateModel;
 import org.keycloak.models.Constants;
 import org.keycloak.common.util.Base64;
@@ -65,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import org.keycloak.representations.idm.RolesRepresentation;
 
 public class RepresentationToModel {
 
@@ -194,47 +196,7 @@ public class RepresentationToModel {
             createClients(session, rep, newRealm);
         }
 
-        if (rep.getRoles() != null) {
-            if (rep.getRoles().getRealm() != null) { // realm roles
-                for (RoleRepresentation roleRep : rep.getRoles().getRealm()) {
-                    createRole(newRealm, roleRep);
-                }
-            }
-            if (rep.getRoles().getClient() != null) {
-                for (Map.Entry<String, List<RoleRepresentation>> entry : rep.getRoles().getClient().entrySet()) {
-                    ClientModel client = newRealm.getClientByClientId(entry.getKey());
-                    if (client == null) {
-                        throw new RuntimeException("App doesn't exist in role definitions: " + entry.getKey());
-                    }
-                    for (RoleRepresentation roleRep : entry.getValue()) {
-                        // Application role may already exists (for example if it is defaultRole)
-                        RoleModel role = roleRep.getId()!=null ? client.addRole(roleRep.getId(), roleRep.getName()) : client.addRole(roleRep.getName());
-                        role.setDescription(roleRep.getDescription());
-                        boolean scopeParamRequired = roleRep.isScopeParamRequired()==null ? false : roleRep.isScopeParamRequired();
-                        role.setScopeParamRequired(scopeParamRequired);
-                    }
-                }
-            }
-            // now that all roles are created, re-iterate and set up composites
-            if (rep.getRoles().getRealm() != null) { // realm roles
-                for (RoleRepresentation roleRep : rep.getRoles().getRealm()) {
-                    RoleModel role = newRealm.getRole(roleRep.getName());
-                    addComposites(role, roleRep, newRealm);
-                }
-            }
-            if (rep.getRoles().getClient() != null) {
-                for (Map.Entry<String, List<RoleRepresentation>> entry : rep.getRoles().getClient().entrySet()) {
-                    ClientModel client = newRealm.getClientByClientId(entry.getKey());
-                    if (client == null) {
-                        throw new RuntimeException("App doesn't exist in role definitions: " + entry.getKey());
-                    }
-                    for (RoleRepresentation roleRep : entry.getValue()) {
-                        RoleModel role = client.getRole(roleRep.getName());
-                        addComposites(role, roleRep, newRealm);
-                    }
-                }
-            }
-        }
+        importRoles(rep.getRoles(), newRealm);
 
         // Setup realm default roles
         if (rep.getDefaultRoles() != null) {
@@ -352,6 +314,50 @@ public class RepresentationToModel {
         }
         if(rep.getDefaultLocale() != null){
             newRealm.setDefaultLocale(rep.getDefaultLocale());
+        }
+    }
+
+    public static void importRoles(RolesRepresentation realmRoles, RealmModel realm) {
+        if (realmRoles == null) return;
+
+        if (realmRoles.getRealm() != null) { // realm roles
+            for (RoleRepresentation roleRep : realmRoles.getRealm()) {
+                createRole(realm, roleRep);
+            }
+        }
+        if (realmRoles.getClient() != null) {
+            for (Map.Entry<String, List<RoleRepresentation>> entry : realmRoles.getClient().entrySet()) {
+                ClientModel client = realm.getClientByClientId(entry.getKey());
+                if (client == null) {
+                    throw new RuntimeException("App doesn't exist in role definitions: " + entry.getKey());
+                }
+                for (RoleRepresentation roleRep : entry.getValue()) {
+                    // Application role may already exists (for example if it is defaultRole)
+                    RoleModel role = roleRep.getId()!=null ? client.addRole(roleRep.getId(), roleRep.getName()) : client.addRole(roleRep.getName());
+                    role.setDescription(roleRep.getDescription());
+                    boolean scopeParamRequired = roleRep.isScopeParamRequired()==null ? false : roleRep.isScopeParamRequired();
+                    role.setScopeParamRequired(scopeParamRequired);
+                }
+            }
+        }
+        // now that all roles are created, re-iterate and set up composites
+        if (realmRoles.getRealm() != null) { // realm roles
+            for (RoleRepresentation roleRep : realmRoles.getRealm()) {
+                RoleModel role = realm.getRole(roleRep.getName());
+                addComposites(role, roleRep, realm);
+            }
+        }
+        if (realmRoles.getClient() != null) {
+            for (Map.Entry<String, List<RoleRepresentation>> entry : realmRoles.getClient().entrySet()) {
+                ClientModel client = realm.getClientByClientId(entry.getKey());
+                if (client == null) {
+                    throw new RuntimeException("App doesn't exist in role definitions: " + entry.getKey());
+                }
+                for (RoleRepresentation roleRep : entry.getValue()) {
+                    RoleModel role = client.getRole(roleRep.getName());
+                    addComposites(role, roleRep, realm);
+                }
+            }
         }
     }
 
@@ -593,9 +599,16 @@ public class RepresentationToModel {
         }
     }
 
+    public static void renameRealm(RealmModel realm, String name) {
+        if (name.equals(realm.getName())) return;
+        ClientModel masterApp = realm.getMasterAdminClient();
+        masterApp.setClientId(KeycloakModelUtils.getMasterRealmAdminApplicationClientId(name));
+        realm.setName(name);
+    }
+
     public static void updateRealm(RealmRepresentation rep, RealmModel realm) {
         if (rep.getRealm() != null) {
-            realm.setName(rep.getRealm());
+            renameRealm(realm, rep.getRealm());
         }
         if (rep.getDisplayName() != null) realm.setDisplayName(rep.getDisplayName());
         if (rep.getDisplayNameHtml() != null) realm.setDisplayNameHtml(rep.getDisplayNameHtml());
@@ -631,15 +644,15 @@ public class RepresentationToModel {
         if (rep.getAccountTheme() != null) realm.setAccountTheme(rep.getAccountTheme());
         if (rep.getAdminTheme() != null) realm.setAdminTheme(rep.getAdminTheme());
         if (rep.getEmailTheme() != null) realm.setEmailTheme(rep.getEmailTheme());
-        
+
         if (rep.isEventsEnabled() != null) realm.setEventsEnabled(rep.isEventsEnabled());
         if (rep.getEventsExpiration() != null) realm.setEventsExpiration(rep.getEventsExpiration());
         if (rep.getEventsListeners() != null) realm.setEventsListeners(new HashSet<>(rep.getEventsListeners()));
         if (rep.getEnabledEventTypes() != null) realm.setEnabledEventTypes(new HashSet<>(rep.getEnabledEventTypes()));
-        
+
         if (rep.isAdminEventsEnabled() != null) realm.setAdminEventsEnabled(rep.isAdminEventsEnabled());
         if (rep.isAdminEventsDetailsEnabled() != null) realm.setAdminEventsDetailsEnabled(rep.isAdminEventsDetailsEnabled());
-        
+
 
         if (rep.getPasswordPolicy() != null) realm.setPasswordPolicy(new PasswordPolicy(rep.getPasswordPolicy()));
         if (rep.getOtpPolicyType() != null) realm.setOTPPolicy(toPolicy(rep));
@@ -903,7 +916,7 @@ public class RepresentationToModel {
             }
         }
         if (resourceRep.isUseTemplateConfig() != null) client.setUseTemplateConfig(resourceRep.isUseTemplateConfig());
-        else client.setUseTemplateConfig(resourceRep.getClientTemplate() != null);
+        else client.setUseTemplateConfig(false); // default to false for now
 
         if (resourceRep.isUseTemplateScope() != null) client.setUseTemplateScope(resourceRep.isUseTemplateScope());
         else client.setUseTemplateScope(resourceRep.getClientTemplate() != null);
@@ -1022,6 +1035,23 @@ public class RepresentationToModel {
                 client.addProtocolMapper(toModel(mapper));
             }
         }
+        if (resourceRep.isBearerOnly() != null) client.setBearerOnly(resourceRep.isBearerOnly());
+        if (resourceRep.isConsentRequired() != null) client.setConsentRequired(resourceRep.isConsentRequired());
+
+        if (resourceRep.isStandardFlowEnabled() != null) client.setStandardFlowEnabled(resourceRep.isStandardFlowEnabled());
+        if (resourceRep.isImplicitFlowEnabled() != null) client.setImplicitFlowEnabled(resourceRep.isImplicitFlowEnabled());
+        if (resourceRep.isDirectAccessGrantsEnabled() != null) client.setDirectAccessGrantsEnabled(resourceRep.isDirectAccessGrantsEnabled());
+        if (resourceRep.isServiceAccountsEnabled() != null) client.setServiceAccountsEnabled(resourceRep.isServiceAccountsEnabled());
+
+        if (resourceRep.isPublicClient() != null) client.setPublicClient(resourceRep.isPublicClient());
+        if (resourceRep.isFrontchannelLogout() != null) client.setFrontchannelLogout(resourceRep.isFrontchannelLogout());
+
+        if (resourceRep.getAttributes() != null) {
+            for (Map.Entry<String, String> entry : resourceRep.getAttributes().entrySet()) {
+                client.setAttribute(entry.getKey(), entry.getValue());
+            }
+        }
+
 
         return client;
     }
@@ -1035,6 +1065,23 @@ public class RepresentationToModel {
 
 
         if (rep.getProtocol() != null) resource.setProtocol(rep.getProtocol());
+
+        if (rep.isBearerOnly() != null) resource.setBearerOnly(rep.isBearerOnly());
+        if (rep.isConsentRequired() != null) resource.setConsentRequired(rep.isConsentRequired());
+        if (rep.isStandardFlowEnabled() != null) resource.setStandardFlowEnabled(rep.isStandardFlowEnabled());
+        if (rep.isImplicitFlowEnabled() != null) resource.setImplicitFlowEnabled(rep.isImplicitFlowEnabled());
+        if (rep.isDirectAccessGrantsEnabled() != null) resource.setDirectAccessGrantsEnabled(rep.isDirectAccessGrantsEnabled());
+        if (rep.isServiceAccountsEnabled() != null) resource.setServiceAccountsEnabled(rep.isServiceAccountsEnabled());
+        if (rep.isPublicClient() != null) resource.setPublicClient(rep.isPublicClient());
+        if (rep.isFullScopeAllowed() != null) resource.setFullScopeAllowed(rep.isFullScopeAllowed());
+        if (rep.isFrontchannelLogout() != null) resource.setFrontchannelLogout(rep.isFrontchannelLogout());
+
+        if (rep.getAttributes() != null) {
+            for (Map.Entry<String, String> entry : rep.getAttributes().entrySet()) {
+                resource.setAttribute(entry.getKey(), entry.getValue());
+            }
+        }
+
     }
 
     public static long getClaimsMask(ClaimRepresentation rep) {

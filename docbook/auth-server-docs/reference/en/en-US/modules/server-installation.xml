@@ -4,7 +4,8 @@
     <section>
         <title>Installation</title>
         <para>
-            Keycloak Server has three downloadable distributions.
+            Keycloak Server has three downloadable distributions. To run the Keycloak server you need to have Java 8 already
+            installed.
         </para>
         <para>
             <itemizedlist>
@@ -370,86 +371,6 @@ bin/add-user.[sh|bat] -r master -u <username> -p <password>
                 </para>
             </section>
         </section>
-        
-        <section>
-            <title>JSON File based model</title>
-            <para>
-                Keycloak provides a JSON file based model implementation, which means that your identity data will be saved
-                in a flat JSON text file instead of traditional RDBMS.  The performance of this implementaion is likely to
-                be slower because it reads and writes the entire file with each call to the Keycloak REST API.  But it is 
-                very useful in development to see exactly what is being saved.  <emphasis>It is not recommended for 
-                production.</emphasis>
-            </para>
-            <para>
-                Note that this only applies to realm and user data.  There is currently no file implementation for
-                event persistence.  So you will need to use JPA or Mongo for that.
-            </para>
-            <para>    
-                To configure Keycloak to use file persistence open <literal>standalone/configuration/keycloak-server.json</literal>
-                in your favourite editor.  Change the realm and user providers and disable caching.  Change:
-
-<programlisting><![CDATA[
-"realm": {
-    "provider": "jpa"
-},
-
-"user": {
-    "provider": "jpa"
-},
-    
-"userSessions": {
-    "provider" : "mem"
-},
-    
-"realmCache": {
-    "provider": "mem"
-},
-
-"userCache": {
-    "provider": "mem",
-    "mem": {
-        "maxSize": 20000
-    }
-},
-]]></programlisting>
-
-                to:
-
-                <programlisting><![CDATA[
-"realm": {
-    "provider": "file"
-},
-
-"user": {
-    "provider": "file"
-},
-                    
-"userSessions": {
-    "provider" : "mem"
-},
-                    
-"realmCache": {
-    "provider": "none"
-},
-
-"userCache": {
-    "provider": "none",
-},
-]]></programlisting>
-
-You can also change the location of the data file by adding a connectionsFile snippet:<programlisting><![CDATA[
-"connectionsFile": {
-   "default" : {
-        "directory": "/mydirectory",
-        "fileName": "myfilename.json"
-    }
-}
-]]></programlisting>
-
-All configuration options are optional. Default value for directory is <literal>${jboss.server.data.dir}</literal>. Default file name
-                is <literal>keycloak-model.json</literal>.
-            </para>
-        </section>
 
         <section>
             <title>Outgoing Server HTTP Requests</title>
@@ -461,9 +382,7 @@ All configuration options are optional. Default value for directory is <literal>
                 By default the setting is like this:
 <programlisting><![CDATA[
 "connectionsHttpClient": {
-    "default": {
-        "disable-trust-manager": true
-    }
+    "default": {}
 },
 ]]></programlisting>
                 Possible configuration options are:
@@ -501,58 +420,11 @@ All configuration options are optional. Default value for directory is <literal>
                         </listitem>
                     </varlistentry>
                     <varlistentry>
-                        <term>disable-trust-manager</term>
-                        <listitem>
-                            <para>
-                                If true, HTTPS server certificates are not verified.  If you set this to false, you must
-                                configure a truststore.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
                         <term>disable-cookies</term>
                         <listitem>
                             <para>
                                 <literal>true</literal> by default.  When set to true, this will disable any cookie
                                 caching.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term>hostname-verification-policy</term>
-                        <listitem>
-                            <para>
-                                <literal>WILDCARD</literal> by default.  For HTTPS requests, this verifies the hostname
-                                of the server's certificate.  <literal>ANY</literal> means that the hostname is not verified.
-                                <literal>WILDCARD</literal> Allows wildcards in subdomain names i.e. *.foo.com.
-                                <literal>STRICT</literal> CN must match hostname exactly.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term>truststore</term>
-                        <listitem>
-                            <para>
-                                The value is the file path to a Java keystore file.  If
-                                you prefix the path with <literal>classpath:</literal>, then the truststore will be obtained
-                                from the deployment's classpath instead.
-                                HTTPS
-                                requests need a way to verify the host of the server they are talking to. This is
-                                what the trustore does. The keystore contains one or more trusted
-                                host certificates or certificate authorities.
-                            </para>
-                        </listitem>
-                    </varlistentry>
-                    <varlistentry>
-                        <term>truststore-password</term>
-                        <listitem>
-                            <para>
-                                Password for the truststore keystore.
-                                This is
-                                <emphasis>REQUIRED</emphasis>
-                                if
-                                <literal>truststore</literal>
-                                is set.
                             </para>
                         </listitem>
                     </varlistentry>
@@ -595,13 +467,111 @@ All configuration options are optional. Default value for directory is <literal>
                 </variablelist>
             </para>
         </section>
+        <section id="truststore">
+            <title>Securing Outgoing Server HTTP Requests</title>
+            <para>
+            When Keycloak connects out to remote HTTP endpoints over secure https connection, it has to validate the other
+            server's certificate in order to ensure it is connecting to a trusted server. That is necessary in order to
+            prevent man-in-the-middle attacks.
+            </para>
+            <para>
+            How certificates are validated is configured in the <literal>standalone/configuration/keycloak-server.json</literal>.
+            By default truststore provider is not configured, and any https connections fall back to standard java truststore
+            configuration as described in <ulink url="https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html">
+            Java's JSSE Reference Guide</ulink> - using <literal>javax.net.ssl.trustStore system property</literal>,
+            otherwise <literal>cacerts</literal> file that comes with java is used.
+            </para>
+            <para>
+                Truststore is used when connecting securely to identity brokers, LDAP identity providers, when sending emails,
+                and for backchannel communication with client applications.
+
+                Some of these facilities may - in case when no trusted certificate is found in your configured truststore -
+                fallback to using the JSSE provided truststore.
+
+                The default JavaMail API implementation used to send out emails behaves in this way, for example.
+            </para>
+            <para>
+            You can add your truststore configuration by using the following template:
+
+            <programlisting><![CDATA[
+"truststore": {
+    "file": {
+        "file": "path to your .jks file containing public certificates",
+        "password": "password",
+        "hostname-verification-policy": "WILDCARD",
+        "disabled": false
+    }
+}
+]]></programlisting>
+
+            </para>
+            <para>
+            Possible configuration options are:
+
+                <variablelist>
+                    <varlistentry>
+                        <term>file</term>
+                        <listitem>
+                            <para>
+                                The value is the file path to a Java keystore file.
+                                HTTPS requests need a way to verify the host of the server they are talking to. This is
+                                what the trustore does. The keystore contains one or more trusted host certificates or
+                                certificate authorities. Truststore file should only contain public certificates of your secured hosts.
+
+                                This is
+                                <emphasis>REQUIRED</emphasis>
+                                if <literal>disabled</literal> is not true.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term>password</term>
+                        <listitem>
+                            <para>
+                                Password for the truststore.
+                                This is
+                                <emphasis>REQUIRED</emphasis>
+                                if <literal>disabled</literal> is not true.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term>hostname-verification-policy</term>
+                        <listitem>
+                            <para>
+                                <literal>WILDCARD</literal> by default.  For HTTPS requests, this verifies the hostname
+                                of the server's certificate.  <literal>ANY</literal> means that the hostname is not verified.
+                                <literal>WILDCARD</literal> Allows wildcards in subdomain names i.e. *.foo.com.
+                                <literal>STRICT</literal> CN must match hostname exactly.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                    <varlistentry>
+                        <term>disabled</term>
+                        <listitem>
+                            <para>
+                                If true (default value), truststore configuration will be ignored, and certificate checking will
+                                fall back to JSSE configuration as described. If set to false, you must
+                                configure <literal>file</literal>, and <literal>password</literal> for the truststore.
+                            </para>
+                        </listitem>
+                    </varlistentry>
+                </variablelist>
+            </para>
+            <para>
+            You can use <emphasis>keytool</emphasis> to create a new truststore file and add trusted host certificates to it:
+
+                <programlisting>
+$ keytool -import -alias HOSTDOMAIN -keystore truststore.jks -file host-certificate.cer
+                </programlisting>
+            </para>
+        </section>
         <section id="ssl_modes">
             <title>SSL/HTTPS Requirement/Modes</title>
             <warning>
                 <para>
-                    Keycloak is not set up by default to handle SSL/HTTPS in either the
-                    war distribution or appliance.  It is highly recommended that you either enable SSL on the Keycloak server
-                    itself or on a reverse proxy in front of the Keycloak server.
+                    Keycloak is not set up by default to handle SSL/HTTPS. It is highly recommended that you either enable SSL
+                    on the Keycloak server itself or on a reverse proxy in front of the Keycloak server.
                 </para>
             </warning>
             <para>

@@ -48,6 +48,7 @@
         <arquillian-wildfly-container.version>2.0.0.Final</arquillian-wildfly-container.version>
         <version.shrinkwrap.resolvers>2.2.2</version.shrinkwrap.resolvers>
         <undertow-embedded.version>1.0.0.Alpha2</undertow-embedded.version>
+        <jacoco.version>0.7.7.201606060606</jacoco.version>
 
         <!--migration properties-->
         <migration.project.version>2.2.1.Final</migration.project.version>
@@ -55,6 +56,9 @@
         
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
+
+        <jacoco.datafile>jacoco-ut.exec</jacoco.datafile>
+        <jacoco.classDump.dir>jacoco-class-dumps</jacoco.classDump.dir>
     </properties>
 
     <dependencyManagement>
@@ -145,6 +149,12 @@
             <properties>
                 <migrated.auth.server.version>${migration.product.version}</migrated.auth.server.version>
             </properties>
+        </profile>
+        <profile>
+            <id>test-coverage</id>
+            <modules>
+                <module>test-coverage</module>
+            </modules>
         </profile>
     </profiles>
 

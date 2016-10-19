@@ -826,6 +826,47 @@
                 <auth.server.management.port.jmx>9999</auth.server.management.port.jmx>
             </properties>
         </profile>
+
+        <profile>
+            <id>test-coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                                <configuration>
+                                    <destFile>${project.build.directory}/${jacoco.datafile}</destFile>
+                                    <classDumpDir>${project.build.directory}/${jacoco.classDump.dir}</classDumpDir>
+                                    <propertyName>jacoco.argline</propertyName>
+                                    <includes>
+                                        <include>org.keycloak.*</include>
+                                    </includes>
+                                    <excludes>
+                                        <exclude>org.keycloak.testsuite.*</exclude>
+                                    </excludes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-surefire-plugin</artifactId>
+                            <configuration>
+                                <argLine>${jacoco.argline}</argLine>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
         
     </profiles>
     

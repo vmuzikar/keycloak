@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2016 Red Hat, Inc. and/or its affiliates
+  ~ and other contributors as indicated by the @author tags.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>integration-arquillian</artifactId>
+        <groupId>org.keycloak.testsuite</groupId>
+        <version>2.3.0-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>integration-arquillian-test-coverage</artifactId>
+
+    <name>Test Coverage report (Arquillian Testsuite)</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.keycloak.testsuite</groupId>
+            <artifactId>integration-arquillian-tests-base</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <properties>
+        <rootDir>../../..</rootDir>
+    </properties>
+
+    <!--
+    HOW TO USE THIS:
+       Run "mvn clean install -Ptest-coverage" in the project's root dir (i.e. "keycloak" dir)
+
+    HOW THE TEST COVERAGE WORKS:
+       1. The tests are run with Jacoco's -javaagent which generates *.exec report of the run
+          (which classes, methods etc. were run); at the same time *.class files are dumped
+          as the tests are running but only the *.class which are used (i.e. non-executed classes
+          are not dumped); we need the *.class files to generate the final report later
+       2. This module is built as the latest
+          2.1. Copies all the dumped *.class-es from all the tests
+          2.2. Copies the missing classes (i.e. non-executed or uncovered classes) from the whole project
+               (from target dirs)
+          2.3. Finds and merges *.exec files from all the test modules
+          2.4. Creates the final human-readable report in target/jacoco-coverage-report
+    -->
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jacoco-copy-classes</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <copy todir="${project.build.outputDirectory}" overwrite="true">
+                                    <regexpmapper from="^.+/target/classes/(org/keycloak/.*\.class)$$" to="\1" />
+                                    <fileset dir="${rootDir}">
+                                        <exclude name="**/integration-arquillian/**" />
+                                    </fileset>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jacoco-move-dumps</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <move todir="${project.build.outputDirectory}" overwrite="true">
+                                    <regexpmapper from="^.+/${jacoco.classDump.dir}/(.+)\..+(\.class)$$" to="\1\2" />
+                                    <fileset dir="${rootDir}" />
+                                </move>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>merge</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>merge</goal>
+                        </goals>
+                        <configuration>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${rootDir}</directory>
+                                    <includes>
+                                        <include>**/${jacoco.datafile}</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/jacoco-coverage-report</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

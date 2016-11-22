@@ -34,7 +34,7 @@ import org.keycloak.models.UserFederationProvider;
 import org.keycloak.models.UserFederationProviderModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
-import org.keycloak.services.managers.UserManager;
+import org.keycloak.models.UserManager;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -178,6 +178,11 @@ public class SSSDFederationProvider implements UserFederationProvider {
     @Override
     public void disableCredentialType(RealmModel realm, UserModel user, String credentialType) {
 
+    }
+
+    @Override
+    public Set<String> getDisableableCredentialTypes(RealmModel realm, UserModel user) {
+        return Collections.EMPTY_SET;
     }
 
     @Override

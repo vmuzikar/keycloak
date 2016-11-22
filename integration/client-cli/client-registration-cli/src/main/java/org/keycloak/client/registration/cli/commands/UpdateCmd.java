@@ -62,6 +62,7 @@ import static org.keycloak.client.registration.cli.util.IoUtil.warnfErr;
 import static org.keycloak.client.registration.cli.util.IoUtil.readFully;
 import static org.keycloak.client.registration.cli.util.HttpUtil.APPLICATION_JSON;
 import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
+import static org.keycloak.client.registration.cli.util.OsUtil.EOL;
 import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
 import static org.keycloak.client.registration.cli.util.ParseUtil.mergeAttributes;
 import static org.keycloak.client.registration.cli.util.ParseUtil.parseFileOrStdin;
@@ -85,9 +86,6 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
     @Option(shortName = 'm', name = "merge", description = "Merge new values with existing configuration on the server", hasValue = false)
     private boolean mergeMode = true;
 
-    @Option(shortName = 'u', name = "unsafe", description = "Allow updating without registration access token - no optimistic locking", hasValue = false)
-    private boolean allowUnsafe = true;
-
     @Option(shortName = 'o', name = "output", description = "After update output the new client configuration", hasValue = false)
     private boolean outputClient = false;
 
@@ -104,6 +102,10 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
         List<AttributeOperation> attrs = new LinkedList<>();
 
         try {
+            if (printHelp()) {
+                return help ? CommandResult.SUCCESS : CommandResult.FAILURE;
+            }
+
             processGlobalOptions();
 
             String clientId = null;
@@ -111,13 +113,13 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
             if (args != null) {
                 Iterator<String> it = args.iterator();
                 if (!it.hasNext()) {
-                    throw new RuntimeException("CLIENT_ID not specified");
+                    throw new IllegalArgumentException("CLIENT_ID not specified");
                 }
 
                 clientId = it.next();
 
                 if (clientId.startsWith("-")) {
-                    warnfErr(ParseUtil.CLIENTID_OPTION_WARN, clientId);
+                    warnfErr(ParseUtil.CLIENT_OPTION_WARN, clientId);
                 }
 
                 while (it.hasNext()) {
@@ -126,7 +128,7 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
                         case "-s":
                         case "--set": {
                             if (!it.hasNext()) {
-                                throw new RuntimeException("Option " + option + " requires a value");
+                                throw new IllegalArgumentException("Option " + option + " requires a value");
                             }
                             String[] keyVal = parseKeyVal(it.next());
                             attrs.add(new AttributeOperation(SET, keyVal[0], keyVal[1]));
@@ -138,14 +140,14 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
                             break;
                         }
                         default: {
-                            throw new RuntimeException("Unsupported option: " + option);
+                            throw new IllegalArgumentException("Unsupported option: " + option);
                         }
                     }
                 }
             }
 
             if (file == null && attrs.size() == 0) {
-                throw new RuntimeException("No file nor attribute values specified");
+                throw new IllegalArgumentException("No file nor attribute values specified");
             }
 
             // We have several options for update:
@@ -276,8 +278,6 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
                     saveMergeConfig(cfg -> {
                         setRegistrationToken(cfg.ensureRealmConfigData(server, realm), clientToUpdate, newToken);
                     });
-                } else if (!allowUnsafe) {
-                    throw new RuntimeException("No Registration Access Token found for client: " + clientId + ". Provide one or use --unsafe.");
                 }
 
                 // merge local representation over remote one
@@ -319,6 +319,8 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
 
             return CommandResult.SUCCESS;
 
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(e.getMessage() + suggestHelp(), e);
         } finally {
             commandInvocation.stop();
         }
@@ -332,6 +334,19 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
                 printOut(JsonSerialization.writeValueAsPrettyString(result));
             }
         }
+    }
+
+    @Override
+    protected boolean nothingToDo() {
+        return noOptions() && regType == null && file == null && (args == null || args.size() == 0);
+    }
+
+    protected String suggestHelp() {
+        return EOL + "Try '" + CMD + " help update' for more information";
+    }
+
+    protected String help() {
+        return usage();
     }
 
     public static String usage() {
@@ -348,7 +363,7 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
         out.println();
         out.println("  Global options:");
         out.println("    -x                    Print full stack trace when exiting with error");
-        out.println("    -c, --config          Path to the config file (" + DEFAULT_CONFIG_FILE_STRING + " by default)");
+        out.println("    --config              Path to the config file (" + DEFAULT_CONFIG_FILE_STRING + " by default)");
         out.println("    --truststore PATH     Path to a truststore containing trusted certificates");
         out.println("    --trustpass PASSWORD  Truststore password (prompted for if not specified and --truststore is used)");
         out.println("    --token TOKEN         Registration access token to use");
@@ -365,7 +380,6 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
         out.println("    -f, --file FILENAME   Use the file or standard input if '-' is specified");
         out.println("    -m, --merge           Merge new values with existing configuration on the server");
         out.println("                          Merge is automatically enabled unless --file is specified");
-        out.println("    -u, --unsafe          Allow updating without registration access token - no optimistic locking");
         out.println("    -o, --output          After update output the new client configuration");
         out.println("    -c, --compressed      Don't pretty print the output");
         out.println();
@@ -381,9 +395,9 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
         out.println("and the following items are shifted.");
         out.println();
         out.println("Merged mode fetches current configuration from the server, applies attribute changes to it, and sends it");
-        out.println("back to the server, overwriting existing configuration there. To ensure there are no unexpected changes");
-        out.println("Registration Access Token is used for authorization when doing changes. Alternatively, one can specify to use");
-        out.println("unsafe mode in which case login session's authorization is used - user requires manage-clients permission.");
+        out.println("back to the server, overwriting existing configuration there. If available, Registration Access Token is used ");
+        out.println("for authorization when doing changes. Otherwise current session's authorization is used in which case user needs");
+        out.println("manage-clients permission for update to work.");
         out.println();
         out.println();
         out.println("Examples:");

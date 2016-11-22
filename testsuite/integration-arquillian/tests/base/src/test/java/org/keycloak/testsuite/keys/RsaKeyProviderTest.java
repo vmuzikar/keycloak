@@ -20,17 +20,13 @@ package org.keycloak.testsuite.keys;
 import org.jboss.arquillian.graphene.page.Page;
 import org.junit.Rule;
 import org.junit.Test;
-import org.keycloak.RSATokenVerifier;
-import org.keycloak.common.VerificationException;
 import org.keycloak.common.util.CertificateUtils;
 import org.keycloak.common.util.KeyUtils;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.keys.Attributes;
-import org.keycloak.keys.GeneratedRsaKeyProviderFactory;
 import org.keycloak.keys.KeyMetadata;
 import org.keycloak.keys.KeyProvider;
-import org.keycloak.keys.RsaKeyProvider;
 import org.keycloak.keys.RsaKeyProviderFactory;
 import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.ErrorRepresentation;
@@ -40,16 +36,11 @@ import org.keycloak.testsuite.AbstractKeycloakTest;
 import org.keycloak.testsuite.AssertEvents;
 import org.keycloak.testsuite.admin.ApiUtil;
 import org.keycloak.testsuite.pages.AppPage;
-import org.keycloak.testsuite.pages.AppPage.RequestType;
 import org.keycloak.testsuite.pages.LoginPage;
-import org.keycloak.testsuite.util.OAuthClient;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.security.KeyPair;
-import java.security.PublicKey;
 import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -144,7 +135,7 @@ public class RsaKeyProviderTest extends AbstractKeycloakTest {
         rep.getConfig().putSingle(Attributes.PRIORITY_KEY, "invalid");
 
         Response response = adminClient.realm("test").components().add(rep);
-        assertErrror(response, "Priority should be a number");
+        assertErrror(response, "'Priority' should be a number");
     }
 
     @Test
@@ -156,7 +147,7 @@ public class RsaKeyProviderTest extends AbstractKeycloakTest {
         rep.getConfig().putSingle(Attributes.ENABLED_KEY, "invalid");
 
         Response response = adminClient.realm("test").components().add(rep);
-        assertErrror(response, "Enabled should be 'true' or 'false'");
+        assertErrror(response, "'Enabled' should be 'true' or 'false'");
     }
 
     @Test
@@ -168,7 +159,7 @@ public class RsaKeyProviderTest extends AbstractKeycloakTest {
         rep.getConfig().putSingle(Attributes.ACTIVE_KEY, "invalid");
 
         Response response = adminClient.realm("test").components().add(rep);
-        assertErrror(response, "Active should be 'true' or 'false'");
+        assertErrror(response, "'Active' should be 'true' or 'false'");
     }
 
     @Test
@@ -178,7 +169,7 @@ public class RsaKeyProviderTest extends AbstractKeycloakTest {
         ComponentRepresentation rep = createRep("invalid", RsaKeyProviderFactory.ID);
 
         Response response = adminClient.realm("test").components().add(rep);
-        assertErrror(response, "Private RSA Key is required");
+        assertErrror(response, "'Private RSA Key' is required");
 
         rep.getConfig().putSingle(Attributes.PRIVATE_KEY_KEY, "nonsense");
         response = adminClient.realm("test").components().add(rep);

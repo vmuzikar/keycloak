@@ -274,7 +274,22 @@ public interface RealmModel extends RoleContainerModel {
     public IdentityProviderMapperModel getIdentityProviderMapperByName(String brokerAlias, String name);
 
 
+    /**
+     * Adds component model.  Will call onCreate() method of ComponentFactory
+     *
+     * @param model
+     * @return
+     */
     ComponentModel addComponentModel(ComponentModel model);
+
+    /**
+     * Adds component model.  Will NOT call onCreate() method of ComponentFactory
+     *
+     * @param model
+     * @return
+     */
+    ComponentModel importComponentModel(ComponentModel model);
+
     void updateComponent(ComponentModel component);
     void removeComponent(ComponentModel component);
     void removeComponents(String parentId);
@@ -336,8 +351,6 @@ public interface RealmModel extends RoleContainerModel {
 
     void setNotBefore(int notBefore);
 
-    boolean removeRoleById(String id);
-
     boolean isEventsEnabled();
 
     void setEventsEnabled(boolean enabled);
@@ -382,13 +395,6 @@ public interface RealmModel extends RoleContainerModel {
     GroupModel createGroup(String name);
     GroupModel createGroup(String id, String name);
 
-    /**
-     * Move Group to top realm level.  Basically just sets group parent to null.  You need to call this though
-     * to make sure caches are set properly
-     *
-     * @param subGroup
-     */
-    void addTopLevelGroup(GroupModel subGroup);
     GroupModel getGroupById(String id);
     List<GroupModel> getGroups();
     List<GroupModel> getTopLevelGroups();

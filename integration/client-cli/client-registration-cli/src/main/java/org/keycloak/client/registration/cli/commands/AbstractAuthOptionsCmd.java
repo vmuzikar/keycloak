@@ -71,9 +71,9 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
     @Option(shortName = 't', name = "token", description = "Initial / Registration access token to use)", hasValue = true)
     protected String token;
 
-    protected void init(AbstractAuthOptionsCmd parent) {
+    protected void initFromParent(AbstractAuthOptionsCmd parent) {
 
-        super.init(parent);
+        super.initFromParent(parent);
 
         noconfig = parent.noconfig;
         config = parent.config;
@@ -96,6 +96,14 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
         if (clientId == null) {
             clientId = DEFAULT_CLIENT;
         }
+    }
+
+    protected boolean noOptions() {
+        return server == null && realm == null && clientId == null && secret == null &&
+                user == null && password == null &&
+                keystore == null && storePass == null && keyPass == null && alias == null &&
+                trustStore == null && trustPass == null &&
+                token == null && config == null;
     }
 
     protected void processGlobalOptions() {
@@ -159,7 +167,8 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
                 initConfigData(config);
                 ConfigUtil.setupInMemoryHandler(config);
 
-                ConfigCredentialsCmd login = new ConfigCredentialsCmd(this);
+                ConfigCredentialsCmd login = new ConfigCredentialsCmd();
+                login.initFromParent(this);
                 login.init(config);
                 login.process(commandInvocation);
 

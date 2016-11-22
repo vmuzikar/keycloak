@@ -49,6 +49,7 @@ import org.keycloak.models.cache.UserCache;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
+import org.keycloak.models.utils.StripSecretsUtils;
 import org.keycloak.partialimport.PartialImportManager;
 import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.provider.ProviderFactory;
@@ -309,7 +310,7 @@ public class RealmAdminResource {
                 usersSyncManager.notifyToRefreshPeriodicSync(session, realm, fedProvider, false);
             }
 
-            adminEvent.operation(OperationType.UPDATE).representation(rep).success();
+            adminEvent.operation(OperationType.UPDATE).representation(StripSecretsUtils.strip(rep)).success();
             return Response.noContent().build();
         } catch (PatternSyntaxException e) {
             return ErrorResponse.error("Specified regex pattern(s) is invalid.", Response.Status.BAD_REQUEST);
@@ -516,7 +517,7 @@ public class RealmAdminResource {
      * @param dateTo To date
      * @param dateFrom From date
      * @param firstResult Paging offset
-     * @param maxResults Paging size
+     * @param maxResults Maximum results size (defaults to 100)
      * @return
      */
     @Path("events")
@@ -578,6 +579,8 @@ public class RealmAdminResource {
         }
         if (maxResults != null) {
             query.maxResults(maxResults);
+        } else {
+            query.maxResults(Constants.DEFAULT_MAX_RESULTS);
         }
 
         return toEventListRep(query.getResultList());
@@ -605,7 +608,7 @@ public class RealmAdminResource {
      * @param dateTo
      * @param dateFrom
      * @param firstResult
-     * @param maxResults
+     * @param maxResults Maximum results size (defaults to 100)
      * @return
      */
     @Path("admin-events")
@@ -688,6 +691,8 @@ public class RealmAdminResource {
         }
         if (maxResults != null) {
             query.maxResults(maxResults);
+        } else {
+            query.maxResults(Constants.DEFAULT_MAX_RESULTS);
         }
 
         return toAdminEventRep(query.getResultList());

@@ -860,6 +860,7 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, templates,
     $scope.samlAuthnStatement = false;
     $scope.samlMultiValuedRoles = false;
     $scope.samlServerSignature = false;
+    $scope.samlServerSignatureEnableKeyInfoExtension = false;
     $scope.samlAssertionSignature = false;
     $scope.samlClientSignature = false;
     $scope.samlEncrypt = false;
@@ -906,6 +907,13 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, templates,
             } else {
                 $scope.samlServerSignature = false;
 
+            }
+        }
+        if ($scope.client.attributes["saml.server.signature.keyinfo.ext"]) {
+            if ($scope.client.attributes["saml.server.signature.keyinfo.ext"] == "true") {
+                $scope.samlServerSignatureEnableKeyInfoExtension = true;
+            } else {
+                $scope.samlServerSignatureEnableKeyInfoExtension = false;
             }
         }
         if ($scope.client.attributes["saml.assertion.signature"]) {
@@ -1115,7 +1123,11 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, templates,
             $scope.client.attributes["saml.server.signature"] = "true";
         } else {
             $scope.client.attributes["saml.server.signature"] = "false";
-
+        }
+        if ($scope.samlServerSignatureEnableKeyInfoExtension == true) {
+            $scope.client.attributes["saml.server.signature.keyinfo.ext"] = "true";
+        } else {
+            $scope.client.attributes["saml.server.signature.keyinfo.ext"] = "false";
         }
         if ($scope.samlAssertionSignature == true) {
             $scope.client.attributes["saml.assertion.signature"] = "true";
@@ -1340,7 +1352,11 @@ module.controller('ClientScopeMappingCtrl', function($scope, $http, realm, clien
 
     }
 
-
+    $scope.hideRoleSelector = function() {
+       return ($scope.client.useTemplateScope && $scope.template && template.fullScopeAllowed)
+               || (!$scope.template && $scope.client.fullScopeAllowed);
+    }
+    
     $scope.changeFlag = function() {
         Client.update({
             realm : realm.realm,
@@ -1550,7 +1566,8 @@ module.controller('ClientClusteringCtrl', function($scope, client, Client, Clien
     };
 });
 
-module.controller('ClientClusteringNodeCtrl', function($scope, client, Client, ClientClusterNode, realm, $location, $routeParams, Notifications) {
+module.controller('ClientClusteringNodeCtrl', function($scope, client, Client, ClientClusterNode, realm, 
+                                                       $location, $routeParams, Notifications, Dialog) {
     $scope.client = client;
     $scope.realm = realm;
     $scope.create = !$routeParams.node;
@@ -1563,9 +1580,11 @@ module.controller('ClientClusteringNodeCtrl', function($scope, client, Client, C
     }
 
     $scope.unregisterNode = function() {
-        ClientClusterNode.remove({ realm : realm.realm, client : client.id , node: $scope.node.host }, function() {
-            Notifications.success('Node ' + $scope.node.host + ' unregistered successfully.');
-            $location.url('/realms/' + realm.realm + '/clients/' + client.id +  '/clustering');
+        Dialog.confirmDelete($scope.node.host, 'node', function() {
+            ClientClusterNode.remove({ realm : realm.realm, client : client.id , node: $scope.node.host }, function() {
+                Notifications.success('Node ' + $scope.node.host + ' unregistered successfully.');
+                $location.url('/realms/' + realm.realm + '/clients/' + client.id +  '/clustering');
+            });
         });
     }
 

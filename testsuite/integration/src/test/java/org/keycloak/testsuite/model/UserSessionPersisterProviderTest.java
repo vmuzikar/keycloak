@@ -33,7 +33,7 @@ import org.keycloak.models.session.UserSessionPersisterProvider;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.services.managers.ClientManager;
 import org.keycloak.services.managers.RealmManager;
-import org.keycloak.services.managers.UserManager;
+import org.keycloak.models.UserManager;
 import org.keycloak.testsuite.rule.KeycloakRule;
 
 import java.util.ArrayList;
@@ -336,6 +336,7 @@ public class UserSessionPersisterProviderTest {
 
         resetSession();
 
+        Assert.assertEquals(1, persister.getUserSessionsCount(true));
         loadedSessions = loadPersistedSessionsPaginated(true, 10, 1, 1);
         UserSessionModel persistedSession = loadedSessions.get(0);
         UserSessionProviderTest.assertSession(persistedSession, session.users().getUserByUsername("user2", realm), "127.0.0.3", started, started, "test-app");

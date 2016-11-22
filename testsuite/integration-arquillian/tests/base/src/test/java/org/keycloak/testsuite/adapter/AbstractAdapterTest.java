@@ -68,6 +68,7 @@ public abstract class AbstractAdapterTest extends AbstractAuthTest {
             } else {
                 modifyClientRedirectUris(tr, "^(/.*/\\*)", appServerContextRootPage.toString() + "$1");
                 modifyClientUrls(tr, "^(/.*)", appServerContextRootPage.toString() + "$1");
+                modifyClientWebOrigins(tr, "8080", System.getProperty("app.server.http.port", null));
                 modifySamlMasterURLs(tr, "8080", System.getProperty("auth.server.http.port", null));
                 modifySAMLClientsAttributes(tr, "8080", System.getProperty("app.server.http.port", "8280"));
                 modifyClientJWKSUrl(tr, "^(/.*)", appServerContextRootPage.toString() + "$1");
@@ -80,7 +81,9 @@ public abstract class AbstractAdapterTest extends AbstractAuthTest {
 
     private void modifyClientJWKSUrl(RealmRepresentation realm, String regex, String replacement) {
         if (realm.getClients() != null) {
-            realm.getClients().stream().filter(client -> "client-jwt".equals(client.getClientAuthenticatorType())).forEach(client -> {
+            realm.getClients().stream().
+                    filter(client -> "client-jwt".equals(client.getClientAuthenticatorType()) && client.getAttributes().containsKey("jwks.url")).
+                    forEach(client -> {
                 Map<String, String> attr = client.getAttributes();
                 attr.put("jwks.url", attr.get("jwks.url").replaceFirst(regex, replacement));
                 client.setAttributes(attr);

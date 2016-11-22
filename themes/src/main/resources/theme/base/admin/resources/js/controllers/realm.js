@@ -956,7 +956,7 @@ module.controller('RealmIdentityProviderCtrl', function($scope, $filter, $upload
                 id: $scope.identityProvider.internalId
             }, $scope.identityProvider, function () {
                 $route.reload();
-                Notifications.success("The " + $scope.identityProvider.alias + " provider has been update.");
+                Notifications.success("The " + $scope.identityProvider.alias + " provider has been updated.");
             });
         }
     };
@@ -1112,12 +1112,10 @@ module.controller('RealmKeysProvidersCtrl', function($scope, Realm, realm, $http
         parent: realm.id,
         type: 'org.keycloak.keys.KeyProvider'
     }, function(data) {
-        console.debug(data);
         $scope.instances = data;
     });
 
     $scope.addProvider = function(provider) {
-        console.log('Add provider: ' + provider.id);
         $location.url("/create/keys/" + realm.realm + "/providers/" + provider.id);
     };
 
@@ -1159,19 +1157,27 @@ module.controller('GenericKeystoreCtrl', function($scope, $location, Notificatio
                 'priority': ["0"]
             }
         }
+    } else {
+        $scope.instance = angular.copy(instance);
+    }
 
-        if (providerFactory.properties) {
-            for (var i = 0; i < providerFactory.properties.length; i++) {
-                var configProperty = providerFactory.properties[i];
+    if (providerFactory.properties) {
+        for (var i = 0; i < providerFactory.properties.length; i++) {
+            var configProperty = providerFactory.properties[i];
+            if (!$scope.instance.config[configProperty.name]) {
                 if (configProperty.defaultValue) {
                     $scope.instance.config[configProperty.name] = [configProperty.defaultValue];
+                    if (!$scope.create) {
+                        instance.config[configProperty.name] = [configProperty.defaultValue];
+                    }
                 } else {
                     $scope.instance.config[configProperty.name] = [''];
+                    if (!$scope.create) {
+                        instance.config[configProperty.name] = [configProperty.defaultValue];
+                    }
                 }
             }
         }
-    } else {
-        $scope.instance = angular.copy(instance);
     }
 
     $scope.$watch('instance', function() {
@@ -1955,7 +1961,7 @@ module.controller('CreateExecutionCtrl', function($scope, realm, parentFlow, for
 
 
 
-module.controller('AuthenticationFlowsCtrl', function($scope, $route, realm, flows, selectedFlow, LastFlowSelected,
+module.controller('AuthenticationFlowsCtrl', function($scope, $route, realm, flows, selectedFlow, LastFlowSelected, Dialog,
                                                       AuthenticationFlows, AuthenticationFlowsCopy, AuthenticationFlowExecutions,
                                                       AuthenticationExecution, AuthenticationExecutionRaisePriority, AuthenticationExecutionLowerPriority,
                                                       $modal, Notifications, CopyDialog, $location) {
@@ -2034,6 +2040,12 @@ module.controller('AuthenticationFlowsCtrl', function($scope, $route, realm, flo
         })
     };
 
+    $scope.deleteFlow = function() {
+        Dialog.confirmDelete($scope.flow.alias, 'flow', function() {
+            $scope.removeFlow();
+        });
+    };
+    
     $scope.removeFlow = function() {
         console.log('Remove flow:' + $scope.flow.alias);
         if (realm.browserFlow == $scope.flow.alias) {
@@ -2053,9 +2065,8 @@ module.controller('AuthenticationFlowsCtrl', function($scope, $route, realm, flo
 
         } else {
             AuthenticationFlows.remove({realm: realm.realm, flow: $scope.flow.id}, function () {
-                $location.url("/realms/" + realm.realm + '/authentication/flows');
+                $location.url("/realms/" + realm.realm + '/authentication/flows/' + flows[0].alias);
                 Notifications.success("Flow removed");
-
             })
         }
 
@@ -2100,10 +2111,14 @@ module.controller('AuthenticationFlowsCtrl', function($scope, $route, realm, flo
 
     $scope.removeExecution = function(execution) {
         console.log('removeExecution: ' + execution.id);
-        AuthenticationExecution.remove({realm: realm.realm, execution: execution.id}, function() {
-            Notifications.success("Execution removed");
-            setupForm();
-        })
+        var exeOrFlow = execution.authenticationFlow ? 'flow' : 'execution';
+        Dialog.confirmDelete(execution.displayName, exeOrFlow, function() {
+            AuthenticationExecution.remove({realm: realm.realm, execution: execution.id}, function() {
+                Notifications.success("The " + exeOrFlow + " was removed.");
+                setupForm();
+            });
+        });
+        
     }
 
     $scope.raisePriority = function(execution) {
@@ -2376,7 +2391,7 @@ module.controller('ClientRegPoliciesCtrl', function($scope, realm, clientRegistr
 
 });
 
-module.controller('ClientRegPolicyDetailCtrl', function($scope, realm, clientRegistrationPolicyProviders, instance, Dialog, Notifications, Components, $route, $location) {
+module.controller('ClientRegPolicyDetailCtrl', function($scope, realm, clientRegistrationPolicyProviders, instance, Dialog, Notifications, Components, ComponentUtils, $route, $location) {
     $scope.realm = realm;
     $scope.instance = instance;
     $scope.providerTypes = clientRegistrationPolicyProviders;
@@ -2393,7 +2408,11 @@ module.controller('ClientRegPolicyDetailCtrl', function($scope, realm, clientReg
 
     function toDefaultValue(configProperty) {
         if (configProperty.type === 'MultivaluedString' || configProperty.type === 'MultivaluedList') {
-            return [];
+            if (configProperty.defaultValue) {
+                return configProperty.defaultValue;
+            } else {
+                return [];
+            }
         }
 
         if (configProperty.defaultValue) {
@@ -2415,6 +2434,10 @@ module.controller('ClientRegPolicyDetailCtrl', function($scope, realm, clientReg
                 $scope.instance.config[configProperty.name] = toDefaultValue(configProperty);
             }
         }
+    }
+
+    if ($scope.providerType.properties) {
+        ComponentUtils.addLastEmptyValueToMultivaluedLists($scope.providerType.properties, $scope.instance.config);
     }
 
     var oldCopy = angular.copy($scope.instance);

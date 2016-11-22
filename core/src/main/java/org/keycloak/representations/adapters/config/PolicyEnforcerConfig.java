@@ -39,11 +39,11 @@ public class PolicyEnforcerConfig {
 
     @JsonProperty("user-managed-access")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private UmaProtocolConfig umaProtocolConfig;
+    private UmaProtocolConfig userManagedAccess;
 
     @JsonProperty("entitlement")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private EntitlementProtocolConfig entitlementProtocolConfig;
+    private EntitlementProtocolConfig entitlement;
 
     @JsonProperty("paths")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -55,7 +55,7 @@ public class PolicyEnforcerConfig {
 
     @JsonProperty("on-deny-redirect-to")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String accessDeniedPath;
+    private String onDenyRedirectTo;
 
     public Boolean isCreateResources() {
         return this.createResources;
@@ -73,12 +73,12 @@ public class PolicyEnforcerConfig {
         this.enforcementMode = enforcementMode;
     }
 
-    public UmaProtocolConfig getUmaProtocolConfig() {
-        return this.umaProtocolConfig;
+    public UmaProtocolConfig getUserManagedAccess() {
+        return this.userManagedAccess;
     }
 
-    public EntitlementProtocolConfig getEntitlementProtocolConfig() {
-        return this.entitlementProtocolConfig;
+    public EntitlementProtocolConfig getEntitlement() {
+        return this.entitlement;
     }
 
     public Boolean isOnlineIntrospection() {
@@ -97,10 +97,22 @@ public class PolicyEnforcerConfig {
         this.paths = paths;
     }
 
-    public String getAccessDeniedPath() {
-        return accessDeniedPath;
+    public String getOnDenyRedirectTo() {
+        return onDenyRedirectTo;
     }
 
+    public void setUserManagedAccess(UmaProtocolConfig userManagedAccess) {
+        this.userManagedAccess = userManagedAccess;
+    }
+
+    public void setEntitlement(EntitlementProtocolConfig entitlement) {
+        this.entitlement = entitlement;
+    }
+
+    public void setOnDenyRedirectTo(String onDenyRedirectTo) {
+        this.onDenyRedirectTo = onDenyRedirectTo;
+    }
+    
     public static class PathConfig {
 
         private String name;
@@ -109,6 +121,9 @@ public class PolicyEnforcerConfig {
         private List<MethodConfig> methods = new ArrayList<>();
         private List<String> scopes = Collections.emptyList();
         private String id;
+
+        @JsonProperty("enforcement-mode")
+        private EnforcementMode enforcementMode = EnforcementMode.ENFORCING;
 
         @JsonIgnore
         private PathConfig parentConfig;
@@ -161,6 +176,14 @@ public class PolicyEnforcerConfig {
             return id;
         }
 
+        public EnforcementMode getEnforcementMode() {
+            return enforcementMode;
+        }
+
+        public void setEnforcementMode(EnforcementMode enforcementMode) {
+            this.enforcementMode = enforcementMode;
+        }
+
         @Override
         public String toString() {
             return "PathConfig{" +
@@ -169,6 +192,7 @@ public class PolicyEnforcerConfig {
                     ", path='" + path + '\'' +
                     ", scopes=" + scopes +
                     ", id='" + id + '\'' +
+                    ", enforcerMode='" + enforcementMode + '\'' +
                     '}';
         }
 

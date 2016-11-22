@@ -27,7 +27,6 @@ import org.keycloak.client.registration.cli.util.ParseUtil;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.keycloak.client.registration.cli.util.AuthUtil.ensureToken;
@@ -40,35 +39,40 @@ import static org.keycloak.client.registration.cli.util.HttpUtil.doDelete;
 import static org.keycloak.client.registration.cli.util.HttpUtil.urlencode;
 import static org.keycloak.client.registration.cli.util.IoUtil.warnfErr;
 import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
+import static org.keycloak.client.registration.cli.util.OsUtil.EOL;
 import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
 
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
-@CommandDefinition(name = "delete", description = "CLIENT_ID [GLOBAL_OPTIONS]")
+@CommandDefinition(name = "delete", description = "CLIENT [GLOBAL_OPTIONS]")
 public class DeleteCmd extends AbstractAuthOptionsCmd {
 
     @Arguments
-    private List<String> args = new ArrayList<>();
+    private List<String> args;
 
     @Override
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
         try {
+            if (printHelp()) {
+                return help ? CommandResult.SUCCESS : CommandResult.FAILURE;
+            }
+
             processGlobalOptions();
 
-            if (args.isEmpty()) {
-                throw new RuntimeException("CLIENT_ID not specified");
+            if (args == null || args.isEmpty()) {
+                throw new IllegalArgumentException("CLIENT not specified");
             }
 
             if (args.size() > 1) {
-                throw new RuntimeException("Invalid option: " + args.get(1));
+                throw new IllegalArgumentException("Invalid option: " + args.get(1));
             }
 
             String clientId = args.get(0);
 
             if (clientId.startsWith("-")) {
-                warnfErr(ParseUtil.CLIENTID_OPTION_WARN, clientId);
+                warnfErr(ParseUtil.CLIENT_OPTION_WARN, clientId);
             }
 
             String regType = "default";
@@ -105,9 +109,24 @@ public class DeleteCmd extends AbstractAuthOptionsCmd {
             });
             return CommandResult.SUCCESS;
 
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(e.getMessage() + suggestHelp(), e);
         } finally {
             commandInvocation.stop();
         }
+    }
+
+    @Override
+    protected boolean nothingToDo() {
+        return noOptions() && (args == null || args.size() == 0);
+    }
+
+    protected String suggestHelp() {
+        return EOL + "Try '" + CMD + " help delete' for more information";
+    }
+
+    protected String help() {
+        return usage();
     }
 
     public static String usage() {

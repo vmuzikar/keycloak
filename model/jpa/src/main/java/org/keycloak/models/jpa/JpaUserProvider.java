@@ -48,6 +48,7 @@ import org.keycloak.models.jpa.entities.UserConsentRoleEntity;
 import org.keycloak.models.jpa.entities.UserEntity;
 import org.keycloak.models.utils.DefaultRoles;
 import org.keycloak.models.utils.KeycloakModelUtils;
+import org.keycloak.storage.UserStorageProvider;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -123,17 +124,6 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
         UserEntity userEntity = em.find(UserEntity.class, user.getId());
         if (userEntity == null) return false;
         removeUser(userEntity);
-        session.getKeycloakSessionFactory().publish(new UserModel.UserRemovedEvent() {
-            @Override
-            public UserModel getUser() {
-                return user;
-            }
-
-            @Override
-            public KeycloakSession getKeycloakSession() {
-                return session;
-            }
-        });
         return true;
     }
 
@@ -395,33 +385,38 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
 
     @Override
     public void preRemove(RealmModel realm, UserFederationProviderModel link) {
+        String linkId = link.getId();
+        removeUserDataByLink(realm, linkId);
+    }
+
+    public void removeUserDataByLink(RealmModel realm, String linkId) {
         int num = em.createNamedQuery("deleteUserRoleMappingsByRealmAndLink")
                 .setParameter("realmId", realm.getId())
-                .setParameter("link", link.getId())
+                .setParameter("link", linkId)
                 .executeUpdate();
         num = em.createNamedQuery("deleteUserRequiredActionsByRealmAndLink")
                 .setParameter("realmId", realm.getId())
-                .setParameter("link", link.getId())
+                .setParameter("link", linkId)
                 .executeUpdate();
         num = em.createNamedQuery("deleteFederatedIdentityByRealmAndLink")
                 .setParameter("realmId", realm.getId())
-                .setParameter("link", link.getId())
+                .setParameter("link", linkId)
                 .executeUpdate();
         num = em.createNamedQuery("deleteCredentialAttributeByRealmAndLink")
                 .setParameter("realmId", realm.getId())
-                .setParameter("link", link.getId())
+                .setParameter("link", linkId)
                 .executeUpdate();
         num = em.createNamedQuery("deleteCredentialsByRealmAndLink")
                 .setParameter("realmId", realm.getId())
-                .setParameter("link", link.getId())
+                .setParameter("link", linkId)
                 .executeUpdate();
         num = em.createNamedQuery("deleteUserAttributesByRealmAndLink")
                 .setParameter("realmId", realm.getId())
-                .setParameter("link", link.getId())
+                .setParameter("link", linkId)
                 .executeUpdate();
         num = em.createNamedQuery("deleteUsersByRealmAndLink")
                 .setParameter("realmId", realm.getId())
-                .setParameter("link", link.getId())
+                .setParameter("link", linkId)
                 .executeUpdate();
     }
 
@@ -718,6 +713,8 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
 
     @Override
     public void preRemove(RealmModel realm, ComponentModel component) {
+        if (!component.getProviderType().equals(UserStorageProvider.class.getName())) return;
+        removeUserDataByLink(realm, component.getId());
 
     }
 

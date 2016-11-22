@@ -33,8 +33,10 @@ import org.keycloak.policy.PolicyError;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -57,7 +59,7 @@ public class PasswordCredentialProvider implements CredentialProvider, Credentia
 
     public CredentialModel getPassword(RealmModel realm, UserModel user) {
         List<CredentialModel> passwords = null;
-        if (user instanceof CachedUserModel) {
+        if (user instanceof CachedUserModel && !((CachedUserModel)user).isMarkedForEviction()) {
             CachedUserModel cached = (CachedUserModel)user;
             passwords = (List<CredentialModel>)cached.getCachedWith().get(PASSWORD_CACHE_KEY);
 
@@ -138,7 +140,7 @@ public class PasswordCredentialProvider implements CredentialProvider, Credentia
         PasswordHashProvider hash = session.getProvider(PasswordHashProvider.class, policy.getHashAlgorithm());
         if (hash == null) {
             logger.warnv("Realm PasswordPolicy PasswordHashProvider {0} not found", policy.getHashAlgorithm());
-            return session.getProvider(PasswordHashProvider.class, HashAlgorithmPasswordPolicyProviderFactory.DEFAULT_VALUE);
+            return session.getProvider(PasswordHashProvider.class, PasswordPolicy.HASH_ALGORITHM_DEFAULT);
         }
         return hash;
     }
@@ -148,6 +150,17 @@ public class PasswordCredentialProvider implements CredentialProvider, Credentia
         if (!supportsCredentialType(credentialType)) return;
         PasswordPolicy policy = realm.getPasswordPolicy();
         expirePassword(realm, user, policy);
+    }
+
+    @Override
+    public Set<String> getDisableableCredentialTypes(RealmModel realm, UserModel user) {
+        if (!getCredentialStore().getStoredCredentialsByType(realm, user, CredentialModel.PASSWORD).isEmpty()) {
+            Set<String> set = new HashSet<>();
+            set.add(CredentialModel.PASSWORD);
+            return set;
+        } else {
+            return Collections.EMPTY_SET;
+        }
     }
 
     @Override

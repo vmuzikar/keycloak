@@ -1469,6 +1469,26 @@ module.config([ '$routeProvider', function($routeProvider) {
             },
             controller : 'RealmSessionStatsCtrl'
         })
+        .when('/create/user-storage/:realm/providers/ldap', {
+            templateUrl : resourceUrl + '/partials/user-storage-ldap.html',
+            resolve : {
+                realm : function(RealmLoader) {
+                    return RealmLoader();
+                },
+                instance : function() {
+                    return {
+
+                    };
+                },
+                providerId : function($route) {
+                    return $route.current.params.provider;
+                },
+                serverInfo : function(ServerInfoLoader) {
+                    return ServerInfoLoader();
+                }
+            },
+            controller : 'LDAPUserStorageCtrl'
+        })
         .when('/create/user-storage/:realm/providers/:provider', {
             templateUrl : resourceUrl + '/partials/user-storage-generic.html',
             resolve : {
@@ -1489,6 +1509,24 @@ module.config([ '$routeProvider', function($routeProvider) {
             },
             controller : 'GenericUserStorageCtrl'
         })
+        .when('/realms/:realm/user-storage/providers/ldap/:componentId', {
+            templateUrl : resourceUrl + '/partials/user-storage-ldap.html',
+            resolve : {
+                realm : function(RealmLoader) {
+                    return RealmLoader();
+                },
+                instance : function(ComponentLoader) {
+                    return ComponentLoader();
+                },
+                providerId : function($route) {
+                    return $route.current.params.provider;
+                },
+                serverInfo : function(ServerInfoLoader) {
+                    return ServerInfoLoader();
+                }
+            },
+            controller : 'LDAPUserStorageCtrl'
+        })
         .when('/realms/:realm/user-storage/providers/:provider/:componentId', {
             templateUrl : resourceUrl + '/partials/user-storage-generic.html',
             resolve : {
@@ -1506,6 +1544,60 @@ module.config([ '$routeProvider', function($routeProvider) {
                 }
             },
             controller : 'GenericUserStorageCtrl'
+        })
+        .when('/realms/:realm/ldap-mappers/:componentId', {
+            templateUrl : function(params){ return resourceUrl + '/partials/user-storage-ldap-mappers.html'; },
+            resolve : {
+                realm : function(RealmLoader) {
+                    return RealmLoader();
+                },
+                provider : function(ComponentLoader) {
+                    return ComponentLoader();
+                },
+                mappers : function(ComponentsLoader, $route) {
+                    return ComponentsLoader.loadComponents($route.current.params.componentId, 'org.keycloak.storage.ldap.mappers.LDAPStorageMapper');
+                }
+            },
+            controller : 'LDAPMapperListCtrl'
+        })
+        .when('/create/ldap-mappers/:realm/:componentId', {
+            templateUrl : function(params){ return resourceUrl + '/partials/user-storage-ldap-mapper-detail.html'; },
+            resolve : {
+                realm : function(RealmLoader) {
+                    return RealmLoader();
+                },
+                provider : function(ComponentLoader) {
+                    return ComponentLoader();
+                },
+                mapperTypes : function(SubComponentTypesLoader, $route) {
+                    return SubComponentTypesLoader.loadComponents($route.current.params.componentId, 'org.keycloak.storage.ldap.mappers.LDAPStorageMapper');
+                },
+                clients : function(ClientListLoader) {
+                    return ClientListLoader();
+                }
+            },
+            controller : 'LDAPMapperCreateCtrl'
+        })
+        .when('/realms/:realm/ldap-mappers/:componentId/mappers/:mapperId', {
+            templateUrl : function(params){ return resourceUrl + '/partials/user-storage-ldap-mapper-detail.html'; },
+            resolve : {
+                realm : function(RealmLoader) {
+                    return RealmLoader();
+                },
+                provider : function(ComponentLoader) {
+                    return ComponentLoader();
+                },
+                mapperTypes : function(SubComponentTypesLoader, $route) {
+                    return SubComponentTypesLoader.loadComponents($route.current.params.componentId, 'org.keycloak.storage.ldap.mappers.LDAPStorageMapper');
+                },
+                mapper : function(LDAPMapperLoader) {
+                    return LDAPMapperLoader();
+                },
+                clients : function(ClientListLoader) {
+                    return ClientListLoader();
+                }
+            },
+            controller : 'LDAPMapperCtrl'
         })
         .when('/realms/:realm/user-federation', {
             templateUrl : resourceUrl + '/partials/user-federation.html',
@@ -2194,6 +2286,8 @@ module.directive('kcSave', function ($compile, Notifications) {
             elem.addClass("btn btn-primary");
             elem.attr("type","submit");
             elem.bind('click', function() {
+                if ($scope.hasOwnProperty("changed") && !$scope.changed) return;
+                
                 $scope.$apply(function() {
                     var form = elem.closest('form');
                     if (form && form.attr('name')) {
@@ -2420,6 +2514,15 @@ module.directive('kcTabsUserFederation', function () {
     }
 });
 
+module.directive('kcTabsLdap', function () {
+    return {
+        scope: true,
+        restrict: 'E',
+        replace: true,
+        templateUrl: resourceUrl + '/templates/kc-tabs-ldap.html'
+    }
+});
+
 module.controller('RoleSelectorModalCtrl', function($scope, realm, config, configName, RealmRoles, Client, ClientRole, $modalInstance) {
     $scope.selectedRealmRole = {
         role: undefined
@@ -2468,7 +2571,7 @@ module.controller('RoleSelectorModalCtrl', function($scope, realm, config, confi
     })
 });
 
-module.controller('ProviderConfigCtrl', function ($modal, $scope) {
+module.controller('ProviderConfigCtrl', function ($modal, $scope, ComponentUtils) {
     $scope.fileNames = {};
 
 
@@ -2490,18 +2593,17 @@ module.controller('ProviderConfigCtrl', function ($modal, $scope) {
         })
     }
 
-    $scope.newValues = [];
+    ComponentUtils.addLastEmptyValueToMultivaluedLists($scope.properties, $scope.config);
 
     $scope.addValueToMultivalued = function(optionName) {
-        var valueToPush = $scope.newValues[optionName];
+        var configProperty = $scope.config[optionName];
+        var lastIndex = configProperty.length - 1;
+        var lastValue = configProperty[lastIndex];
+        console.log("Option=" + optionName + ", lastIndex=" + lastIndex + ", lastValue=" + lastValue);
 
-        console.log("New value to multivalued: optionName=" + optionName + ", valueToPush=" + valueToPush);
-
-        if (!$scope.config[optionName]) {
-            $scope.config[optionName] = [];
+        if (lastValue.length > 0) {
+            configProperty.push('');
         }
-        $scope.config[optionName].push(valueToPush);
-        $scope.newValues[optionName] = "";
     }
 
     $scope.deleteValueFromMultivalued = function(optionName, index) {

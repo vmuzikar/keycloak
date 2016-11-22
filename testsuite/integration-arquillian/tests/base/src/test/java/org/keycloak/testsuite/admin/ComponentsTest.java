@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.keycloak.admin.client.resource.ComponentsResource;
 import org.keycloak.common.util.MultivaluedHashMap;
+import org.keycloak.representations.idm.AdminEventRepresentation;
 import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.ErrorRepresentation;
 import org.keycloak.testsuite.components.TestProvider;
@@ -65,7 +66,7 @@ public class ComponentsTest extends AbstractAdminTest {
         try {
             createComponent(rep);
         } catch (WebApplicationException e) {
-            assertErrror(e.getResponse(), "Required is required");
+            assertErrror(e.getResponse(), "'Required' is required");
         }
 
         rep.getConfig().putSingle("required", "Required");
@@ -75,7 +76,7 @@ public class ComponentsTest extends AbstractAdminTest {
         try {
             createComponent(rep);
         } catch (WebApplicationException e) {
-            assertErrror(e.getResponse(), "Number should be a number");
+            assertErrror(e.getResponse(), "'Number' should be a number");
         }
     }
 
@@ -143,6 +144,24 @@ public class ComponentsTest extends AbstractAdminTest {
         assertEquals(1, returned.getConfig().size());
     }
 
+
+    @Test
+    public void testRename() {
+        ComponentRepresentation rep = createComponentRepresentation("mycomponent");
+        rep.getConfig().addFirst("required", "foo");
+
+        String id = createComponent(rep);
+        ComponentRepresentation returned = components.component(id).toRepresentation();
+        assertEquals("mycomponent", returned.getName());
+
+        rep.setName("myupdatedcomponent");
+
+        components.component(id).update(rep);
+
+        returned = components.component(id).toRepresentation();
+        assertEquals("myupdatedcomponent", returned.getName());
+    }
+
     @Test
     public void testSecretConfig() throws Exception {
         ComponentRepresentation rep = createComponentRepresentation("mycomponent");
@@ -155,6 +174,11 @@ public class ComponentsTest extends AbstractAdminTest {
         ComponentRepresentation returned = components.component(id).toRepresentation();
         assertEquals(ComponentRepresentation.SECRET_VALUE, returned.getConfig().getFirst("secret"));
 
+        // Check secret not leaked in admin events
+        AdminEventRepresentation event = testingClient.testing().pollAdminEvent();
+        assertFalse(event.getRepresentation().contains("some secret value!!"));
+        assertTrue(event.getRepresentation().contains(ComponentRepresentation.SECRET_VALUE));
+
         Map<String, TestProvider.DetailsRepresentation> details = testingClient.testing(REALM_NAME).getTestComponentDetails();
 
         // Check value is set correctly
@@ -166,6 +190,11 @@ public class ComponentsTest extends AbstractAdminTest {
         ComponentRepresentation returned2 = components.component(id).toRepresentation();
         assertEquals(ComponentRepresentation.SECRET_VALUE, returned2.getConfig().getFirst("secret"));
 
+        // Check secret not leaked in admin events
+        event = testingClient.testing().pollAdminEvent();
+        assertFalse(event.getRepresentation().contains("some secret value!!"));
+        assertTrue(event.getRepresentation().contains(ComponentRepresentation.SECRET_VALUE));
+
         // Check secret value is not set to '*********'
         details = testingClient.testing(REALM_NAME).getTestComponentDetails();
         assertEquals("some secret value!!", details.get("mycomponent").getConfig().get("secret").get(0));
@@ -176,6 +205,9 @@ public class ComponentsTest extends AbstractAdminTest {
         // Check secret value is updated
         details = testingClient.testing(REALM_NAME).getTestComponentDetails();
         assertEquals("updated secret value!!", details.get("mycomponent").getConfig().get("secret").get(0));
+
+        ComponentRepresentation returned3 = components.query().stream().filter(c -> c.getId().equals(returned2.getId())).findFirst().get();
+        assertEquals(ComponentRepresentation.SECRET_VALUE, returned3.getConfig().getFirst("secret"));
     }
 
     private String createComponent(ComponentRepresentation rep) {

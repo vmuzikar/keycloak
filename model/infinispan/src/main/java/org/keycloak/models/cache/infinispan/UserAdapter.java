@@ -27,6 +27,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.cache.CachedUserModel;
 import org.keycloak.models.cache.infinispan.entities.CachedUser;
 import org.keycloak.models.utils.KeycloakModelUtils;
+import org.keycloak.models.utils.RoleUtils;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -61,6 +62,11 @@ public class UserAdapter implements CachedUserModel {
             if (updated == null) throw new IllegalStateException("Not found in database");
         }
         return updated;
+    }
+
+    @Override
+    public boolean isMarkedForEviction() {
+        return updated != null;
     }
 
     @Override
@@ -301,7 +307,7 @@ public class UserAdapter implements CachedUserModel {
         for (RoleModel mapping: mappings) {
            if (mapping.hasRole(role)) return true;
         }
-        return KeycloakModelUtils.hasRoleFromGroup(getGroups(), role, true);
+        return RoleUtils.hasRoleFromGroup(getGroups(), role, true);
     }
 
     @Override
@@ -368,7 +374,7 @@ public class UserAdapter implements CachedUserModel {
         if (updated != null) return updated.isMemberOf(group);
         if (cached.getGroups().contains(group.getId())) return true;
         Set<GroupModel> roles = getGroups();
-        return KeycloakModelUtils.isMember(roles, group);
+        return RoleUtils.isMember(roles, group);
     }
 
     @Override

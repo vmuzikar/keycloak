@@ -3,7 +3,6 @@ package org.keycloak.testsuite.cli.registration;
 import org.junit.Assert;
 import org.junit.Before;
 import org.keycloak.admin.client.resource.ClientInitialAccessResource;
-import org.keycloak.admin.client.resource.ClientRegistrationTrustedHostResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.authentication.authenticators.client.ClientIdAndSecretAuthenticator;
 import org.keycloak.authentication.authenticators.client.JWTClientAuthenticator;
@@ -12,7 +11,6 @@ import org.keycloak.client.registration.cli.config.FileConfigHandler;
 import org.keycloak.client.registration.cli.config.RealmConfigData;
 import org.keycloak.representations.idm.ClientInitialAccessCreatePresentation;
 import org.keycloak.representations.idm.ClientInitialAccessPresentation;
-import org.keycloak.representations.idm.ClientRegistrationTrustedHostRepresentation;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -27,7 +25,6 @@ import org.keycloak.testsuite.util.ClientBuilder;
 import org.keycloak.testsuite.util.UserBuilder;
 import org.keycloak.util.JsonSerialization;
 
-import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -42,6 +39,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.keycloak.testsuite.admin.AbstractAdminTest.loadJson;
+import static org.keycloak.testsuite.cli.KcRegExec.WORK_DIR;
 import static org.keycloak.testsuite.cli.KcRegExec.execute;
 
 /**
@@ -354,7 +352,7 @@ public abstract class AbstractCliTest extends AbstractKeycloakTest {
 
     FileConfigHandler initCustomConfigFile() {
         String filename = UUID.randomUUID().toString() + ".config";
-        File cfgFile = new File(KcRegExec.WORK_DIR + "/" + filename);
+        File cfgFile = new File(WORK_DIR + "/" + filename);
         FileConfigHandler handler = new FileConfigHandler();
         handler.setConfigFile(cfgFile.getAbsolutePath());
         return handler;
@@ -366,7 +364,7 @@ public abstract class AbstractCliTest extends AbstractKeycloakTest {
 
     File initTempFile(String extension, String content) throws IOException {
         String filename = UUID.randomUUID().toString() + extension;
-        File file = new File(KcRegExec.WORK_DIR + "/" + filename);
+        File file = new File(WORK_DIR + "/" + filename);
         if (content != null) {
             OutputStream os = new FileOutputStream(file);
             os.write(content.getBytes(Charset.forName("iso_8859_1")));
@@ -433,7 +431,7 @@ public abstract class AbstractCliTest extends AbstractKeycloakTest {
 
         exe = execute("get test-client --no-config --server " + serverUrl + " --realm test " + credentials + " " + extraOptions);
 
-        Assert.assertEquals("exitCode == 0", 0, exe.exitCode());
+        assertExitCodeAndStdErrSize(exe, 0, 1);
 
         ClientRepresentation client2 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client2.getClientId());
@@ -452,7 +450,7 @@ public abstract class AbstractCliTest extends AbstractKeycloakTest {
         // because the previous invocation didn't use a registration access token
         exe = execute("get test-client --no-config --server " + serverUrl + " --realm test " + extraOptions + " -t " + client.getRegistrationAccessToken());
 
-        Assert.assertEquals("exitCode == 0", 0, exe.exitCode());
+        assertExitCodeAndStdErrSize(exe, 0, 0);
 
         ClientRepresentation client3 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client3.getClientId());
@@ -469,9 +467,9 @@ public abstract class AbstractCliTest extends AbstractKeycloakTest {
 
 
         exe = execute("update test-client --no-config --server " + serverUrl + " --realm test " +
-                credentials + " " + extraOptions + " -s enabled=false -o --unsafe");
+                credentials + " " + extraOptions + " -s enabled=false -o");
 
-        Assert.assertEquals("exitCode == 0", 0, exe.exitCode());
+        assertExitCodeAndStdErrSize(exe, 0, 1);
 
         ClientRepresentation client4 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client4.getClientId());
@@ -491,7 +489,7 @@ public abstract class AbstractCliTest extends AbstractKeycloakTest {
         exe = execute("update test-client --no-config --server " + serverUrl + " --realm test " + extraOptions +
                 " -s enabled=true -o -t " + client3.getRegistrationAccessToken());
 
-        Assert.assertEquals("exitCode == 0", 0, exe.exitCode());
+        assertExitCodeAndStdErrSize(exe, 0, 0);
 
         ClientRepresentation client5 = JsonSerialization.readValue(exe.stdout(), ClientRepresentation.class);
         Assert.assertEquals("clientId", "test-client", client5.getClientId());
@@ -530,10 +528,42 @@ public abstract class AbstractCliTest extends AbstractKeycloakTest {
         Assert.assertEquals("config file not modified", lastModified, lastModified2);
     }
 
+    void assertExitCodeAndStdOutSize(KcRegExec exe, int exitCode, int stdOutLineCount) {
+        assertExitCodeAndStreamSizes(exe, exitCode, stdOutLineCount, -1);
+    }
+
+    void assertExitCodeAndStdErrSize(KcRegExec exe, int exitCode, int stdErrLineCount) {
+        assertExitCodeAndStreamSizes(exe, exitCode, -1, stdErrLineCount);
+    }
+
     void assertExitCodeAndStreamSizes(KcRegExec exe, int exitCode, int stdOutLineCount, int stdErrLineCount) {
         Assert.assertEquals("exitCode == " + exitCode, exitCode, exe.exitCode());
-        Assert.assertTrue("stdout output has " + stdOutLineCount + " lines", exe.stdoutLines().size() == stdOutLineCount);
-        Assert.assertTrue("stderr output has " + stdErrLineCount + " lines", exe.stderrLines().size() == stdErrLineCount);
+        if (stdOutLineCount != -1) {
+            try {
+                assertLineCount("stdout output", exe.stdoutLines(), stdOutLineCount);
+            } catch (Throwable e) {
+                throw new AssertionError("STDOUT: " + exe.stdoutString(), e);
+            }
+        }
+        if (stdErrLineCount != -1) {
+            try {
+                assertLineCount("stderr output", exe.stderrLines(), stdErrLineCount);
+            } catch (Throwable e) {
+                throw new AssertionError("STDERR: " + exe.stderrString(), e);
+            }
+        }
+    }
 
+    void assertLineCount(String label, List<String> lines, int count) {
+        if (lines.size() == count) {
+            return;
+        }
+        // there is some kind of race condition in 'kcreg' that results in intermittent extra empty line
+        if (lines.size() == count + 1) {
+            if ("".equals(lines.get(lines.size()-1))) {
+                return;
+            }
+        }
+        Assert.assertTrue(label + " has " + lines.size() + " lines (expected: " + count + ")", lines.size() == count);
     }
 }

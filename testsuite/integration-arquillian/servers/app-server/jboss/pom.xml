@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.keycloak.testsuite</groupId>
         <artifactId>integration-arquillian-servers-app-server</artifactId>
-        <version>2.3.0-SNAPSHOT</version>
+        <version>2.4.0.CR1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -108,7 +108,7 @@
                         <executions>
                             <execution>
                                 <id>configure-adapter-debug-log</id>
-                                <phase>process-resources</phase>
+                                <phase>process-test-resources</phase>
                                 <goals>
                                     <goal>transform</goal>
                                 </goals>
@@ -189,7 +189,7 @@
                         <executions>
                             <execution>
                                 <id>install-adapters</id>
-                                <phase>process-test-resources</phase>
+                                <phase>process-resources</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
@@ -437,7 +437,13 @@
             <modules>
                 <module>relative</module>
             </modules>
-        </profile>        
+        </profile>
+        <profile>
+            <id>app-server-eap6-fuse</id>
+            <modules>
+                <module>eap6-fuse</module>
+            </modules>
+        </profile>
     </profiles>    
 
 </project>

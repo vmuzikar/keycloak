@@ -8,6 +8,7 @@ import org.keycloak.testsuite.util.TempFileResource;
 
 import java.io.IOException;
 
+import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
 import static org.keycloak.client.registration.cli.util.OsUtil.EOL;
 import static org.keycloak.testsuite.cli.KcRegExec.execute;
 
@@ -23,20 +24,23 @@ public class KcRegConfigTest extends AbstractCliTest {
 
         try (TempFileResource configFile = new TempFileResource(handler.getConfigFile())) {
 
-            // forget --server
+            // without --server
             KcRegExec exe = execute("config registration-token --config '" + configFile.getName() + "' ");
-            assertExitCodeAndStreamSizes(exe, 1, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 1, 0, 2);
             Assert.assertEquals("error message", "Required option not specified: --server", exe.stderrLines().get(0));
+            Assert.assertEquals("try help", "Try '" + CMD + " help config registration-token' for more information", exe.stderrLines().get(1));
 
-            // forget --realm
+            // without --realm
             exe = execute("config registration-token --config '" + configFile.getName() + "' --server http://localhost:8080/auth");
-            assertExitCodeAndStreamSizes(exe, 1, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 1, 0, 2);
             Assert.assertEquals("error message", "Required option not specified: --realm", exe.stderrLines().get(0));
+            Assert.assertEquals("try help", "Try '" + CMD + " help config registration-token' for more information", exe.stderrLines().get(1));
 
-            // forget --client
+            // without --client
             exe = execute("config registration-token --config '" + configFile.getName() + "' --server http://localhost:8080/auth --realm test");
-            assertExitCodeAndStreamSizes(exe, 1, 0, 1);
+            assertExitCodeAndStreamSizes(exe, 1, 0, 2);
             Assert.assertEquals("error message", "Required option not specified: --client", exe.stderrLines().get(0));
+            Assert.assertEquals("try help", "Try '" + CMD + " help config registration-token' for more information", exe.stderrLines().get(1));
 
             // specify token on cmdline
             exe = execute("config registration-token --config '" + configFile.getName() + "' --server http://localhost:8080/auth --realm test --client my_client NEWTOKEN");

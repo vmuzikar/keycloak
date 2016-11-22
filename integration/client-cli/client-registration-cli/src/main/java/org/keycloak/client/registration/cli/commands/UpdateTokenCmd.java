@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.keycloak.client.registration.cli.util.AuthUtil.ensureToken;
@@ -46,6 +45,7 @@ import static org.keycloak.client.registration.cli.util.HttpUtil.doPost;
 import static org.keycloak.client.registration.cli.util.IoUtil.printOut;
 import static org.keycloak.client.registration.cli.util.IoUtil.warnfOut;
 import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
+import static org.keycloak.client.registration.cli.util.OsUtil.EOL;
 import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
 
 /**
@@ -55,22 +55,26 @@ import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
 public class UpdateTokenCmd extends AbstractAuthOptionsCmd {
 
     @Arguments
-    private List<String> args = new ArrayList<>();
+    private List<String> args;
 
     @Override
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
 
         try {
+            if (printHelp()) {
+                return help ? CommandResult.SUCCESS : CommandResult.FAILURE;
+            }
+
             processGlobalOptions();
 
-            if (args.isEmpty()) {
-                throw new RuntimeException("CLIENT not specified");
+            if (args == null || args.isEmpty()) {
+                throw new IllegalArgumentException("CLIENT not specified");
             }
 
             String clientId = args.get(0);
 
             if (clientId.startsWith("-")) {
-                warnfOut(ParseUtil.CLIENTID_OPTION_WARN, clientId);
+                warnfOut(ParseUtil.CLIENT_OPTION_WARN, clientId);
             }
 
             ConfigData config = loadConfig();
@@ -124,9 +128,24 @@ public class UpdateTokenCmd extends AbstractAuthOptionsCmd {
             //System.out.println("Token updated for client " + clientId);
             return CommandResult.SUCCESS;
 
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(e.getMessage() + suggestHelp(), e);
         } finally {
             commandInvocation.stop();
         }
+    }
+
+    @Override
+    protected boolean nothingToDo() {
+        return noOptions() && (args == null || args.size() == 0);
+    }
+
+    protected String suggestHelp() {
+        return EOL + "Try '" + CMD + " help update-token' for more information";
+    }
+
+    protected String help() {
+        return usage();
     }
 
     public static String usage() {
@@ -141,7 +160,7 @@ public class UpdateTokenCmd extends AbstractAuthOptionsCmd {
         out.println();
         out.println("  Global options:");
         out.println("    -x                    Print full stack trace when exiting with error");
-        out.println("    -c, --config          Path to the config file (" + DEFAULT_CONFIG_FILE_STRING + " by default)");
+        out.println("    --config              Path to the config file (" + DEFAULT_CONFIG_FILE_STRING + " by default)");
         out.println("    --truststore PATH     Path to a truststore containing trusted certificates");
         out.println("    --trustpass PASSWORD  Truststore password (prompted for if not specified and --truststore is used)");
         out.println("    CREDENTIALS OPTIONS   Same set of options as accepted by '" + CMD + " config credentials' in order to establish");

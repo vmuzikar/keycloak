@@ -35,6 +35,7 @@ public interface UserModel extends RoleMapperModel {
     String LOCALE = "locale";
 
     interface UserRemovedEvent extends ProviderEvent {
+        RealmModel getRealm();
         UserModel getUser();
         KeycloakSession getKeycloakSession();
     }
@@ -57,7 +58,7 @@ public interface UserModel extends RoleMapperModel {
     void setEnabled(boolean enabled);
 
     /**
-     * Set single value of specified attribute. Remove all other existing values
+     * Set single value of specified attribute. Remove all other existing values of this attribute
      *
      * @param name
      * @param value

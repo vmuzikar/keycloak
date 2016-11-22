@@ -22,7 +22,6 @@ import org.keycloak.common.enums.SslRequired;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.component.ComponentFactory;
 import org.keycloak.component.ComponentModel;
-import org.keycloak.jose.jwk.JWKBuilder;
 import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.AuthenticationFlowModel;
 import org.keycloak.models.AuthenticatorConfigModel;
@@ -66,10 +65,6 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import java.security.Key;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -955,13 +950,6 @@ public class RealmAdapter implements RealmModel, JpaModel<RealmEntity> {
     @Override
     public RoleModel getRoleById(String id) {
         return session.realms().getRoleById(id, this);
-    }
-
-    @Override
-    public boolean removeRoleById(String id) {
-        RoleModel role = getRoleById(id);
-        if (role == null) return false;
-        return role.getContainer().removeRole(role);
     }
 
     @Override
@@ -1938,12 +1926,6 @@ public class RealmAdapter implements RealmModel, JpaModel<RealmEntity> {
     }
 
     @Override
-    public void addTopLevelGroup(GroupModel subGroup) {
-        session.realms().addTopLevelGroup(this, subGroup);
-
-    }
-
-    @Override
     public void moveGroup(GroupModel group, GroupModel toParent) {
         session.realms().moveGroup(this, group, toParent);
     }
@@ -2036,12 +2018,20 @@ public class RealmAdapter implements RealmModel, JpaModel<RealmEntity> {
 
     @Override
     public ComponentModel addComponentModel(ComponentModel model) {
+        model = importComponentModel(model);
+        ComponentUtil.notifyCreated(session, this, model);
+
+        return model;
+    }
+
+    @Override
+    public ComponentModel importComponentModel(ComponentModel model) {
         ComponentFactory componentFactory = ComponentUtil.getComponentFactory(session, model);
         if (componentFactory == null) {
             throw new IllegalArgumentException("Invalid component type");
         }
 
-        componentFactory.validateConfiguration(session, model);
+        componentFactory.validateConfiguration(session, this, model);
 
         ComponentEntity c = new ComponentEntity();
         if (model.getId() == null) {
@@ -2051,6 +2041,10 @@ public class RealmAdapter implements RealmModel, JpaModel<RealmEntity> {
         }
         c.setName(model.getName());
         c.setParentId(model.getParentId());
+        if (model.getParentId() == null) {
+            c.setParentId(this.getId());
+            model.setParentId(this.getId());
+        }
         c.setProviderType(model.getProviderType());
         c.setProviderId(model.getProviderId());
         c.setSubType(model.getSubType());
@@ -2080,7 +2074,7 @@ public class RealmAdapter implements RealmModel, JpaModel<RealmEntity> {
 
     @Override
     public void updateComponent(ComponentModel component) {
-        ComponentUtil.getComponentFactory(session, component).validateConfiguration(session, component);
+        ComponentUtil.getComponentFactory(session, component).validateConfiguration(session, this, component);
 
         ComponentEntity c = em.find(ComponentEntity.class, component.getId());
         if (c == null) return;
@@ -2101,6 +2095,7 @@ public class RealmAdapter implements RealmModel, JpaModel<RealmEntity> {
         ComponentEntity c = em.find(ComponentEntity.class, component.getId());
         if (c == null) return;
         session.users().preRemove(this, component);
+        removeComponents(component.getId());
         em.createNamedQuery("deleteComponentConfigByComponent").setParameter("component", c).executeUpdate();
         em.remove(c);
     }

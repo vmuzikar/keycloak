@@ -9,7 +9,7 @@ For more information about Keycloak visit [Keycloak homepage](http://keycloak.or
 Building
 --------
 
-Ensure you have JDK 8 (or newer), Maven 3.2.1 (or newer) and Git installed
+Ensure you have JDK 8 (or newer), Maven 3.1.1 (or newer) and Git installed
 
     java -version
     mvn -version
@@ -36,7 +36,7 @@ Once completed you will find distribution archives in `distribution`.
 Starting Keycloak
 -----------------
 
-To start Keycloak during development first build as specficied above, then run:
+To start Keycloak during development first build as specified above, then run:
 
     mvn -f testsuite/integration/pom.xml exec:java -Pkeycloak-server 
 

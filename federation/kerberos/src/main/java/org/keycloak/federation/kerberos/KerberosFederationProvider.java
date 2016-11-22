@@ -33,7 +33,7 @@ import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserFederationProvider;
 import org.keycloak.models.UserFederationProviderModel;
 import org.keycloak.models.UserModel;
-import org.keycloak.services.managers.UserManager;
+import org.keycloak.models.UserManager;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -162,6 +162,11 @@ public class KerberosFederationProvider implements UserFederationProvider {
     @Override
     public void disableCredentialType(RealmModel realm, UserModel user, String credentialType) {
 
+    }
+
+    @Override
+    public Set<String> getDisableableCredentialTypes(RealmModel realm, UserModel user) {
+        return Collections.EMPTY_SET;
     }
 
     @Override

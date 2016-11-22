@@ -55,7 +55,6 @@ public interface UserSessionProvider extends Provider {
 
     void onRealmRemoved(RealmModel realm);
     void onClientRemoved(RealmModel realm, ClientModel client);
-    void onUserRemoved(RealmModel realm, UserModel user);
 
     UserSessionModel createOfflineUserSession(UserSessionModel userSession);
     UserSessionModel getOfflineUserSession(RealmModel realm, String userSessionId);
@@ -81,11 +80,6 @@ public interface UserSessionProvider extends Provider {
     ClientInitialAccessModel getClientInitialAccessModel(RealmModel realm, String id);
     void removeClientInitialAccessModel(RealmModel realm, String id);
     List<ClientInitialAccessModel> listClientInitialAccess(RealmModel realm);
-
-    ClientRegistrationTrustedHostModel createClientRegistrationTrustedHostModel(RealmModel realm, String hostName, int count);
-    ClientRegistrationTrustedHostModel getClientRegistrationTrustedHostModel(RealmModel realm, String hostName);
-    void removeClientRegistrationTrustedHostModel(RealmModel realm, String hostName);
-    List<ClientRegistrationTrustedHostModel> listClientRegistrationTrustedHosts(RealmModel realm);
 
     void close();
 

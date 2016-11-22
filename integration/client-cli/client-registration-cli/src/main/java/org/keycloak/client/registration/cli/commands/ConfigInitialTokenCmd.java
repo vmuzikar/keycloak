@@ -19,6 +19,7 @@ import static org.keycloak.client.registration.cli.util.ConfigUtil.DEFAULT_CONFI
 import static org.keycloak.client.registration.cli.util.ConfigUtil.saveMergeConfig;
 import static org.keycloak.client.registration.cli.util.IoUtil.warnfOut;
 import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
+import static org.keycloak.client.registration.cli.util.OsUtil.EOL;
 import static org.keycloak.client.registration.cli.util.OsUtil.OS_ARCH;
 import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
 
@@ -33,20 +34,30 @@ public class ConfigInitialTokenCmd extends AbstractAuthOptionsCmd implements Com
     private boolean delete;
     private boolean keepDomain;
 
-    public ConfigInitialTokenCmd() {}
 
-    public ConfigInitialTokenCmd(ConfigCmd parent) {
+    protected void initFromParent(ConfigCmd parent) {
         this.parent = parent;
-        init(parent);
+        super.initFromParent(parent);
     }
 
     @Override
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
         try {
+            if (printHelp()) {
+                return help ? CommandResult.SUCCESS : CommandResult.FAILURE;
+            }
+
             return process(commandInvocation);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(e.getMessage() + suggestHelp(), e);
         } finally {
             commandInvocation.stop();
         }
+    }
+
+    @Override
+    protected boolean nothingToDo() {
+        return noOptions() && parent.args.size() == 1;
     }
 
     public CommandResult process(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
@@ -77,13 +88,13 @@ public class ConfigInitialTokenCmd extends AbstractAuthOptionsCmd implements Com
         }
 
         if (args.size() > 1) {
-            throw new RuntimeException("Invalid option: " + args.get(1));
+            throw new IllegalArgumentException("Invalid option: " + args.get(1));
         }
 
         String token = args.size() == 1 ? args.get(0) : null;
 
         if (realm == null) {
-            throw new RuntimeException("Realm not specified");
+            throw new IllegalArgumentException("Realm not specified");
         }
 
         if (token != null && token.startsWith("-")) {
@@ -128,6 +139,14 @@ public class ConfigInitialTokenCmd extends AbstractAuthOptionsCmd implements Com
         });
 
         return CommandResult.SUCCESS;
+    }
+
+    protected String suggestHelp() {
+        return EOL + "Try '" + CMD + " help config initial-token' for more information";
+    }
+
+    protected String help() {
+        return usage();
     }
 
     public static String usage() {

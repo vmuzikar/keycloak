@@ -22,10 +22,12 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.component.ComponentValidationException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ConfigurationValidationHelper;
 import org.keycloak.provider.ProviderConfigProperty;
 
 import java.util.List;
+import org.jboss.logging.Logger;
 
 import static org.keycloak.provider.ProviderConfigProperty.STRING_TYPE;
 
@@ -33,6 +35,7 @@ import static org.keycloak.provider.ProviderConfigProperty.STRING_TYPE;
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JavaKeystoreKeyProviderFactory extends AbstractRsaKeyProviderFactory {
+    private static final Logger logger = Logger.getLogger(JavaKeystoreKeyProviderFactory.class);
 
     public static final String ID = "java-keystore";
 
@@ -63,8 +66,8 @@ public class JavaKeystoreKeyProviderFactory extends AbstractRsaKeyProviderFactor
     }
 
     @Override
-    public void validateConfiguration(KeycloakSession session, ComponentModel model) throws ComponentValidationException {
-        super.validateConfiguration(session, model);
+    public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
+        super.validateConfiguration(session, realm, model);
 
         ConfigurationValidationHelper.check(model)
                 .checkSingle(KEYSTORE_PROPERTY, true)
@@ -76,7 +79,8 @@ public class JavaKeystoreKeyProviderFactory extends AbstractRsaKeyProviderFactor
             new JavaKeystoreKeyProvider(session.getContext().getRealm(), model)
                     .loadKeys(session.getContext().getRealm(), model);
         } catch (Throwable t) {
-            throw new ComponentValidationException("Failed to load keys", t);
+            logger.error("Failed to load keys.", t);
+            throw new ComponentValidationException("Failed to load keys. " + t.getMessage(), t);
         }
     }
 

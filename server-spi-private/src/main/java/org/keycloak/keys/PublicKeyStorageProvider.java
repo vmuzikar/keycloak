@@ -37,4 +37,9 @@ public interface PublicKeyStorageProvider extends Provider {
      */
     PublicKey getPublicKey(String modelKey, String kid, PublicKeyLoader loader);
 
+    /**
+     * Clears all the cached public keys, so they need to be loaded again
+     */
+    void clearCache();
+
 }

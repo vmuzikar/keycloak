@@ -85,7 +85,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
     protected KeycloakSession session;
     protected ComponentModel model;
     protected LDAPIdentityStore ldapIdentityStore;
-    protected LDAPStorageProviderFactory.EditMode editMode;
+    protected EditMode editMode;
     protected LDAPProviderKerberosConfig kerberosConfig;
     protected PasswordUpdated updater;
 
@@ -117,7 +117,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
         return this.ldapIdentityStore;
     }
 
-    public LDAPStorageProviderFactory.EditMode getEditMode() {
+    public EditMode getEditMode() {
         return editMode;
     }
 
@@ -168,19 +168,15 @@ public class LDAPStorageProvider implements UserStorageProvider,
         return Collections.EMPTY_LIST;
     }
 
-    @Override
-    public void grantToAllUsers(RealmModel realm, RoleModel role) {
-
-    }
-
     public boolean synchronizeRegistrations() {
-        return "true".equalsIgnoreCase(model.getConfig().getFirst(LDAPConstants.SYNC_REGISTRATIONS)) && editMode == LDAPStorageProviderFactory.EditMode.WRITABLE;
+        return "true".equalsIgnoreCase(model.getConfig().getFirst(LDAPConstants.SYNC_REGISTRATIONS)) && editMode == UserStorageProvider.EditMode.WRITABLE;
     }
 
     @Override
     public UserModel addUser(RealmModel realm, String username) {
-        if (editMode == LDAPStorageProviderFactory.EditMode.READ_ONLY || editMode == LDAPStorageProviderFactory.EditMode.UNSYNCED) throw new IllegalStateException("Registration is not supported by this ldap server");
-        if (!synchronizeRegistrations()) throw new IllegalStateException("Registration is not supported by this ldap server");
+        if (!synchronizeRegistrations()) {
+            return null;
+        }
         UserModel user = session.userLocalStorage().addUser(realm, username);
         user.setFederationLink(model.getId());
         LDAPObject ldapUser = LDAPUtils.addUserToLDAP(this, realm, user);
@@ -193,7 +189,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
 
     @Override
     public boolean removeUser(RealmModel realm, UserModel user) {
-        if (editMode == LDAPStorageProviderFactory.EditMode.READ_ONLY || editMode == LDAPStorageProviderFactory.EditMode.UNSYNCED) {
+        if (editMode == UserStorageProvider.EditMode.READ_ONLY || editMode == UserStorageProvider.EditMode.UNSYNCED) {
             logger.warnf("User '%s' can't be deleted in LDAP as editMode is '%s'. Deleting user just from Keycloak DB, but he will be re-imported from LDAP again once searched in Keycloak", user.getUsername(), editMode.toString());
             return true;
         }
@@ -425,7 +421,12 @@ public class LDAPStorageProvider implements UserStorageProvider,
 
         // Check here if user already exists
         String ldapUsername = LDAPUtils.getUsername(ldapUser, ldapIdentityStore.getConfig());
-        if (session.userLocalStorage().getUserByUsername(ldapUsername, realm) != null) {
+        UserModel user = session.userLocalStorage().getUserByUsername(ldapUsername, realm);
+        
+        if (user != null) {
+            LDAPUtils.checkUuid(ldapUser, ldapIdentityStore.getConfig());
+            // If email attribute mapper is set to "Always Read Value From LDAP" the user may be in Keycloak DB with an old email address
+            if (ldapUser.getUuid().equals(user.getFirstAttribute(LDAPConstants.LDAP_ID))) return user;
             throw new ModelDuplicateException("User with username '" + ldapUsername + "' already exists in Keycloak. It conflicts with LDAP user with email '" + email + "'");
         }
 
@@ -479,17 +480,28 @@ public class LDAPStorageProvider implements UserStorageProvider,
     @Override
     public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
         if (!CredentialModel.PASSWORD.equals(input.getType()) || ! (input instanceof UserCredentialModel)) return false;
-        if (editMode == LDAPStorageProviderFactory.EditMode.READ_ONLY) {
+        if (editMode == UserStorageProvider.EditMode.READ_ONLY) {
             throw new ModelReadOnlyException("Federated storage is not writable");
 
-        } else if (editMode == LDAPStorageProviderFactory.EditMode.WRITABLE) {
+        } else if (editMode == UserStorageProvider.EditMode.WRITABLE) {
             LDAPIdentityStore ldapIdentityStore = getLdapIdentityStore();
             UserCredentialModel cred = (UserCredentialModel)input;
             String password = cred.getValue();
             LDAPObject ldapUser = loadAndValidateUser(realm, user);
-            ldapIdentityStore.updatePassword(ldapUser, password);
-            if (updater != null) updater.passwordUpdated(user, ldapUser, input);
-            return true;
+
+            try {
+                ldapIdentityStore.updatePassword(ldapUser, password);
+                if (updater != null) updater.passwordUpdated(user, ldapUser, input);
+                return true;
+            } catch (ModelException me) {
+                if (updater != null) {
+                    updater.passwordUpdateFailed(user, ldapUser, input, me);
+                    return false;
+                } else {
+                    throw me;
+                }
+            }
+
         } else {
             return false;
         }
@@ -596,7 +608,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
                     logger.warnf("User with username [%s] aready exists and is linked to provider [%s] but is not valid. Stale LDAP_ID on local user is: %s",
                             username,  model.getName(), user.getFirstAttribute(LDAPConstants.LDAP_ID));
                     logger.warn("Will re-create user");
-                    session.getUserCache().evict(realm, user);
+                    session.userCache().evict(realm, user);
                     new UserManager(session).removeUser(realm, user, session.userLocalStorage());
                 }
             }

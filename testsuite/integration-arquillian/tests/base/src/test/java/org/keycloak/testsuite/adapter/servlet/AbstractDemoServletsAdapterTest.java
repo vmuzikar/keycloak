@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.keycloak.testsuite.adapter.servlet;
 
 import org.apache.commons.io.FileUtils;
@@ -28,18 +27,13 @@ import org.junit.Test;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.common.Version;
-import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.common.util.Time;
 import org.keycloak.constants.AdapterConstants;
-import org.keycloak.keys.KeyProvider;
-import org.keycloak.models.Constants;
-import org.keycloak.protocol.oidc.OIDCAdvancedConfigWrapper;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.OIDCLoginProtocolService;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.VersionRepresentation;
 import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testsuite.adapter.AbstractServletsAdapterTest;
@@ -48,7 +42,6 @@ import org.keycloak.testsuite.adapter.page.BasicAuth;
 import org.keycloak.testsuite.adapter.page.CustomerDb;
 import org.keycloak.testsuite.adapter.page.CustomerDbErrorPage;
 import org.keycloak.testsuite.adapter.page.CustomerPortal;
-import org.keycloak.testsuite.adapter.page.CustomerPortalSubsystem;
 import org.keycloak.testsuite.adapter.page.InputPortal;
 import org.keycloak.testsuite.adapter.page.ProductPortal;
 import org.keycloak.testsuite.adapter.page.SecurePortal;
@@ -58,7 +51,6 @@ import org.keycloak.testsuite.auth.page.account.Applications;
 import org.keycloak.testsuite.auth.page.login.OAuthGrant;
 import org.keycloak.testsuite.console.page.events.Config;
 import org.keycloak.testsuite.console.page.events.LoginEvents;
-import org.keycloak.testsuite.util.URLAssert;
 import org.keycloak.testsuite.util.URLUtils;
 import org.keycloak.util.BasicAuthHelper;
 import org.openqa.selenium.By;
@@ -71,7 +63,6 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -86,12 +77,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import org.keycloak.testsuite.adapter.page.CustomerPortalNoConf;
 import static org.keycloak.testsuite.auth.page.AuthRealm.DEMO;
 import static org.keycloak.testsuite.util.URLAssert.assertCurrentUrlEquals;
-import static org.keycloak.testsuite.util.URLAssert.assertCurrentUrlStartsWith;
 import static org.keycloak.testsuite.util.URLAssert.assertCurrentUrlStartsWithLoginUrlOf;
 import static org.keycloak.testsuite.util.WaitUtils.pause;
 import static org.keycloak.testsuite.util.WaitUtils.waitUntilElement;
@@ -106,8 +95,6 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
     private CustomerPortal customerPortal;
     @Page
     private CustomerPortalNoConf customerPortalNoConf;
-    @Page
-    private CustomerPortalSubsystem customerPortalSubsystem;
     @Page
     private SecurePortal securePortal;
     @Page
@@ -133,17 +120,12 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
 
     @Deployment(name = CustomerPortal.DEPLOYMENT_NAME)
     protected static WebArchive customerPortal() {
-        return servletDeployment(CustomerPortal.DEPLOYMENT_NAME, CustomerServlet.class, ErrorServlet.class);
+        return servletDeployment(CustomerPortal.DEPLOYMENT_NAME, CustomerServlet.class, ErrorServlet.class, ServletTestUtils.class);
     }
-    
+
     @Deployment(name = CustomerPortalNoConf.DEPLOYMENT_NAME)
     protected static WebArchive customerPortalNoConf() {
         return servletDeployment(CustomerPortalNoConf.DEPLOYMENT_NAME, CustomerServletNoConf.class, ErrorServlet.class);
-    }
-
-    @Deployment(name = CustomerPortalSubsystem.DEPLOYMENT_NAME)
-    protected static WebArchive customerPortalSubsystem() {
-        return servletDeployment(CustomerPortalSubsystem.DEPLOYMENT_NAME, CustomerServlet.class, ErrorServlet.class);
     }
 
     @Deployment(name = SecurePortal.DEPLOYMENT_NAME)
@@ -153,7 +135,7 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
 
     @Deployment(name = CustomerDb.DEPLOYMENT_NAME)
     protected static WebArchive customerDb() {
-        return servletDeployment(CustomerDb.DEPLOYMENT_NAME, CustomerDatabaseServlet.class);
+        return servletDeployment(CustomerDb.DEPLOYMENT_NAME, AdapterActionsFilter.class, CustomerDatabaseServlet.class);
     }
 
     @Deployment(name = CustomerDbErrorPage.DEPLOYMENT_NAME)
@@ -168,7 +150,7 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
 
     @Deployment(name = InputPortal.DEPLOYMENT_NAME)
     protected static WebArchive inputPortal() {
-        return servletDeployment(InputPortal.DEPLOYMENT_NAME, "keycloak.json", InputServlet.class);
+        return servletDeployment(InputPortal.DEPLOYMENT_NAME, "keycloak.json", InputServlet.class, ServletTestUtils.class);
     }
 
     @Deployment(name = TokenMinTTLPage.DEPLOYMENT_NAME)
@@ -198,14 +180,6 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
     }
 
     @Test
-    public void testCustomerPortalWithSubsystemSettings() {
-        customerPortalSubsystem.navigateTo();
-        assertCurrentUrlStartsWithLoginUrlOf(testRealmPage);
-        testRealmLoginPage.form().login("bburke@redhat.com", "password");
-        assertTrue(driver.getPageSource().contains("Bill Burke") && driver.getPageSource().contains("Stian Thorgersen"));
-    }
-
-    @Test
     public void testSavedPostRequest() throws InterruptedException {
         // test login to customer-portal which does a bearer request to customer-db
         inputPortal.navigateTo();
@@ -214,7 +188,7 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
 
         assertCurrentUrlStartsWithLoginUrlOf(testRealmPage);
         testRealmLoginPage.form().login("bburke@redhat.com", "password");
-        assertEquals(driver.getCurrentUrl(), inputPortal + "/secured/post");
+        assertCurrentUrlEquals(driver, inputPortal + "/secured/post");
         String pageSource = driver.getPageSource();
         assertTrue(pageSource.contains("parameter=hello"));
 
@@ -235,97 +209,6 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
         String text = client.target(inputPortal + "/unsecured").request().post(Entity.form(form), String.class);
         assertTrue(text.contains("parameter=hello"));
         client.close();
-    }
-
-    @Test
-    public void testRealmKeyRotationWithNewKeyDownload() throws Exception {
-        // Login success first
-        tokenMinTTLPage.navigateTo();
-        testRealmLoginPage.form().waitForUsernameInputPresent();
-        assertCurrentUrlStartsWithLoginUrlOf(testRealmPage);
-        testRealmLoginPage.form().login("bburke@redhat.com", "password");
-        assertCurrentUrlEquals(tokenMinTTLPage);
-
-        AccessToken token = tokenMinTTLPage.getAccessToken();
-        Assert.assertEquals("bburke@redhat.com", token.getPreferredUsername());
-
-        // Logout
-        String logoutUri = OIDCLoginProtocolService.logoutUrl(authServerPage.createUriBuilder())
-                .queryParam(OAuth2Constants.REDIRECT_URI, tokenMinTTLPage.toString())
-                .build("demo").toString();
-        driver.navigate().to(logoutUri);
-
-        // Generate new realm key
-        String realmId = adminClient.realm(DEMO).toRepresentation().getId();
-        ComponentRepresentation keys = new ComponentRepresentation();
-        keys.setName("generated");
-        keys.setProviderType(KeyProvider.class.getName());
-        keys.setProviderId("rsa-generated");
-        keys.setParentId(realmId);
-        keys.setConfig(new MultivaluedHashMap<>());
-        keys.getConfig().putSingle("priority", "100");
-        Response response = adminClient.realm(DEMO).components().add(keys);
-        assertEquals(201, response.getStatus());
-        response.close();
-
-        String adapterActionsUrl = tokenMinTTLPage.toString() + "/unsecured/foo";
-        setAdapterAndServerTimeOffset(300, adapterActionsUrl);
-
-        // Try to login. Should work now due to realm key change
-        tokenMinTTLPage.navigateTo();
-        testRealmLoginPage.form().waitForUsernameInputPresent();
-        assertCurrentUrlStartsWithLoginUrlOf(testRealmPage);
-        testRealmLoginPage.form().login("bburke@redhat.com", "password");
-        assertCurrentUrlEquals(tokenMinTTLPage);
-        token = tokenMinTTLPage.getAccessToken();
-        Assert.assertEquals("bburke@redhat.com", token.getPreferredUsername());
-        driver.navigate().to(logoutUri);
-
-        // Revert public keys change
-        String timeOffsetUri = UriBuilder.fromUri(adapterActionsUrl)
-                .queryParam(AdapterActionsFilter.RESET_PUBLIC_KEY_PARAM, "true")
-                .build().toString();
-        driver.navigate().to(timeOffsetUri);
-        waitUntilElement(By.tagName("body")).is().visible();
-
-        setAdapterAndServerTimeOffset(0, adapterActionsUrl);
-    }
-
-    @Test
-    public void testClientWithJwksUri() throws Exception {
-        // Set client to bad JWKS URI
-        ClientResource clientResource = ApiUtil.findClientResourceByClientId(testRealmResource(), "secure-portal");
-        ClientRepresentation client = clientResource.toRepresentation();
-        OIDCAdvancedConfigWrapper wrapper = OIDCAdvancedConfigWrapper.fromClientRepresentation(client);
-        wrapper.setUseJwksUrl(true);
-        wrapper.setJwksUrl(securePortal + "/bad-jwks-url");
-        clientResource.update(client);
-
-        // Login should fail at the code-to-token
-        securePortal.navigateTo();
-        assertCurrentUrlStartsWithLoginUrlOf(testRealmPage);
-        testRealmLoginPage.form().login("bburke@redhat.com", "password");
-        String pageSource = driver.getPageSource();
-        assertCurrentUrlStartsWith(securePortal);
-        assertFalse(pageSource.contains("Bill Burke") && pageSource.contains("Stian Thorgersen"));
-
-        // Set client to correct JWKS URI
-        client = clientResource.toRepresentation();
-        wrapper = OIDCAdvancedConfigWrapper.fromClientRepresentation(client);
-        wrapper.setUseJwksUrl(true);
-        wrapper.setJwksUrl(securePortal + "/" + AdapterConstants.K_JWKS);
-        clientResource.update(client);
-
-        // Login to secure-portal should be fine now. Client keys downloaded from JWKS URI
-        securePortal.navigateTo();
-        assertCurrentUrlEquals(securePortal);
-        pageSource = driver.getPageSource();
-        assertTrue(pageSource.contains("Bill Burke") && pageSource.contains("Stian Thorgersen"));
-
-        // Logout
-        String logoutUri = OIDCLoginProtocolService.logoutUrl(authServerPage.createUriBuilder())
-                .queryParam(OAuth2Constants.REDIRECT_URI, securePortal.toString()).build("demo").toString();
-        driver.navigate().to(logoutUri);
     }
 
     @Test
@@ -661,6 +544,8 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
         String value = "hello";
         Client client = ClientBuilder.newClient();
 
+        //pause(1000000);
+
         Response response = client.target(basicAuthPage
                 .setTemplateValues("mposolda", "password", value).buildUri()).request().get();
 
@@ -817,7 +702,8 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
 
         String serverLogPath = null;
 
-        if (System.getProperty("app.server").equals("wildfly") || System.getProperty("app.server").equals("eap6") || System.getProperty("app.server").equals("eap")) {
+        String appServer = System.getProperty("app.server");
+        if (appServer != null && (appServer.equals("wildfly") || appServer.equals("eap6") || appServer.equals("eap"))) {
             serverLogPath = System.getProperty("app.server.home") + "/standalone/log/server.log";
         }
 
@@ -843,13 +729,12 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
             log.info("Checking app server log on app-server: \"" + System.getProperty("app.server") + "\" is not supported.");
         }
     }
-    
+
     @Test
     public void testWithoutKeycloakConf() {
         customerPortalNoConf.navigateTo();
         String pageSource = driver.getPageSource();
         assertTrue(pageSource.contains("Forbidden") || pageSource.contains("HTTP Status 401"));
     }
-
 
 }

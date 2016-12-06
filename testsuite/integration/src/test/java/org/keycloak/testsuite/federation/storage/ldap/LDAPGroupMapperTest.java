@@ -26,6 +26,7 @@ import org.junit.rules.TestRule;
 import org.junit.runners.MethodSorters;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.component.ComponentModel;
+import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.UserStorageProviderModel;
 import org.keycloak.storage.ldap.LDAPConfig;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
@@ -50,7 +51,6 @@ import org.keycloak.testsuite.rule.KeycloakRule;
 import org.keycloak.testsuite.rule.LDAPRule;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -73,7 +73,7 @@ public class LDAPGroupMapperTest {
 
             MultivaluedHashMap<String,String> ldapConfig = LDAPTestUtils.getLdapRuleConfig(ldapRule);
             ldapConfig.putSingle(LDAPConstants.SYNC_REGISTRATIONS, "true");
-            ldapConfig.putSingle(LDAPConstants.EDIT_MODE, LDAPStorageProviderFactory.EditMode.WRITABLE.toString());
+            ldapConfig.putSingle(LDAPConstants.EDIT_MODE, UserStorageProvider.EditMode.WRITABLE.toString());
             UserStorageProviderModel model = new UserStorageProviderModel();
             model.setLastSync(0);
             model.setChangedSyncPeriod(-1);
@@ -102,7 +102,7 @@ public class LDAPGroupMapperTest {
             LDAPUtils.addMember(ldapFedProvider, MembershipType.DN, LDAPConstants.MEMBER, group1, group12, true);
 
             // Sync LDAP groups to Keycloak DB
-            ComponentModel mapperModel = LDAPTestUtils.getComponentByName(appRealm,ldapModel, "groupsMapper");
+            ComponentModel mapperModel = LDAPTestUtils.getSubcomponentByName(appRealm,ldapModel, "groupsMapper");
             new GroupLDAPStorageMapperFactory().create(session, mapperModel).syncDataFromFederationProviderToKeycloak(mapperModel, ldapFedProvider, session, appRealm);
 
             // Delete all LDAP users
@@ -135,7 +135,7 @@ public class LDAPGroupMapperTest {
         try {
             RealmModel appRealm = session.realms().getRealmByName("test");
 
-            ComponentModel mapperModel = LDAPTestUtils.getComponentByName(appRealm,ldapModel, "groupsMapper");
+            ComponentModel mapperModel = LDAPTestUtils.getSubcomponentByName(appRealm,ldapModel, "groupsMapper");
             LDAPTestUtils.updateGroupMapperConfigOptions(mapperModel, GroupMapperConfig.MODE, LDAPGroupMapperMode.LDAP_ONLY.toString());
             appRealm.updateComponent(mapperModel);
 
@@ -205,7 +205,7 @@ public class LDAPGroupMapperTest {
             System.out.println("starting test02_readOnlyGroupMappings");
             RealmModel appRealm = session.realms().getRealmByName("test");
 
-            ComponentModel mapperModel = LDAPTestUtils.getComponentByName(appRealm,ldapModel, "groupsMapper");
+            ComponentModel mapperModel = LDAPTestUtils.getSubcomponentByName(appRealm,ldapModel, "groupsMapper");
             LDAPTestUtils.updateGroupMapperConfigOptions(mapperModel, GroupMapperConfig.MODE, LDAPGroupMapperMode.READ_ONLY.toString());
             appRealm.updateComponent(mapperModel);
 
@@ -273,7 +273,7 @@ public class LDAPGroupMapperTest {
         try {
             RealmModel appRealm = session.realms().getRealmByName("test");
 
-            ComponentModel mapperModel = LDAPTestUtils.getComponentByName(appRealm,ldapModel, "groupsMapper");
+            ComponentModel mapperModel = LDAPTestUtils.getSubcomponentByName(appRealm,ldapModel, "groupsMapper");
             LDAPTestUtils.updateGroupMapperConfigOptions(mapperModel, GroupMapperConfig.MODE, LDAPGroupMapperMode.IMPORT.toString());
             appRealm.updateComponent(mapperModel);
 
@@ -328,7 +328,7 @@ public class LDAPGroupMapperTest {
 
             RealmModel appRealm = session.realms().getRealmByName("test");
 
-            ComponentModel mapperModel = LDAPTestUtils.getComponentByName(appRealm,ldapModel, "groupsMapper");
+            ComponentModel mapperModel = LDAPTestUtils.getSubcomponentByName(appRealm,ldapModel, "groupsMapper");
             LDAPTestUtils.updateGroupMapperConfigOptions(mapperModel, GroupMapperConfig.MODE, LDAPGroupMapperMode.LDAP_ONLY.toString());
             appRealm.updateComponent(mapperModel);
 

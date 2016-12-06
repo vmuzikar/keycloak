@@ -29,9 +29,9 @@ import org.keycloak.models.UserProvider;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.UserModelDelegate;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.SynchronizationResultRepresentation;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
-import org.keycloak.storage.ldap.LDAPStorageProviderFactory;
 import org.keycloak.storage.ldap.LDAPUtils;
 import org.keycloak.storage.ldap.idm.model.LDAPObject;
 import org.keycloak.storage.ldap.idm.query.internal.LDAPQuery;
@@ -62,11 +62,11 @@ import java.util.Set;
 public class LDAPTestUtils {
     public static MultivaluedHashMap<String, String> getLdapRuleConfig(LDAPRule ldapRule) {
         Map<String,String> ldapConfig = ldapRule.getConfig();
-        return toLdapConfig(ldapConfig);
+        return toComponentConfig(ldapConfig);
 
     }
 
-    public static MultivaluedHashMap<String, String> toLdapConfig(Map<String, String> ldapConfig) {
+    public static MultivaluedHashMap<String, String> toComponentConfig(Map<String, String> ldapConfig) {
         MultivaluedHashMap<String, String> config = new MultivaluedHashMap<>();
         for (Map.Entry<String, String> entry : ldapConfig.entrySet()) {
             config.add(entry.getKey(), entry.getValue());
@@ -168,7 +168,7 @@ public class LDAPTestUtils {
     }
 
     public static void addOrUpdateRoleLDAPMappers(RealmModel realm, ComponentModel providerModel, LDAPGroupMapperMode mode) {
-        ComponentModel mapperModel = getComponentByName(realm, providerModel, "realmRolesMapper");
+        ComponentModel mapperModel = getSubcomponentByName(realm, providerModel, "realmRolesMapper");
         if (mapperModel != null) {
             mapperModel.getConfig().putSingle(RoleMapperConfig.MODE, mode.toString());
             realm.updateComponent(mapperModel);
@@ -181,7 +181,7 @@ public class LDAPTestUtils {
             realm.addComponentModel(mapperModel);
         }
 
-        mapperModel = getComponentByName(realm, providerModel, "financeRolesMapper");
+        mapperModel = getSubcomponentByName(realm, providerModel, "financeRolesMapper");
         if (mapperModel != null) {
             mapperModel.getConfig().putSingle(RoleMapperConfig.MODE, mode.toString());
             realm.updateComponent(mapperModel);
@@ -196,7 +196,7 @@ public class LDAPTestUtils {
         }
     }
 
-    public static ComponentModel getComponentByName(RealmModel realm, ComponentModel providerModel, String name) {
+    public static ComponentModel getSubcomponentByName(RealmModel realm, ComponentModel providerModel, String name) {
         List<ComponentModel> components = realm.getComponents(providerModel.getId(), LDAPStorageMapper.class.getName());
         for (ComponentModel component : components) {
             if (component.getName().equals(name)) {
@@ -207,7 +207,7 @@ public class LDAPTestUtils {
     }
 
     public static void addOrUpdateGroupMapper(RealmModel realm, ComponentModel providerModel, LDAPGroupMapperMode mode, String descriptionAttrName, String... otherConfigOptions) {
-        ComponentModel mapperModel = getComponentByName(realm, providerModel, "groupsMapper");
+        ComponentModel mapperModel = getSubcomponentByName(realm, providerModel, "groupsMapper");
         if (mapperModel != null) {
             mapperModel.getConfig().putSingle(GroupMapperConfig.MODE, mode.toString());
             updateGroupMapperConfigOptions(mapperModel, otherConfigOptions);
@@ -235,12 +235,12 @@ public class LDAPTestUtils {
     // End CRUD model mappers
 
     public static void syncRolesFromLDAP(RealmModel realm, LDAPStorageProvider ldapProvider, ComponentModel providerModel) {
-        ComponentModel mapperModel = getComponentByName(realm, providerModel, "realmRolesMapper");
+        ComponentModel mapperModel = getSubcomponentByName(realm, providerModel, "realmRolesMapper");
         RoleLDAPStorageMapper roleMapper = getRoleMapper(mapperModel, ldapProvider, realm);
 
         roleMapper.syncDataFromFederationProviderToKeycloak();
 
-        mapperModel = getComponentByName(realm, providerModel, "financeRolesMapper");
+        mapperModel = getSubcomponentByName(realm, providerModel, "financeRolesMapper");
         roleMapper = getRoleMapper(mapperModel, ldapProvider, realm);
         roleMapper.syncDataFromFederationProviderToKeycloak();
     }
@@ -256,7 +256,7 @@ public class LDAPTestUtils {
     }
 
     public static void removeAllLDAPRoles(KeycloakSession session, RealmModel appRealm, ComponentModel ldapModel, String mapperName) {
-        ComponentModel mapperModel = getComponentByName(appRealm, ldapModel, mapperName);
+        ComponentModel mapperModel = getSubcomponentByName(appRealm, ldapModel, mapperName);
         LDAPStorageProvider ldapProvider = LDAPTestUtils.getLdapProvider(session, ldapModel);
         LDAPQuery roleQuery = getRoleMapper(mapperModel, ldapProvider, appRealm).createRoleQuery();
         List<LDAPObject> ldapRoles = roleQuery.getResultList();
@@ -266,7 +266,7 @@ public class LDAPTestUtils {
     }
 
     public static void removeAllLDAPGroups(KeycloakSession session, RealmModel appRealm, ComponentModel ldapModel, String mapperName) {
-        ComponentModel mapperModel = getComponentByName(appRealm, ldapModel, mapperName);
+        ComponentModel mapperModel = getSubcomponentByName(appRealm, ldapModel, mapperName);
         LDAPStorageProvider ldapProvider = LDAPTestUtils.getLdapProvider(session, ldapModel);
         LDAPQuery roleQuery = getGroupMapper(mapperModel, ldapProvider, appRealm).createGroupQuery();
         List<LDAPObject> ldapRoles = roleQuery.getResultList();
@@ -276,13 +276,13 @@ public class LDAPTestUtils {
     }
 
     public static void createLDAPRole(KeycloakSession session, RealmModel appRealm, ComponentModel ldapModel, String mapperName, String roleName) {
-        ComponentModel mapperModel = getComponentByName(appRealm, ldapModel, mapperName);
+        ComponentModel mapperModel = getSubcomponentByName(appRealm, ldapModel, mapperName);
         LDAPStorageProvider ldapProvider = LDAPTestUtils.getLdapProvider(session, ldapModel);
         getRoleMapper(mapperModel, ldapProvider, appRealm).createLDAPRole(roleName);
     }
 
     public static LDAPObject createLDAPGroup(KeycloakSession session, RealmModel appRealm, ComponentModel ldapModel, String groupName, String... additionalAttrs) {
-        ComponentModel mapperModel = getComponentByName(appRealm, ldapModel, "groupsMapper");
+        ComponentModel mapperModel = getSubcomponentByName(appRealm, ldapModel, "groupsMapper");
         LDAPStorageProvider ldapProvider = LDAPTestUtils.getLdapProvider(session, ldapModel);
 
         Map<String, Set<String>> additAttrs = new HashMap<>();
@@ -305,6 +305,12 @@ public class LDAPTestUtils {
 
 
     public static void assertSyncEquals(SynchronizationResult syncResult, int expectedAdded, int expectedUpdated, int expectedRemoved, int expectedFailed) {
+        Assert.assertEquals(expectedAdded, syncResult.getAdded());
+        Assert.assertEquals(expectedUpdated, syncResult.getUpdated());
+        Assert.assertEquals(expectedRemoved, syncResult.getRemoved());
+        Assert.assertEquals(expectedFailed, syncResult.getFailed());
+    }
+    public static void assertSyncEquals(SynchronizationResultRepresentation syncResult, int expectedAdded, int expectedUpdated, int expectedRemoved, int expectedFailed) {
         Assert.assertEquals(expectedAdded, syncResult.getAdded());
         Assert.assertEquals(expectedUpdated, syncResult.getUpdated());
         Assert.assertEquals(expectedRemoved, syncResult.getRemoved());

@@ -67,9 +67,16 @@ public interface RealmModel extends RoleContainerModel {
         KeycloakSession getKeycloakSession();
     }
 
-    interface UserFederationProviderCreationEvent extends ProviderEvent {
-        UserFederationProviderModel getCreatedFederationProvider();
+    interface IdentityProviderUpdatedEvent extends ProviderEvent {
         RealmModel getRealm();
+        IdentityProviderModel getUpdatedIdentityProvider();
+        KeycloakSession getKeycloakSession();
+    }
+
+    interface IdentityProviderRemovedEvent extends ProviderEvent {
+        RealmModel getRealm();
+        IdentityProviderModel getRemovedIdentityProvider();
+        KeycloakSession getKeycloakSession();
     }
 
     String getId();
@@ -309,21 +316,6 @@ public interface RealmModel extends RoleContainerModel {
         Collections.sort(list, UserStorageProviderModel.comparator);
         return list;
     }
-
-    // Should return list sorted by UserFederationProviderModel.priority
-    List<UserFederationProviderModel> getUserFederationProviders();
-    UserFederationProviderModel addUserFederationProvider(String providerName, Map<String, String> config, int priority, String displayName, int fullSyncPeriod, int changedSyncPeriod, int lastSync);
-    void updateUserFederationProvider(UserFederationProviderModel provider);
-    void removeUserFederationProvider(UserFederationProviderModel provider);
-    void setUserFederationProviders(List<UserFederationProviderModel> providers);
-
-    Set<UserFederationMapperModel> getUserFederationMappers();
-    Set<UserFederationMapperModel> getUserFederationMappersByFederationProvider(String federationProviderId);
-    UserFederationMapperModel addUserFederationMapper(UserFederationMapperModel mapper);
-    void removeUserFederationMapper(UserFederationMapperModel mapper);
-    void updateUserFederationMapper(UserFederationMapperModel mapper);
-    UserFederationMapperModel getUserFederationMapperById(String id);
-    UserFederationMapperModel getUserFederationMapperByName(String federationProviderId, String name);
 
     String getLoginTheme();
 

@@ -65,7 +65,6 @@ import org.keycloak.testsuite.rule.WebRule;
 import org.openqa.selenium.WebDriver;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -88,7 +87,7 @@ public class LDAPProvidersIntegrationTest {
 
             MultivaluedHashMap<String,String> ldapConfig = LDAPTestUtils.getLdapRuleConfig(ldapRule);
             ldapConfig.putSingle(LDAPConstants.SYNC_REGISTRATIONS, "true");
-            ldapConfig.putSingle(LDAPConstants.EDIT_MODE, LDAPStorageProviderFactory.EditMode.WRITABLE.toString());
+            ldapConfig.putSingle(LDAPConstants.EDIT_MODE, UserStorageProvider.EditMode.WRITABLE.toString());
             UserStorageProviderModel model = new UserStorageProviderModel();
             model.setLastSync(0);
             model.setChangedSyncPeriod(-1);
@@ -150,6 +149,27 @@ public class LDAPProvidersIntegrationTest {
 //
 //    }
 
+    /**
+     * KEYCLOAK-3986
+     *
+     */
+    @Test
+    public void testSyncRegistrationOff() {
+        KeycloakSession session = keycloakRule.startSession();
+        try {
+            RealmManager manager = new RealmManager(session);
+            RealmModel appRealm = manager.getRealm("test");
+            UserStorageProviderModel newModel = new UserStorageProviderModel(ldapModel);
+            newModel.getConfig().putSingle(LDAPConstants.SYNC_REGISTRATIONS, "false");
+            appRealm.updateComponent(newModel);
+            UserModel newUser1 = session.users().addUser(appRealm, "newUser1");
+            Assert.assertNull(newUser1.getFederationLink());
+        } finally {
+            keycloakRule.stopSession(session, false);
+        }
+
+
+    }
 
     @Test
     public void caseInSensitiveImport() {
@@ -384,7 +404,7 @@ public class LDAPProvidersIntegrationTest {
             LDAPObject johnZip = LDAPTestUtils.addLDAPUser(ldapFedProvider, appRealm, "johnzip", "John", "Zip", "johnzip@email.org", null, "12398");
 
             // Remove default zipcode mapper and add the mapper for "POstalCode" to test case sensitivity
-            ComponentModel currentZipMapper = LDAPTestUtils.getComponentByName(appRealm, ldapModel, "zipCodeMapper");
+            ComponentModel currentZipMapper = LDAPTestUtils.getSubcomponentByName(appRealm, ldapModel, "zipCodeMapper");
             appRealm.removeComponent(currentZipMapper);
             LDAPTestUtils.addUserAttributeMapper(appRealm, ldapModel, "zipCodeMapper-cs", "postal_code", "POstalCode");
 
@@ -481,12 +501,12 @@ public class LDAPProvidersIntegrationTest {
             RealmModel appRealm = new RealmManager(session).getRealmByName("test");
 
             // Update postalCode mapper to always read the value from LDAP
-            ComponentModel zipMapper = LDAPTestUtils.getComponentByName(appRealm, ldapModel, "zipCodeMapper");
+            ComponentModel zipMapper = LDAPTestUtils.getSubcomponentByName(appRealm, ldapModel, "zipCodeMapper");
             zipMapper.getConfig().putSingle(UserAttributeLDAPStorageMapper.ALWAYS_READ_VALUE_FROM_LDAP, "true");
             appRealm.updateComponent(zipMapper);
 
             // Update lastName mapper to read the value from Keycloak DB
-            ComponentModel lastNameMapper = LDAPTestUtils.getComponentByName(appRealm, ldapModel, "last name");
+            ComponentModel lastNameMapper = LDAPTestUtils.getSubcomponentByName(appRealm, ldapModel, "last name");
             lastNameMapper.getConfig().putSingle(UserAttributeLDAPStorageMapper.ALWAYS_READ_VALUE_FROM_LDAP, "false");
             appRealm.updateComponent(lastNameMapper);
 
@@ -528,7 +548,7 @@ public class LDAPProvidersIntegrationTest {
             LDAPTestUtils.addLDAPUser(ldapFedProvider, appRealm, "fullname", "James Dee", "Dee", "fullname@email.org", null, "4578");
 
             // add fullname mapper to the provider and remove "firstNameMapper". For this test, we will simply map full name to the LDAP attribute, which was before firstName ( "givenName" on active directory, "cn" on other LDAP servers)
-            firstNameMapper =  LDAPTestUtils.getComponentByName(appRealm, ldapModel, "first name");
+            firstNameMapper =  LDAPTestUtils.getSubcomponentByName(appRealm, ldapModel, "first name");
             String ldapFirstNameAttributeName = firstNameMapper.getConfig().getFirst(UserAttributeLDAPStorageMapper.LDAP_ATTRIBUTE);
             appRealm.removeComponent(firstNameMapper);
 
@@ -548,7 +568,7 @@ public class LDAPProvidersIntegrationTest {
             LDAPTestUtils.assertUserImported(session.users(), appRealm, "fullname", "James", "Dee", "fullname@email.org", "4578");
 
             // change mapper to writeOnly
-            ComponentModel fullNameMapperModel = LDAPTestUtils.getComponentByName(appRealm, ldapModel, "full name");
+            ComponentModel fullNameMapperModel = LDAPTestUtils.getSubcomponentByName(appRealm, ldapModel, "full name");
             fullNameMapperModel.getConfig().putSingle(FullNameLDAPStorageMapper.WRITE_ONLY, "true");
             appRealm.updateComponent(fullNameMapperModel);
         } finally {
@@ -582,7 +602,7 @@ public class LDAPProvidersIntegrationTest {
             session.users().removeUser(appRealm, fullnameUser);
 
             // Revert mappers
-            ComponentModel fullNameMapperModel = LDAPTestUtils.getComponentByName(appRealm, ldapModel, "full name");
+            ComponentModel fullNameMapperModel = LDAPTestUtils.getSubcomponentByName(appRealm, ldapModel, "full name");
             appRealm.removeComponent(fullNameMapperModel);
 
             firstNameMapper.setId(null);
@@ -629,7 +649,7 @@ public class LDAPProvidersIntegrationTest {
             }
 
             // Revert mappers
-            ComponentModel hardcodedMapperModel = LDAPTestUtils.getComponentByName(appRealm, ldapModel, "hardcoded role");
+            ComponentModel hardcodedMapperModel = LDAPTestUtils.getSubcomponentByName(appRealm, ldapModel, "hardcoded role");
             appRealm.removeComponent(hardcodedMapperModel);
         } finally {
             keycloakRule.stopSession(session, true);
@@ -670,7 +690,7 @@ public class LDAPProvidersIntegrationTest {
             RealmModel appRealm = session.realms().getRealmByName("test");
 
             UserStorageProviderModel model = new UserStorageProviderModel(ldapModel);
-            model.getConfig().putSingle(LDAPConstants.EDIT_MODE, LDAPStorageProviderFactory.EditMode.READ_ONLY.toString());
+            model.getConfig().putSingle(LDAPConstants.EDIT_MODE, UserStorageProvider.EditMode.READ_ONLY.toString());
             appRealm.updateComponent(model);
             UserModel user = session.users().getUserByUsername("johnkeycloak", appRealm);
             Assert.assertNotNull(user);
@@ -710,7 +730,7 @@ public class LDAPProvidersIntegrationTest {
         session = keycloakRule.startSession();
         try {
             RealmModel appRealm = session.realms().getRealmByName("test");
-            Assert.assertEquals(LDAPStorageProviderFactory.EditMode.WRITABLE.toString(), appRealm.getComponent(ldapModel.getId()).getConfig().getFirst(LDAPConstants.EDIT_MODE));
+            Assert.assertEquals(UserStorageProvider.EditMode.WRITABLE.toString(), appRealm.getComponent(ldapModel.getId()).getConfig().getFirst(LDAPConstants.EDIT_MODE));
         } finally {
             keycloakRule.stopSession(session, false);
         }
@@ -829,7 +849,7 @@ public class LDAPProvidersIntegrationTest {
             RealmModel appRealm = session.realms().getRealmByName("test");
 
             UserStorageProviderModel model = new UserStorageProviderModel(ldapModel);
-            model.getConfig().putSingle(LDAPConstants.EDIT_MODE, LDAPStorageProviderFactory.EditMode.UNSYNCED.toString());
+            model.getConfig().putSingle(LDAPConstants.EDIT_MODE, UserStorageProvider.EditMode.UNSYNCED.toString());
             appRealm.updateComponent(model);
             UserModel user = session.users().getUserByUsername("johnkeycloak", appRealm);
             Assert.assertNotNull(user);
@@ -860,7 +880,7 @@ public class LDAPProvidersIntegrationTest {
         session = keycloakRule.startSession();
         try {
             RealmModel appRealm = session.realms().getRealmByName("test");
-            Assert.assertEquals(LDAPStorageProviderFactory.EditMode.WRITABLE.toString(),  appRealm.getComponent(ldapModel.getId()).getConfig().getFirst(LDAPConstants.EDIT_MODE));
+            Assert.assertEquals(UserStorageProvider.EditMode.WRITABLE.toString(),  appRealm.getComponent(ldapModel.getId()).getConfig().getFirst(LDAPConstants.EDIT_MODE));
         } finally {
             keycloakRule.stopSession(session, false);
         }

@@ -36,13 +36,13 @@ import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.exportimport.ClientDescriptionConverter;
 import org.keycloak.exportimport.ClientDescriptionConverterFactory;
+import org.keycloak.keys.PublicKeyStorageProvider;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.Constants;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.RealmModel;
-import org.keycloak.models.UserFederationProviderModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.cache.CacheRealmProvider;
 import org.keycloak.models.cache.UserCache;
@@ -66,8 +66,9 @@ import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.managers.LDAPConnectionTestManager;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.managers.ResourceAdminManager;
-import org.keycloak.services.managers.UsersSyncManager;
+import org.keycloak.services.managers.UserStorageSyncManager;
 import org.keycloak.services.resources.admin.RealmAuth.Resource;
+import org.keycloak.storage.UserStorageProviderModel;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -304,9 +305,9 @@ public class RealmAdminResource {
             RepresentationToModel.updateRealm(rep, realm, session);
 
             // Refresh periodic sync tasks for configured federationProviders
-            List<UserFederationProviderModel> federationProviders = realm.getUserFederationProviders();
-            UsersSyncManager usersSyncManager = new UsersSyncManager();
-            for (final UserFederationProviderModel fedProvider : federationProviders) {
+            List<UserStorageProviderModel> federationProviders = realm.getUserStorageProviders();
+            UserStorageSyncManager usersSyncManager = new UserStorageSyncManager();
+            for (final UserStorageProviderModel fedProvider : federationProviders) {
                 usersSyncManager.notifyToRefreshPeriodicSync(session, realm, fedProvider, false);
             }
 
@@ -346,14 +347,6 @@ public class RealmAdminResource {
         ResteasyProviderFactory.getInstance().injectProperties(users);
         //resourceContext.initResource(users);
         return users;
-    }
-
-    @Path("user-federation")
-    public UserFederationProvidersResource userFederation() {
-        UserFederationProvidersResource fed = new UserFederationProvidersResource(realm, auth, adminEvent);
-        ResteasyProviderFactory.getInstance().injectProperties(fed);
-        //resourceContext.initResource(fed);
-        return fed;
     }
 
     @Path("user-storage")
@@ -876,6 +869,23 @@ public class RealmAdminResource {
         UserCache cache = session.getProvider(UserCache.class);
         if (cache != null) {
             cache.clear();
+        }
+
+        adminEvent.operation(OperationType.ACTION).resourcePath(uriInfo).success();
+    }
+
+    /**
+     * Clear cache of external public keys (Public keys of clients or Identity providers)
+     *
+     */
+    @Path("clear-keys-cache")
+    @POST
+    public void clearKeysCache() {
+        auth.requireManage();
+
+        PublicKeyStorageProvider cache = session.getProvider(PublicKeyStorageProvider.class);
+        if (cache != null) {
+            cache.clearCache();
         }
 
         adminEvent.operation(OperationType.ACTION).resourcePath(uriInfo).success();

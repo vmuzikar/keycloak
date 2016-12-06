@@ -32,18 +32,13 @@ import org.keycloak.events.admin.AdminEventQuery;
 import org.keycloak.events.admin.AuthDetails;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
-import org.keycloak.keys.KeyProvider;
-import org.keycloak.keys.KeyProviderFactory;
 import org.keycloak.models.AuthenticationFlowModel;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.FederatedIdentityModel;
-import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RealmProvider;
 import org.keycloak.models.UserCredentialModel;
-import org.keycloak.models.UserFederationProvider;
-import org.keycloak.models.UserFederationProviderFactory;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserProvider;
 import org.keycloak.models.UserSessionModel;
@@ -54,15 +49,17 @@ import org.keycloak.representations.idm.AuthDetailsRepresentation;
 import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
 import org.keycloak.representations.idm.EventRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.keycloak.services.managers.ClientSessionCode;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.resource.RealmResourceProvider;
+import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.testsuite.components.TestProvider;
 import org.keycloak.testsuite.components.TestProviderFactory;
 import org.keycloak.testsuite.events.EventsListenerProvider;
+import org.keycloak.testsuite.federation.DummyUserFederationProviderFactory;
 import org.keycloak.testsuite.forms.PassThroughAuthenticator;
 import org.keycloak.testsuite.forms.PassThroughClientAuthenticator;
 import org.keycloak.testsuite.rest.representation.AuthenticatorState;
+import org.keycloak.testsuite.rest.resource.TestCacheResource;
 import org.keycloak.testsuite.rest.resource.TestingExportImportResource;
 
 import javax.ws.rs.Consumes;
@@ -520,14 +517,11 @@ public class TestingResourceProvider implements RealmResourceProvider {
         return details;
     }
 
-    @GET
-    @Path("/cache/{cache}/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public boolean isCached(@PathParam("cache") String cacheName, @PathParam("id") String id) {
-        InfinispanConnectionProvider provider = session.getProvider(InfinispanConnectionProvider.class);
-        Cache<Object, Object> cache = provider.getCache(cacheName);
-        return cache.containsKey(id);
+    @Path("/cache/{cache}")
+    public TestCacheResource getCacheResource(@PathParam("cache") String cacheName) {
+        return new TestCacheResource(session, cacheName);
     }
+
 
     @Override
     public void close() {
@@ -580,8 +574,8 @@ public class TestingResourceProvider implements RealmResourceProvider {
     public UserRepresentation getUserByUsernameFromFedProviderFactory(@QueryParam("realmName") String realmName,
                                                                       @QueryParam("userName") String userName) {
         RealmModel realm = getRealmByName(realmName);
-        UserFederationProviderFactory factory = (UserFederationProviderFactory)session.getKeycloakSessionFactory().getProviderFactory(UserFederationProvider.class, "dummy");
-        UserModel user = factory.getInstance(session, null).getUserByUsername(realm, userName);
+        DummyUserFederationProviderFactory factory = (DummyUserFederationProviderFactory)session.getKeycloakSessionFactory().getProviderFactory(UserStorageProvider.class, "dummy");
+        UserModel user = factory.create(session, null).getUserByUsername(userName, realm);
         if (user == null) return null;
         return ModelToRepresentation.toRepresentation(session, realm, user);
     }

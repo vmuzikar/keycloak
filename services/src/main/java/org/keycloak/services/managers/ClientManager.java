@@ -156,7 +156,7 @@ public class ClientManager {
             logger.debugf("Creating service account user '%s'", username);
 
             // Don't use federation for service account user
-            UserModel user = realmManager.getSession().userStorage().addUser(client.getRealm(), username);
+            UserModel user = realmManager.getSession().userLocalStorage().addUser(client.getRealm(), username);
             user.setEnabled(true);
             user.setEmail(username + "@placeholder.org");
             user.setServiceAccountClientLink(client.getId());
@@ -192,6 +192,17 @@ public class ClientManager {
                     false, "",
                     true, true);
             client.addProtocolMapper(protocolMapper);
+        }
+    }
+
+    public void clientIdChanged(ClientModel client, String newClientId) {
+        logger.debugf("Updating clientId from '%s' to '%s'", client.getClientId(), newClientId);
+
+        UserModel serviceAccountUser = realmManager.getSession().users().getServiceAccount(client);
+        if (serviceAccountUser != null) {
+            String username = ServiceAccountConstants.SERVICE_ACCOUNT_USER_PREFIX + newClientId;
+            serviceAccountUser.setUsername(username);
+            serviceAccountUser.setEmail(username + "@placeholder.org");
         }
     }
 

@@ -19,6 +19,7 @@ package org.keycloak.keys.infinispan;
 
 import java.security.PublicKey;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -27,9 +28,14 @@ import java.util.concurrent.FutureTask;
 
 import org.infinispan.Cache;
 import org.jboss.logging.Logger;
+import org.keycloak.cluster.ClusterProvider;
 import org.keycloak.common.util.Time;
 import org.keycloak.keys.PublicKeyLoader;
 import org.keycloak.keys.PublicKeyStorageProvider;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakTransaction;
+import org.keycloak.models.cache.infinispan.ClearCacheEvent;
+import org.keycloak.models.cache.infinispan.InfinispanCacheRealmProviderFactory;
 
 
 /**
@@ -39,16 +45,85 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
 
     private static final Logger log = Logger.getLogger(InfinispanPublicKeyStorageProvider.class);
 
+    private final KeycloakSession session;
+
     private final Cache<String, PublicKeysEntry> keys;
 
     private final Map<String, FutureTask<PublicKeysEntry>> tasksInProgress;
 
     private final int minTimeBetweenRequests ;
 
-    public InfinispanPublicKeyStorageProvider(Cache<String, PublicKeysEntry> keys, Map<String, FutureTask<PublicKeysEntry>> tasksInProgress, int minTimeBetweenRequests) {
+    private Set<String> invalidations = new HashSet<>();
+
+    private boolean transactionEnlisted = false;
+
+    public InfinispanPublicKeyStorageProvider(KeycloakSession session, Cache<String, PublicKeysEntry> keys, Map<String, FutureTask<PublicKeysEntry>> tasksInProgress, int minTimeBetweenRequests) {
+        this.session = session;
         this.keys = keys;
         this.tasksInProgress = tasksInProgress;
         this.minTimeBetweenRequests = minTimeBetweenRequests;
+    }
+
+
+    @Override
+    public void clearCache() {
+        keys.clear();
+        ClusterProvider cluster = session.getProvider(ClusterProvider.class);
+        cluster.notify(InfinispanPublicKeyStorageProviderFactory.KEYS_CLEAR_CACHE_EVENTS, new ClearCacheEvent(), true);
+    }
+
+
+    void addInvalidation(String cacheKey) {
+        if (!transactionEnlisted) {
+            session.getTransactionManager().enlistAfterCompletion(getAfterTransaction());
+            transactionEnlisted = true;
+        }
+
+        this.invalidations.add(cacheKey);
+    }
+
+
+    protected KeycloakTransaction getAfterTransaction() {
+        return new KeycloakTransaction() {
+
+            @Override
+            public void begin() {
+            }
+
+            @Override
+            public void commit() {
+                runInvalidations();
+            }
+
+            @Override
+            public void rollback() {
+                runInvalidations();
+            }
+
+            @Override
+            public void setRollbackOnly() {
+            }
+
+            @Override
+            public boolean getRollbackOnly() {
+                return false;
+            }
+
+            @Override
+            public boolean isActive() {
+                return true;
+            }
+        };
+    }
+
+
+    protected void runInvalidations() {
+        ClusterProvider cluster = session.getProvider(ClusterProvider.class);
+
+        for (String cacheKey : invalidations) {
+            keys.remove(cacheKey);
+            cluster.notify(cacheKey, PublicKeyStorageInvalidationEvent.create(cacheKey), true);
+        }
     }
 
 

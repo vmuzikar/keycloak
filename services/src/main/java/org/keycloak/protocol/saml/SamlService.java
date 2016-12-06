@@ -248,9 +248,9 @@ public class SamlService extends AuthorizationEndpointBase {
             String bindingType = getBindingType(requestAbstractType);
             if (samlClient.forcePostBinding())
                 bindingType = SamlProtocol.SAML_POST_BINDING;
-            String redirect = null;
+            String redirect;
             URI redirectUri = requestAbstractType.getAssertionConsumerServiceURL();
-            if (redirectUri != null && !"null".equals(redirectUri)) { // "null" is for testing purposes
+            if (redirectUri != null && ! "null".equals(redirectUri.toString())) { // "null" is for testing purposes
                 redirect = RedirectUtils.verifyRedirectUri(uriInfo, redirectUri.toString(), realm, client);
             } else {
                 if (bindingType.equals(SamlProtocol.SAML_POST_BINDING)) {
@@ -279,8 +279,9 @@ public class SamlService extends AuthorizationEndpointBase {
 
             // Handle NameIDPolicy from SP
             NameIDPolicyType nameIdPolicy = requestAbstractType.getNameIDPolicy();
-            if (nameIdPolicy != null && !samlClient.forceNameIDFormat()) {
-                String nameIdFormat = nameIdPolicy.getFormat().toString();
+            final URI nameIdFormatUri = nameIdPolicy == null ? null : nameIdPolicy.getFormat();
+            if (nameIdFormatUri != null && ! samlClient.forceNameIDFormat()) {
+                String nameIdFormat = nameIdFormatUri.toString();
                 // TODO: Handle AllowCreate too, relevant for persistent NameID.
                 if (isSupportedNameIdFormat(nameIdFormat)) {
                     clientSession.setNote(GeneralConstants.NAMEID_FORMAT, nameIdFormat);
@@ -345,7 +346,7 @@ public class SamlService extends AuthorizationEndpointBase {
             AuthenticationManager.AuthResult authResult = authManager.authenticateIdentityCookie(session, realm, false);
             if (authResult != null) {
                 String logoutBinding = getBindingType();
-                if ("true".equals(samlClient.forcePostBinding()))
+                if (samlClient.forcePostBinding())
                     logoutBinding = SamlProtocol.SAML_POST_BINDING;
                 boolean postBinding = Objects.equals(SamlProtocol.SAML_POST_BINDING, logoutBinding);
 
@@ -611,12 +612,29 @@ public class SamlService extends AuthorizationEndpointBase {
             return ErrorPage.error(session, Messages.INVALID_REDIRECT_URI);
         }
 
+        ClientSessionModel clientSession = createClientSessionForIdpInitiatedSso(this.session, this.realm, client, relayState);
+
+        return newBrowserAuthentication(clientSession, false, false);
+    }
+
+    /**
+     * Creates a client session object for SAML IdP-initiated SSO session.
+     * The session takes the parameters from from client definition,
+     * namely binding type and redirect URL.
+     *
+     * @param session KC session
+     * @param realm Realm to create client session in
+     * @param client Client to create client session for
+     * @param relayState Optional relay state - free field as per SAML specification
+     * @return
+     */
+    public static ClientSessionModel createClientSessionForIdpInitiatedSso(KeycloakSession session, RealmModel realm, ClientModel client, String relayState) {
         String bindingType = SamlProtocol.SAML_POST_BINDING;
         if (client.getManagementUrl() == null && client.getAttribute(SamlProtocol.SAML_ASSERTION_CONSUMER_URL_POST_ATTRIBUTE) == null && client.getAttribute(SamlProtocol.SAML_ASSERTION_CONSUMER_URL_REDIRECT_ATTRIBUTE) != null) {
             bindingType = SamlProtocol.SAML_REDIRECT_BINDING;
         }
 
-        String redirect = null;
+        String redirect;
         if (bindingType.equals(SamlProtocol.SAML_REDIRECT_BINDING)) {
             redirect = client.getAttribute(SamlProtocol.SAML_ASSERTION_CONSUMER_URL_REDIRECT_ATTRIBUTE);
         } else {
@@ -640,8 +658,7 @@ public class SamlService extends AuthorizationEndpointBase {
             clientSession.setNote(GeneralConstants.RELAY_STATE, relayState);
         }
 
-        return newBrowserAuthentication(clientSession, false, false);
-
+        return clientSession;
     }
 
     @POST

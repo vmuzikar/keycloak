@@ -49,6 +49,7 @@
                 { "type" : "password",
                     "value" : "password" }
             ],
+            "realmRoles": [ "realm-composite-role" ],
             "groups": [
                 "/top"
             ]
@@ -75,6 +76,14 @@
             {
                 "name": "admin",
                 "description": "Administrator privileges"
+            },
+            {
+                "name": "realm-composite-role",
+                "description": "Realm composite role containing user role",
+                "composite": true,
+                "composites": {
+                    "realm": ["user"]
+                }
             }
         ]
     },
@@ -117,6 +126,13 @@
 
     ],
     "clients": [
+        {
+            "clientId": "customer-db",
+            "enabled": true,
+            "adminUrl": "/customer-db",
+            "baseUrl": "/customer-db",
+            "bearerOnly": true
+        },
         {
             "clientId": "customer-portal",
             "enabled": true,
@@ -172,6 +188,16 @@
             "baseUrl": "/product-portal",
             "redirectUris": [
                 "/product-portal/*"
+            ],
+            "secret": "password"
+        },
+        {
+            "clientId": "product-portal-subsystem",
+            "enabled": true,
+            "adminUrl": "/product-portal-subsystem",
+            "baseUrl": "/product-portal-subsystem",
+            "redirectUris": [
+                "/product-portal-subsystem/*"
             ],
             "secret": "password"
         },

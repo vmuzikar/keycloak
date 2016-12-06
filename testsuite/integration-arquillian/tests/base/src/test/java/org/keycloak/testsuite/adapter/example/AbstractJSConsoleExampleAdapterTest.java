@@ -22,8 +22,10 @@ import org.jboss.arquillian.graphene.page.Page;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Test;
 import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testsuite.adapter.AbstractExampleAdapterTest;
 import org.keycloak.testsuite.adapter.page.JSConsoleTestApp;
 import org.keycloak.testsuite.adapter.page.JSDatabaseTestApp;
@@ -190,6 +192,15 @@ public abstract class AbstractJSConsoleExampleAdapterTest extends AbstractExampl
     }
 
     @Test
+    public void testCertEndpoint() {
+        logInAndInit("standard");
+        waitUntilElement(jsConsoleTestAppPage.getOutputElement()).text().contains("Init Success (Authenticated)");
+
+        jsConsoleTestAppPage.sendCertRequest();
+        waitUntilElement(jsConsoleTestAppPage.getOutputElement()).text().contains("Success");
+    }
+
+    @Test
     public void grantBrowserBasedApp() {
         testRealmPage.setAuthRealm(EXAMPLE);
         testRealmLoginPage.setAuthRealm(EXAMPLE);
@@ -323,6 +334,16 @@ public abstract class AbstractJSConsoleExampleAdapterTest extends AbstractExampl
     }
 
     @Test
+    public void implicitFlowCertEndpoint() {
+        setImplicitFlowForClient();
+        logInAndInit("implicit");
+        waitUntilElement(jsConsoleTestAppPage.getOutputElement()).text().contains("Init Success (Authenticated)");
+
+        jsConsoleTestAppPage.sendCertRequest();
+        waitUntilElement(jsConsoleTestAppPage.getOutputElement()).text().contains("Success");
+    }
+
+    @Test
     public void testBearerRequest() {
         jsConsoleTestAppPage.navigateTo();
         jsConsoleTestAppPage.init();
@@ -393,6 +414,21 @@ public abstract class AbstractJSConsoleExampleAdapterTest extends AbstractExampl
         assertTrue("TimeSkew was: " + timeSkew + ", but should be ~-40", timeSkew + 40  <= TIME_SKEW_TOLERANCE);
     }
 
+    @Test
+    public void testLocationHeaderInResponse() {
+        logInAndInit("standard");
+        waitUntilElement(jsConsoleTestAppPage.getOutputElement()).text().contains("Init Success (Authenticated)");
+
+        jsConsoleTestAppPage.createUserRequest();
+
+        UsersResource userResource = testRealmResource().users();
+
+        List<UserRepresentation> users = userResource.search("mhajas", 0, 1);
+        assertEquals("There should be created user mhajas", 1, users.size());
+        waitUntilElement(jsConsoleTestAppPage.getOutputElement()).text()
+                .contains("location: " + authServerContextRootPage.toString() + "/auth/admin/realms/" + EXAMPLE + "/users/" + users.get(0).getId());
+    }
+
     private void setImplicitFlowForClient() {
         ClientResource clientResource = ApiUtil.findClientResourceByClientId(testRealmResource(), "js-console");
         ClientRepresentation client = clientResource.toRepresentation();
@@ -406,6 +442,7 @@ public abstract class AbstractJSConsoleExampleAdapterTest extends AbstractExampl
         jsConsoleTestAppPage.setFlow(flow);
         jsConsoleTestAppPage.init();
         jsConsoleTestAppPage.logIn();
+        waitUntilElement(By.xpath("//body")).is().present();
         testRealmLoginPage.form().login(user, "password");
         jsConsoleTestAppPage.setFlow(flow);
         jsConsoleTestAppPage.init();

@@ -32,7 +32,7 @@
     </description>
     <groupId>org.keycloak</groupId>
     <artifactId>keycloak-parent</artifactId>
-    <version>2.4.0.CR1-SNAPSHOT</version>
+    <version>2.5.0.Final-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -117,7 +117,7 @@
         <jmeter.analysis.plugin.version>1.0.4</jmeter.analysis.plugin.version>
         <minify.plugin.version>1.7.2</minify.plugin.version>
         <osgi.bundle.plugin.version>2.3.7</osgi.bundle.plugin.version>
-        <wildfly.plugin.version>1.0.1.Final</wildfly.plugin.version>
+        <wildfly.plugin.version>1.1.0.Beta1</wildfly.plugin.version>
         <nexus.staging.plugin.version>1.6.5</nexus.staging.plugin.version>
 
         <!-- Surefire Settings -->
@@ -1296,7 +1296,7 @@
 
             <dependency>
                 <groupId>org.keycloak</groupId>
-                <artifactId>federation-properties-example</artifactId>
+                <artifactId>user-storage-properties-example</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

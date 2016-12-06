@@ -172,9 +172,6 @@ public interface RealmResource {
     @Path("attack-detection")
     AttackDetectionResource attackDetection();
 
-    @Path("user-federation")
-    UserFederationProvidersResource userFederation();
-
     @Path("testLDAPConnection")
     @GET
     @NoCache
@@ -189,6 +186,10 @@ public interface RealmResource {
     @Path("clear-user-cache")
     @POST
     void clearUserCache();
+
+    @Path("clear-keys-cache")
+    @POST
+    void clearKeysCache();
 
     @Path("push-revocation")
     @POST
@@ -206,6 +207,10 @@ public interface RealmResource {
 
     @Path("components")
     ComponentsResource components();
+
+    @Path("user-storage")
+    UserStorageProviderResource userStorage();
+
 
     @Path("keys")
     KeyResource keys();

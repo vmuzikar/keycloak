@@ -197,6 +197,9 @@ module.factory('ComponentUtils', function() {
     var utils = {};
 
     utils.addLastEmptyValueToMultivaluedLists = function(properties, config) {
+        if (!properties) {
+            return;
+        }
 
         for (var i=0 ; i<properties.length ; i++) {
             var prop = properties[i];
@@ -393,59 +396,6 @@ module.service('UserSearchState', function() {
 module.service('LastFlowSelected', function() {
     this.alias = null;
 });
-
-module.factory('UserFederationInstances', function($resource) {
-    return $resource(authUrl + '/admin/realms/:realm/user-federation/instances/:instance', {
-        realm : '@realm',
-        instance : '@instance'
-    },  {
-        update : {
-            method : 'PUT'
-        }
-    });
-});
-
-module.factory('UserFederationProviders', function($resource) {
-    return $resource(authUrl + '/admin/realms/:realm/user-federation/providers/:provider', {
-        realm : '@realm',
-        provider : "@provider"
-    });
-});
-
-module.factory('UserFederationSync', function($resource) {
-    return $resource(authUrl + '/admin/realms/:realm/user-federation/instances/:provider/sync');
-});
-
-module.factory('UserFederationMapperTypes', function($resource) {
-    return $resource(authUrl + '/admin/realms/:realm/user-federation/instances/:provider/mapper-types', {
-        realm : '@realm',
-        provider : '@provider'
-    });
-});
-
-module.factory('UserFederationMappers', function($resource) {
-    return $resource(authUrl + '/admin/realms/:realm/user-federation/instances/:provider/mappers', {
-        realm : '@realm',
-        provider : '@provider'
-    });
-});
-
-module.factory('UserFederationMapper', function($resource) {
-    return $resource(authUrl + '/admin/realms/:realm/user-federation/instances/:provider/mappers/:mapperId', {
-        realm : '@realm',
-        provider : '@provider',
-        mapperId: '@mapperId'
-    }, {
-        update: {
-            method : 'PUT'
-        }
-    });
-});
-
-module.factory('UserFederationMapperSync', function($resource) {
-    return $resource(authUrl + '/admin/realms/:realm/user-federation/instances/:provider/mappers/:mapperId/sync');
-});
-
 
 module.factory('UserSessionStats', function($resource) {
     return $resource(authUrl + '/admin/realms/:realm/users/:user/session-stats', {
@@ -674,6 +624,12 @@ module.factory('RealmClearUserCache', function($resource) {
 
 module.factory('RealmClearRealmCache', function($resource) {
     return $resource(authUrl + '/admin/realms/:realm/clear-realm-cache', {
+        realm : '@realm'
+    });
+});
+
+module.factory('RealmClearKeysCache', function($resource) {
+    return $resource(authUrl + '/admin/realms/:realm/clear-keys-cache', {
         realm : '@realm'
     });
 });

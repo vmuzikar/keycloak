@@ -36,6 +36,7 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.keycloak.common.util.Time;
 import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
@@ -128,7 +129,7 @@ public class InfinispanKeyStorageProviderTest {
 
         @Override
         public void run() {
-            InfinispanPublicKeyStorageProvider provider = new InfinispanPublicKeyStorageProvider(keys, tasksInProgress, minTimeBetweenRequests);
+            InfinispanPublicKeyStorageProvider provider = new InfinispanPublicKeyStorageProvider(null, keys, tasksInProgress, minTimeBetweenRequests);
             provider.getPublicKey(modelKey, "kid1", new SampleLoader(modelKey));
         }
 

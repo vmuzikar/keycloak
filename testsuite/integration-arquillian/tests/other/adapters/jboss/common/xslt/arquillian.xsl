@@ -41,6 +41,7 @@
                     <property name="javaVmArguments">
                         ${app.server.memory.settings}
                         -Djava.net.preferIPv4Stack=true
+                        ${testcoverage.javaagent}
                     </property>
                     <property name="managementProtocol">${app.server.management.protocol}</property>
                     <property name="managementPort">${app.server.management.port}</property>

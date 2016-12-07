@@ -45,7 +45,9 @@
 
     <!--
     HOW TO USE THIS:
-       Run "mvn clean install -Ptest-coverage" in the project's root dir (i.e. "keycloak" dir)
+       Run "mvn clean install -Ptest-coverage,app-server-wildfly" in the project's root dir (i.e. "keycloak" dir);
+       "app-server-wildfly" profile is there to run adapter tests alongside the base testsuite;
+       currently only Wildfly as the app server is supported (auth server is Undertow)
 
     HOW THE TEST COVERAGE WORKS:
        1. The tests are run with Jacoco's -javaagent which generates *.exec report of the run

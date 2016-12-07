@@ -78,6 +78,8 @@
         <testsuite.constants>${project.build.directory}/dependency/test-constants.properties</testsuite.constants>
 
         <skip.add.user.json>false</skip.add.user.json>
+
+        <testcoverage.javaagent/>
     </properties>
 
     <build>
@@ -184,6 +186,8 @@
                             <project.version>${project.version}</project.version>
                             <migration.project.version>${migration.project.version}</migration.project.version>
                             <migration.product.version>${migration.product.version}</migration.product.version>
+
+                            <testcoverage.javaagent>${testcoverage.javaagent}</testcoverage.javaagent>
                         </systemPropertyVariables>
                         <properties>
                             <property>
@@ -896,11 +900,16 @@
                             <artifactId>maven-surefire-plugin</artifactId>
                             <configuration>
                                 <argLine>${jacoco.argline}</argLine>
+                                <testFailureIgnore>true</testFailureIgnore>
                             </configuration>
                         </plugin>
                     </plugins>
                 </pluginManagement>
             </build>
+            <properties>
+                <!-- This is for the arquillian.xml so the container (in this case Wildfly) can be run with the javaagent -->
+                <testcoverage.javaagent>${jacoco.argline}</testcoverage.javaagent>
+            </properties>
         </profile>
         
     </profiles>

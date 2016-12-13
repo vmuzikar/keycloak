@@ -64,7 +64,19 @@ public class LDAPGroupMapperTest {
     private static ComponentModel ldapModel = null;
     private static String descriptionAttrName = null;
 
-    private static KeycloakRule keycloakRule = new KeycloakRule(new KeycloakRule.KeycloakSetup() {
+
+    static class GroupTestKeycloakSetup extends KeycloakRule.KeycloakSetup {
+
+        private final LDAPRule ldapRule;
+
+        ComponentModel ldapModel = null;
+        String descriptionAttrName = null;
+
+
+        public GroupTestKeycloakSetup(LDAPRule ldapRule) {
+            this.ldapRule = ldapRule;
+        }
+
 
         @Override
         public void config(RealmManager manager, RealmModel adminstrationRealm, RealmModel appRealm) {
@@ -97,13 +109,14 @@ public class LDAPGroupMapperTest {
             LDAPObject group1 = LDAPTestUtils.createLDAPGroup(manager.getSession(), appRealm, ldapModel, "group1", descriptionAttrName, "group1 - description");
             LDAPObject group11 = LDAPTestUtils.createLDAPGroup(manager.getSession(), appRealm, ldapModel, "group11");
             LDAPObject group12 = LDAPTestUtils.createLDAPGroup(manager.getSession(), appRealm, ldapModel, "group12", descriptionAttrName, "group12 - description");
+            LDAPObject groupSpecialCharacters = LDAPTestUtils.createLDAPGroup(manager.getSession(), appRealm, ldapModel, "group-spec,ia*l_characžter)s", descriptionAttrName, "group-special-characters");
 
             LDAPUtils.addMember(ldapFedProvider, MembershipType.DN, LDAPConstants.MEMBER, group1, group11, false);
             LDAPUtils.addMember(ldapFedProvider, MembershipType.DN, LDAPConstants.MEMBER, group1, group12, true);
 
             // Sync LDAP groups to Keycloak DB
-            ComponentModel mapperModel = LDAPTestUtils.getSubcomponentByName(appRealm,ldapModel, "groupsMapper");
-            new GroupLDAPStorageMapperFactory().create(session, mapperModel).syncDataFromFederationProviderToKeycloak(mapperModel, ldapFedProvider, session, appRealm);
+            ComponentModel mapperModel = LDAPTestUtils.getSubcomponentByName(appRealm, ldapModel, "groupsMapper");
+            new GroupLDAPStorageMapperFactory().create(session, mapperModel).syncDataFromFederationProviderToKeycloak(appRealm);
 
             // Delete all LDAP users
             LDAPTestUtils.removeAllLDAPUsers(ldapFedProvider, appRealm);
@@ -121,8 +134,22 @@ public class LDAPGroupMapperTest {
             LDAPObject james = LDAPTestUtils.addLDAPUser(ldapFedProvider, appRealm, "jameskeycloak", "James", "Brown", "james@email.org", null, "8910");
             LDAPTestUtils.updateLDAPPassword(ldapFedProvider, james, "Password1");
 
+            LDAPObject james2 = LDAPTestUtils.addLDAPUser(ldapFedProvider, appRealm, "jamees,key*cložak)ppp", "James2", "Brown2", "james2@email.org", null, "89102");
+            LDAPTestUtils.updateLDAPPassword(ldapFedProvider, james2, "Password1");
+
+            postSetup();
         }
-    });
+
+
+        void postSetup() {
+            LDAPGroupMapperTest.ldapModel = this.ldapModel;
+            LDAPGroupMapperTest.descriptionAttrName = this.descriptionAttrName;
+        }
+
+    }
+
+
+    private static KeycloakRule keycloakRule = new KeycloakRule(new GroupTestKeycloakSetup(ldapRule));
 
     @ClassRule
     public static TestRule chain = RuleChain
@@ -220,8 +247,8 @@ public class LDAPGroupMapperTest {
             GroupLDAPStorageMapper groupMapper = LDAPTestUtils.getGroupMapper(mapperModel, ldapProvider, appRealm);
 
             LDAPObject maryLdap = ldapProvider.loadLDAPUserByUsername(appRealm, "marykeycloak");
-            groupMapper.addGroupMappingInLDAP("group1", maryLdap);
-            groupMapper.addGroupMappingInLDAP("group11", maryLdap);
+            groupMapper.addGroupMappingInLDAP(appRealm, "group1", maryLdap);
+            groupMapper.addGroupMappingInLDAP(appRealm, "group11", maryLdap);
 
             // Add some group mapping to model
             mary.joinGroup(group12);
@@ -282,8 +309,8 @@ public class LDAPGroupMapperTest {
             GroupLDAPStorageMapper groupMapper = LDAPTestUtils.getGroupMapper(mapperModel, ldapProvider, appRealm);
 
             LDAPObject robLdap = ldapProvider.loadLDAPUserByUsername(appRealm, "robkeycloak");
-            groupMapper.addGroupMappingInLDAP("group11", robLdap);
-            groupMapper.addGroupMappingInLDAP("group12", robLdap);
+            groupMapper.addGroupMappingInLDAP(appRealm, "group11", robLdap);
+            groupMapper.addGroupMappingInLDAP(appRealm, "group12", robLdap);
 
             // Get user and check that he has requested groupa from LDAP
             UserModel rob = session.users().getUserByUsername("robkeycloak", appRealm);
@@ -349,7 +376,7 @@ public class LDAPGroupMapperTest {
             LDAPUtils.addMember(ldapProvider, MembershipType.DN, LDAPConstants.MEMBER, group2, nonExistentLdapUser, true);
 
             // 4 - Check group members. Just existing user rob should be present
-            groupMapper.syncDataFromFederationProviderToKeycloak();
+            groupMapper.syncDataFromFederationProviderToKeycloak(appRealm);
             GroupModel kcGroup2 = KeycloakModelUtils.findGroupByPath(appRealm, "/group2");
             List<UserModel> groupUsers = session.users().getGroupMembers(appRealm, kcGroup2, 0, 5);
             Assert.assertEquals(1, groupUsers.size());

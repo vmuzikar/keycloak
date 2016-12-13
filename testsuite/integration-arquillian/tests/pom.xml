@@ -888,6 +888,8 @@
                                     </includes>
                                     <excludes>
                                         <exclude>org.keycloak.testsuite.*</exclude>
+                                        <exclude>org.keycloak.example.*</exclude>
+                                        <exclude>org.keycloak.examples.*</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

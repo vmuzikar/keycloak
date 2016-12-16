@@ -76,7 +76,7 @@
                         <configuration>
                             <target>
                                 <copy todir="${project.build.outputDirectory}" overwrite="true">
-                                    <regexpmapper from="^.+/target/classes/(org/keycloak/.*\.class)$$" to="\1" />
+                                    <regexpmapper from="^.+/target/classes/(org/keycloak/(?!example/|examples/).*\.class)$$" to="\1" />
                                     <fileset dir="${rootDir}">
                                         <exclude name="**/integration-arquillian/**" />
                                     </fileset>

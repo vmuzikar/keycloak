@@ -68,3 +68,6 @@ org.keycloak.credential.hash.PasswordHashSpi
 org.keycloak.credential.CredentialSpi
 org.keycloak.keys.PublicKeyStorageSpi
 org.keycloak.keys.KeySpi
+org.keycloak.approvals.ApprovalEvaluatorSpi
+org.keycloak.approvals.ApprovalHandlerSpi
+org.keycloak.approvals.ApprovalInterceptorSpi

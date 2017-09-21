@@ -15,33 +15,20 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals;
+package org.keycloak.approvals.handlers;
 
-import java.lang.reflect.Method;
+import com.google.common.collect.ImmutableSet;
+import org.keycloak.services.resources.admin.UserResource;
+import org.keycloak.services.resources.admin.UsersResource;
+
+import java.util.Set;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class DefaultApprovalEvaluator implements ApprovalEvaluator {
-    private boolean disabled = false;
-
+public class UsersResourceHandler extends AbstractApprovalHandler {
     @Override
-    public boolean needsApproval(Method protectedMethod, ApprovalContext context) {
-        return true; // TODO make it dynamic!!!
-    }
-
-    @Override
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
-    }
-
-    @Override
-    public boolean isDisabled() {
-        return disabled;
-    }
-
-    @Override
-    public void close() {
-
+    public Set<Class> getProtectedClasses() {
+        return ImmutableSet.of(UsersResource.class, UserResource.class);
     }
 }

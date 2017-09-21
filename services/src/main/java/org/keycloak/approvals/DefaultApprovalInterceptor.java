@@ -92,19 +92,17 @@ public class DefaultApprovalInterceptor implements ApprovalInterceptor {
         final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
         StackTraceElement callerElement = null;
 
-        // we're not sure what (how many classes) lies on top of the stack (it doesn't necessarily need to be this class)
-        int flag = 0;   // 0 == this class was not yet encountered
-                        // 1 == this class was already encountered, the next will be caller class
-                        // 2 == caller class was encountered, next will be the final caller's caller
-
+        // Three phases:
+        //    1) move through what lies on top of the stack and is not this class
+        //    2) move through elements which belongs to this class (i.e. through methods of this class)
+        //    3) after that, return the next method
+        boolean currentClassEncountered = false;
         for (StackTraceElement element : elements) {
-            if (flag == 0 && element.getClassName().equals(this.getClass().getName())) {
-                flag++;
+            boolean isCurrentClass = element.getClassName().equals(this.getClass().getName());
+            if (!currentClassEncountered && isCurrentClass) {
+                currentClassEncountered = true;
             }
-            else if (flag == 1) {
-                flag++;
-            }
-            else if (flag == 2) {
+            else if (currentClassEncountered && !isCurrentClass) {
                 callerElement = element;
                 break;
             }

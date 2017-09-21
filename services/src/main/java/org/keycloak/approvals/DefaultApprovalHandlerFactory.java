@@ -39,7 +39,12 @@ public class DefaultApprovalHandlerFactory implements ApprovalHandlerFactory {
     @Override
     public ApprovalHandler create(KeycloakSession session, Class protectedClass) {
         try {
-            return handlers.get(protectedClass).newInstance();
+            Class<? extends ApprovalHandler> handler = handlers.get(protectedClass);
+            if (handler == null) {
+                throw new RuntimeException("Couldn't find requested handler");
+            }
+
+            return handler.newInstance();
         }
         catch (Exception e) {
             throw new RuntimeException(e);

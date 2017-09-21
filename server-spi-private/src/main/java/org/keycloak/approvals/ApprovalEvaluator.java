@@ -26,4 +26,6 @@ import java.lang.reflect.Method;
  */
 public interface ApprovalEvaluator extends Provider {
     boolean needsApproval(Method protectedMethod, ApprovalContext context);
+    void setDisabled(boolean disabled);
+    boolean isDisabled();
 }

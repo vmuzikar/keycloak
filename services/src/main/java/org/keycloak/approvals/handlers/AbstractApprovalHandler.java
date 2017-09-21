@@ -15,29 +15,37 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals;
+package org.keycloak.approvals.handlers;
 
+import org.jboss.logging.Logger;
+import org.keycloak.approvals.ApprovalContext;
+import org.keycloak.approvals.ApprovalHandler;
+import org.keycloak.services.resources.admin.UsersResource;
+import org.keycloak.util.JsonSerialization;
+
+import java.io.IOException;
 import java.lang.reflect.Method;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class DefaultApprovalEvaluator implements ApprovalEvaluator {
-    private boolean disabled = false;
+public abstract class AbstractApprovalHandler implements ApprovalHandler {
+    private static final Logger log = Logger.getLogger(UsersResource.class);
 
     @Override
-    public boolean needsApproval(Method protectedMethod, ApprovalContext context) {
-        return true; // TODO make it dynamic!!!
+    public void handleRequest(Method protectedMethod, ApprovalContext context) {
+        // TODO store the request
+        try {
+            log.info(JsonSerialization.writeValueAsString(context.getRepresentation()));
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
-    }
+    public void handleResponse() {
 
-    @Override
-    public boolean isDisabled() {
-        return disabled;
     }
 
     @Override

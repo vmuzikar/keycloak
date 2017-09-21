@@ -28,6 +28,10 @@ public class ApprovalContext {
 
     private Map<String, Object> attributes = new HashMap<>();
 
+    public static ApprovalContext fromRep(Object representation) {
+        return (new ApprovalContext()).setAttribute(REPRESENTANTION_ATTR, representation);
+    }
+
     public ApprovalContext setAttribute(String name, Object value) {
         attributes.put(name, value);
         return this;
@@ -39,5 +43,9 @@ public class ApprovalContext {
             throw new IllegalArgumentException("Attribute '" + name + "' not found!");
         }
         return value;
+    }
+
+    public Object getRepresentation() {
+        return getAttribute(REPRESENTANTION_ATTR);
     }
 }

@@ -420,6 +420,11 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     @Override
+    public Response createRegisterApprovalNeededPage() {
+        return createResponse(LoginFormsPages.REGISTER_APPROVAL_NEEDED);
+    }
+
+    @Override
     public Response createInfoPage() {
         return createResponse(LoginFormsPages.INFO);
     }

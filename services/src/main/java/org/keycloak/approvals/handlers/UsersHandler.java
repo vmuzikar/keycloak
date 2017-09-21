@@ -18,17 +18,39 @@
 package org.keycloak.approvals.handlers;
 
 import com.google.common.collect.ImmutableSet;
+import org.keycloak.approvals.ApprovalContext;
+import org.keycloak.authentication.forms.RegistrationApproval;
+import org.keycloak.models.UserModel;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.resources.admin.UserResource;
 import org.keycloak.services.resources.admin.UsersResource;
 
+import java.lang.reflect.Method;
 import java.util.Set;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class UsersResourceHandler extends AbstractApprovalHandler {
+public class UsersHandler extends AbstractApprovalHandler {
     @Override
     public Set<Class> getProtectedClasses() {
-        return ImmutableSet.of(UsersResource.class, UserResource.class);
+        return ImmutableSet.of(UsersResource.class, UserResource.class, RegistrationApproval.class);
+    }
+
+    @Override
+    public void handleRequest(Method protectedMethod, ApprovalContext context) {
+        if (protectedMethod.getDeclaringClass().equals(RegistrationApproval.class)) {
+            UserModel userModel = (UserModel)context.getModel();
+
+            userModel.setEnabled(false);
+
+            UserRepresentation userRep = new UserRepresentation();
+            userRep.setId(userModel.getId());
+            userRep.setEnabled(true);
+
+            context = ApprovalContext.fromRep(userRep);
+        }
+
+        super.handleRequest(protectedMethod, context);
     }
 }

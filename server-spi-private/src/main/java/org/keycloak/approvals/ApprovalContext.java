@@ -25,11 +25,23 @@ import java.util.Map;
  */
 public class ApprovalContext {
     public static final String REPRESENTANTION_ATTR = "representantion";
+    public static final String MODEL_ATTR = "model";
 
     private Map<String, Object> attributes = new HashMap<>();
 
+    protected ApprovalContext() {
+    }
+
+    public static ApprovalContext empty() {
+        return new ApprovalContext();
+    }
+
     public static ApprovalContext fromRep(Object representation) {
-        return (new ApprovalContext()).setAttribute(REPRESENTANTION_ATTR, representation);
+        return empty().setAttribute(REPRESENTANTION_ATTR, representation);
+    }
+
+    public static ApprovalContext fromModel(Object model) {
+        return empty().setAttribute(MODEL_ATTR, model);
     }
 
     public ApprovalContext setAttribute(String name, Object value) {
@@ -47,5 +59,9 @@ public class ApprovalContext {
 
     public Object getRepresentation() {
         return getAttribute(REPRESENTANTION_ATTR);
+    }
+
+    public Object getModel() {
+        return getAttribute(MODEL_ATTR);
     }
 }

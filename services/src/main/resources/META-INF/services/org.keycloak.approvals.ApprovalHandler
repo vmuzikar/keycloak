@@ -15,4 +15,4 @@
 # limitations under the License.
 #
 
-org.keycloak.approvals.handlers.UsersResourceHandler
+org.keycloak.approvals.handlers.UsersHandler

@@ -59,6 +59,8 @@ public interface LoginFormsProvider extends Provider {
 
     public Response createRegistration();
 
+    public Response createRegisterApprovalNeededPage();
+
     public Response createInfoPage();
 
     public Response createUpdateProfilePage();

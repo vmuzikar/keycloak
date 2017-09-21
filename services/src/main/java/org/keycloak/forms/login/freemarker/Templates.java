@@ -46,6 +46,8 @@ public class Templates {
                 return "login-update-password.ftl";
             case REGISTER:
                 return "register.ftl";
+            case REGISTER_APPROVAL_NEEDED:
+                return "register-approval-needed.ftl";
             case INFO:
                 return "info.ftl";
             case ERROR:

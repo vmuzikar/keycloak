@@ -142,7 +142,13 @@ public class DefaultAuthenticationFlows {
         realm.addAuthenticatorExecution(execution);
 
 
-
+        execution = new AuthenticationExecutionModel();
+        execution.setParentFlow(registrationFlow.getId());
+        execution.setRequirement(AuthenticationExecutionModel.Requirement.REQUIRED);
+        execution.setAuthenticator("register-approval");
+        execution.setPriority(20);
+        execution.setAuthenticatorFlow(false);
+        realm.addAuthenticatorExecution(execution);
     }
 
     public static void browserFlow(RealmModel realm) {

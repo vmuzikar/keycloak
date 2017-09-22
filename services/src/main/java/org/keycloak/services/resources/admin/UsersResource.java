@@ -161,7 +161,7 @@ public class UsersResource {
             if (auth.users().canQuery()) throw new NotFoundException("User not found");
             else throw new ForbiddenException();
         }
-        UserResource resource = new UserResource(realm, user, auth, adminEvent);
+        UserResource resource = new UserResource(realm, user, auth, adminEvent, approval);
         ResteasyProviderFactory.getInstance().injectProperties(resource);
         //resourceContext.initResource(users);
         return resource;

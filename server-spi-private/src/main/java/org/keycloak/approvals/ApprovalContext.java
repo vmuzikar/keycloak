@@ -26,6 +26,7 @@ import java.util.Map;
 public class ApprovalContext {
     public static final String REPRESENTANTION_ATTR = "representantion";
     public static final String MODEL_ATTR = "model";
+    public static final String ACTION = "action";
 
     private Map<String, Object> attributes = new HashMap<>();
 
@@ -55,6 +56,15 @@ public class ApprovalContext {
             throw new IllegalArgumentException("Attribute '" + name + "' not found!");
         }
         return value;
+    }
+
+    public String getAction() {
+        return (String)getAttribute(ACTION);
+    }
+
+    public ApprovalContext setAction(String value) {
+        setAttribute(ACTION, value);
+        return this;
     }
 
     public Object getRepresentation() {

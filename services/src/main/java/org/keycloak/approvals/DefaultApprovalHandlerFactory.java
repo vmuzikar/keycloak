@@ -17,10 +17,12 @@
 
 package org.keycloak.approvals;
 
+import org.jboss.logging.Logger;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -29,6 +31,7 @@ import java.util.ServiceLoader;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class DefaultApprovalHandlerFactory implements ApprovalHandlerFactory {
+    private final Logger log = Logger.getLogger(this.getClass());
     private Map<Class, Class<? extends ApprovalHandler>> handlers = new HashMap<>();
 
     @Override
@@ -39,12 +42,23 @@ public class DefaultApprovalHandlerFactory implements ApprovalHandlerFactory {
     @Override
     public ApprovalHandler create(KeycloakSession session, Class protectedClass) {
         try {
-            Class<? extends ApprovalHandler> handler = handlers.get(protectedClass);
-            if (handler == null) {
+            Class<? extends ApprovalHandler> handlerClass = handlers.get(protectedClass);
+            if (handlerClass == null) {
                 throw new RuntimeException("Couldn't find requested handler");
             }
 
-            return handler.newInstance();
+            ApprovalHandler handlerInstance = handlerClass.newInstance();
+
+            // dependency injection
+            try {
+                Method m = handlerInstance.getClass().getMethod("setKeycloakSession", KeycloakSession.class);
+                m.invoke(handlerInstance, session);
+            }
+            catch (NoSuchMethodException e) {
+                log.debug(handlerClass + ": setter for KeycloakSession not found");
+            }
+
+            return handlerInstance;
         }
         catch (Exception e) {
             throw new RuntimeException(e);

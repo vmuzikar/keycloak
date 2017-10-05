@@ -48,7 +48,7 @@ public class UsersHandler extends AbstractApprovalHandler {
             userRep.setId(userModel.getId());
             userRep.setEnabled(true);
 
-            context = ApprovalContext.fromRep(userRep);
+            context = ApprovalContext.fromRep(userRep, context.getRealm());
         }
 
         super.handleRequest(protectedMethod, context);

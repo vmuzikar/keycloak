@@ -17,6 +17,8 @@
 
 package org.keycloak.approvals;
 
+import org.keycloak.models.RealmModel;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,26 +26,33 @@ import java.util.Map;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class ApprovalContext {
-    public static final String REPRESENTANTION_ATTR = "representantion";
+    public static final String REALM_ATTR = "realm";
+    public static final String REPRESENTATION_ATTR = "representation";
     public static final String MODEL_ATTR = "model";
-    public static final String ACTION = "action";
+    public static final String ACTION_ATTR = "action";
 
     private Map<String, Object> attributes = new HashMap<>();
 
     protected ApprovalContext() {
     }
 
-    public static ApprovalContext empty() {
-        return new ApprovalContext();
+
+    // Factories
+
+    public static ApprovalContext empty(RealmModel realm) {
+        return new ApprovalContext().setAttribute(REALM_ATTR, realm);
     }
 
-    public static ApprovalContext fromRep(Object representation) {
-        return empty().setAttribute(REPRESENTANTION_ATTR, representation);
+    public static ApprovalContext fromRep(Object representation, RealmModel realm) {
+        return empty(realm).setAttribute(REPRESENTATION_ATTR, representation);
     }
 
-    public static ApprovalContext fromModel(Object model) {
-        return empty().setAttribute(MODEL_ATTR, model);
+    public static ApprovalContext fromModel(Object model, RealmModel realm) {
+        return empty(realm).setAttribute(MODEL_ATTR, model);
     }
+
+
+    // Generic getter and setter
 
     public ApprovalContext setAttribute(String name, Object value) {
         attributes.put(name, value);
@@ -51,24 +60,27 @@ public class ApprovalContext {
     }
 
     public Object getAttribute(String name) {
-        Object value = attributes.get(name);
-        if (value == null) {
-            throw new IllegalArgumentException("Attribute '" + name + "' not found!");
-        }
-        return value;
+        return attributes.get(name);
     }
 
+
+    // Some common getters/setters
+
     public String getAction() {
-        return (String)getAttribute(ACTION);
+        return (String)getAttribute(ACTION_ATTR);
     }
 
     public ApprovalContext setAction(String value) {
-        setAttribute(ACTION, value);
+        setAttribute(ACTION_ATTR, value);
         return this;
     }
 
+    public RealmModel getRealm() {
+        return (RealmModel)getAttribute(REALM_ATTR);
+    }
+
     public Object getRepresentation() {
-        return getAttribute(REPRESENTANTION_ATTR);
+        return getAttribute(REPRESENTATION_ATTR);
     }
 
     public Object getModel() {

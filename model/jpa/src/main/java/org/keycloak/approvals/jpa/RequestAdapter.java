@@ -36,36 +36,43 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
 
     @Override
     public String getId() {
-        return null;
+        return entity.getId();
     }
 
     @Override
     public RealmModel getRealm() {
-        return null;
+        return realm;
     }
 
     @Override
     public String getRequester() {
-        return null;
+        return entity.getRequester();
     }
 
     @Override
     public String getAttribute(String name) {
-        return null;
+        return entity.getAttributes().get(name);
     }
 
     @Override
     public void setAttribute(String name, String value) {
+        entity.getAttributes().put(name, value);
+    }
 
+    @Override
+    public void setAttributeIfNotNull(String name, String value) {
+        if (value != null) {
+            setAttribute(name, value);
+        }
     }
 
     @Override
     public void removeAttribute(String name) {
-
+        entity.getAttributes().remove(name);
     }
 
     @Override
     public RequestEntity getEntity() {
-        return null;
+        return entity;
     }
 }

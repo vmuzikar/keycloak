@@ -159,7 +159,7 @@ public class UserResource {
 
         auth.users().requireManage(user);
         try {
-            approval.intercept(ApprovalContext.fromRep(rep));
+            approval.intercept(ApprovalContext.fromRep(rep, realm));
 
             Set<String> attrsToRemove;
             if (rep.getAttributes() != null) {

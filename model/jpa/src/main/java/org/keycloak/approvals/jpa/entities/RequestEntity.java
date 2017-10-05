@@ -31,6 +31,7 @@ import javax.persistence.MapKeyColumn;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -58,7 +59,7 @@ public class RequestEntity {
     @MapKeyColumn(name = "NAME")
     @Column(name = "VALUE", length = 4096)
     @CollectionTable(name = "APPROVAL_REQUEST_ATTRIBUTES", joinColumns = {@JoinColumn(name = "REQUEST_ID")})
-    private Map<String, String> attributes;
+    private Map<String, String> attributes = new HashMap<>();
 
     public String getId() {
         return id;

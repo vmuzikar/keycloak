@@ -23,9 +23,7 @@
             <column name="ID" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
-            <column name="REALM_ID" type="VARCHAR(36)">
-                <constraints nullable="false"/>
-            </column>
+            <column name="REALM_ID" type="VARCHAR(36)"/>
             <column name="REQUESTER" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>

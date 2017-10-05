@@ -24,6 +24,7 @@ import org.keycloak.approvals.store.ApprovalStoreProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.jpa.entities.RealmEntity;
+import org.keycloak.models.utils.KeycloakModelUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
@@ -48,6 +49,7 @@ public class JpaRequestStore implements ApprovalRequestStore {
     @Override
     public ApprovalRequestModel createRequest(String requester, RealmModel realm) {
         RequestEntity entity = new RequestEntity();
+        entity.setId(KeycloakModelUtils.generateId());
         entity.setRequester(requester);
         entity.setRealm(em.getReference(RealmEntity.class, realm.getId()));
 

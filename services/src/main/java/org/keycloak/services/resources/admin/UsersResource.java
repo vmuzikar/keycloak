@@ -118,7 +118,7 @@ public class UsersResource {
         }
 
         try {
-            approval.intercept(ApprovalContext.fromRep(rep));
+            approval.intercept(ApprovalContext.fromRep(rep, realm));
 
             UserModel user = session.users().addUser(realm, rep.getUsername());
             Set<String> emptySet = Collections.emptySet();

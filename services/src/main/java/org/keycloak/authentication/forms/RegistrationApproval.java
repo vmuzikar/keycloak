@@ -36,7 +36,7 @@ public class RegistrationApproval implements Authenticator {
         final UserModel userModel = context.getUser();
 
         try {
-            approval.intercept(ApprovalContext.fromModel(userModel));
+            approval.intercept(ApprovalContext.fromModel(userModel, context.getRealm()));
         }
         catch (InterceptedException e) {
             context.challenge(context.form().createRegisterApprovalNeededPage());

@@ -42,6 +42,6 @@ public class ApprovalStoreProviderSpi implements Spi {
 
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
-        return ApprovalRequestStoreFactory.class;
+        return ApprovalStoreProviderFactory.class;
     }
 }

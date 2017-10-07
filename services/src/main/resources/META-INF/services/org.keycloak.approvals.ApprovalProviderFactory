@@ -15,4 +15,4 @@
 # limitations under the License.
 #
 
-org.keycloak.approvals.store.StoreProviderFactory
+org.keycloak.approvals.DefaultApprovalProviderFactory

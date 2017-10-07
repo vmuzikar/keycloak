@@ -72,5 +72,5 @@ org.keycloak.keys.KeySpi
 org.keycloak.approvals.ApprovalEvaluatorSpi
 org.keycloak.approvals.ApprovalHandlerSpi
 org.keycloak.approvals.ApprovalInterceptorSpi
-org.keycloak.approvals.store.ApprovalStoreProviderSpi
+org.keycloak.approvals.ApprovalProviderSpi
 org.keycloak.approvals.store.ApprovalRequestStoreSpi

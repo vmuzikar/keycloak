@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals.store;
+package org.keycloak.approvals;
 
-import org.keycloak.provider.Provider;
+import org.keycloak.provider.ProviderFactory;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public interface ApprovalStoreProvider extends Provider {
-    ApprovalRequestStore getRequestStore();
+public interface ApprovalProviderFactory extends ProviderFactory<ApprovalProvider> {
 }

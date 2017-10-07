@@ -15,27 +15,14 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals.store;
+package org.keycloak.approvals;
 
-import org.keycloak.models.KeycloakSession;
+import org.keycloak.approvals.store.ApprovalRequestStore;
+import org.keycloak.provider.Provider;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class StoreProvider implements ApprovalStoreProvider {
-    private KeycloakSession session;
-
-    public StoreProvider(KeycloakSession session) {
-        this.session = session;
-    }
-
-    @Override
-    public ApprovalRequestStore getRequestStore() {
-        return session.getProvider(ApprovalRequestStore.class); // TODO caching...
-    }
-
-    @Override
-    public void close() {
-
-    }
+public interface ApprovalProvider extends Provider {
+    ApprovalRequestStore getRequestStore();
 }

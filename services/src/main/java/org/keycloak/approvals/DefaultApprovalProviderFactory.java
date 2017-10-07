@@ -15,12 +15,38 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals.store;
+package org.keycloak.approvals;
 
-import org.keycloak.provider.ProviderFactory;
+import org.keycloak.Config;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakSessionFactory;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public interface ApprovalStoreProviderFactory extends ProviderFactory<ApprovalStoreProvider> {
+public class DefaultApprovalProviderFactory implements ApprovalProviderFactory {
+    @Override
+    public ApprovalProvider create(KeycloakSession session) {
+        return new DefaultApprovalProvider(session);
+    }
+
+    @Override
+    public void init(Config.Scope config) {
+
+    }
+
+    @Override
+    public void postInit(KeycloakSessionFactory factory) {
+
+    }
+
+    @Override
+    public void close() {
+
+    }
+
+    @Override
+    public String getId() {
+        return "default";
+    }
 }

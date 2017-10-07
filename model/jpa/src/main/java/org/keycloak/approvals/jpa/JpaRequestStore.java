@@ -17,10 +17,10 @@
 
 package org.keycloak.approvals.jpa;
 
+import org.keycloak.approvals.ApprovalProvider;
 import org.keycloak.approvals.jpa.entities.RequestEntity;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.approvals.store.ApprovalRequestStore;
-import org.keycloak.approvals.store.ApprovalStoreProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.jpa.entities.RealmEntity;
@@ -38,9 +38,9 @@ import java.util.stream.Collectors;
 public class JpaRequestStore implements ApprovalRequestStore {
     protected KeycloakSession session;
     protected EntityManager em;
-    protected ApprovalStoreProvider storeProvider;
+    protected ApprovalProvider storeProvider;
 
-    public JpaRequestStore(KeycloakSession session, EntityManager em, ApprovalStoreProvider storeProvider) {
+    public JpaRequestStore(KeycloakSession session, EntityManager em, ApprovalProvider storeProvider) {
         this.session = session;
         this.em = em;
         this.storeProvider = storeProvider;

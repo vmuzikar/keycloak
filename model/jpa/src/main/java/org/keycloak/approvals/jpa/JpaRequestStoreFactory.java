@@ -18,9 +18,9 @@
 package org.keycloak.approvals.jpa;
 
 import org.keycloak.Config;
+import org.keycloak.approvals.ApprovalProvider;
 import org.keycloak.approvals.store.ApprovalRequestStore;
 import org.keycloak.approvals.store.ApprovalRequestStoreFactory;
-import org.keycloak.approvals.store.ApprovalStoreProvider;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
@@ -34,7 +34,7 @@ public class JpaRequestStoreFactory implements ApprovalRequestStoreFactory {
         return new JpaRequestStore(
                 session,
                 session.getProvider(JpaConnectionProvider.class).getEntityManager(),
-                session.getProvider(ApprovalStoreProvider.class)
+                session.getProvider(ApprovalProvider.class)
         );
     }
 

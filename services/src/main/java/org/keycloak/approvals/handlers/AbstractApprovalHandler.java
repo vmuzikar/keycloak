@@ -20,10 +20,11 @@ package org.keycloak.approvals.handlers;
 import org.jboss.logging.Logger;
 import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.ApprovalHandler;
+import org.keycloak.approvals.ApprovalProvider;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.approvals.store.ApprovalRequestStore;
-import org.keycloak.approvals.store.ApprovalStoreProvider;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
 import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;
@@ -40,7 +41,7 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
 
     public void setKeycloakSession(KeycloakSession session) {
         this.session = session;
-        this.requestStore = session.getProvider(ApprovalStoreProvider.class).getRequestStore();
+        this.requestStore = session.getProvider(ApprovalProvider.class).getRequestStore();
     }
 
     @Override
@@ -74,7 +75,7 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
     }
 
     @Override
-    public void handleResponse() {
+    public void handleResponse(ApprovalRequestModel request, RealmModel realm) {
 
     }
 

@@ -18,7 +18,6 @@
 package org.keycloak.approvals;
 
 import org.keycloak.approvals.store.ApprovalRequestModel;
-import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
 
 import java.lang.reflect.Method;
@@ -30,5 +29,5 @@ import java.util.Set;
 public interface ApprovalHandler extends Provider {
     Set<Class> getProtectedClasses();
     void handleRequest(Method protectedMethod, ApprovalContext context);
-    void handleResponse(ApprovalRequestModel request, RealmModel realm);
+    void handleResponse(ApprovalRequestModel request);
 }

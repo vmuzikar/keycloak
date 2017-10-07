@@ -18,6 +18,7 @@
 package org.keycloak.approvals;
 
 import org.keycloak.approvals.store.ApprovalRequestStore;
+import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
 
 /**
@@ -25,4 +26,6 @@ import org.keycloak.provider.Provider;
  */
 public interface ApprovalProvider extends Provider {
     ApprovalRequestStore getRequestStore();
+    ApprovalHandler getHandlerByProtectedClass(Class protectedClass);
+    ApprovalHandler getHandlerByRequest(String requestId, RealmModel realmModel);
 }

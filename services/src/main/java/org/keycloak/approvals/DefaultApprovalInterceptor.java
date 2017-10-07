@@ -75,10 +75,8 @@ public class DefaultApprovalInterceptor implements ApprovalInterceptor {
 
     protected void populateHandler() {
         if (handler == null) {
-            handler = ((ApprovalHandlerFactory)session
-                    .getKeycloakSessionFactory()
-                    .getProviderFactory(ApprovalHandler.class, "default"))
-                    .create(session, protectedMethod.getDeclaringClass());
+            handler = session.getProvider(ApprovalProvider.class)
+                    .getHandlerByProtectedClass(protectedMethod.getDeclaringClass());
         }
     }
 

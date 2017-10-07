@@ -24,7 +24,6 @@ import org.keycloak.approvals.ApprovalProvider;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.approvals.store.ApprovalRequestStore;
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
 import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;
@@ -75,7 +74,7 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
     }
 
     @Override
-    public void handleResponse(ApprovalRequestModel request, RealmModel realm) {
+    public void handleResponse(ApprovalRequestModel request) {
 
     }
 

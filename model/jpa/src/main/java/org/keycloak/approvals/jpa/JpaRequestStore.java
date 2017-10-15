@@ -60,8 +60,17 @@ public class JpaRequestStore implements ApprovalRequestStore {
     }
 
     @Override
-    public void removeRequest(String id, RealmModel realm) {
+    public boolean removeRequest(String id, RealmModel realm) {
+        ApprovalRequestModel requestModel = getRequestById(id, realm);
+        if (requestModel == null) {
+            return false;
+        }
 
+        RequestEntity entity = ((RequestAdapter)requestModel).getEntity();
+        em.remove(entity);
+        em.flush();
+
+        return true;
     }
 
     @Override

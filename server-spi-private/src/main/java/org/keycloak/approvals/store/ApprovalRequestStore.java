@@ -27,7 +27,7 @@ import java.util.List;
  */
 public interface ApprovalRequestStore extends Provider {
     ApprovalRequestModel createRequest(String requester, RealmModel realm);
-    void removeRequest(String id, RealmModel realm);
+    boolean removeRequest(String id, RealmModel realm);
     ApprovalRequestModel getRequestById(String id, RealmModel realm);
     List<ApprovalRequestModel> getRequestsForRealm(RealmModel realm);
 }

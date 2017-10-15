@@ -28,6 +28,7 @@ public interface ApprovalRequestModel {
     String getRequester();
 
     String getAttribute(String name);
+    String getActionAttribute();
     void setAttribute(String name, String value);
     void setAttributeIfNotNull(String name, String value);
     void removeAttribute(String name);

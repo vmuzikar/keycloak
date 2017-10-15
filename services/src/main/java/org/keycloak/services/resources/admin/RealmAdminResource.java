@@ -1020,4 +1020,11 @@ public class RealmAdminResource {
         return resource;
     }
 
+    @Path("approvals")
+    public ApprovalsResource approvals() {
+        ApprovalsResource resource = new ApprovalsResource(realm);
+        ResteasyProviderFactory.getInstance().injectProperties(resource);
+        return resource;
+    }
+
 }

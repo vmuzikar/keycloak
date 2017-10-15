@@ -17,6 +17,7 @@
 
 package org.keycloak.approvals;
 
+import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.approvals.store.ApprovalRequestStore;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -33,7 +34,7 @@ public class DefaultApprovalProvider implements ApprovalProvider {
 
     @Override
     public ApprovalRequestStore getRequestStore() {
-        return session.getProvider(ApprovalRequestStore.class); // TODO caching...
+        return session.getProvider(ApprovalRequestStore.class); // TODO caching layer...
     }
 
     @Override
@@ -46,7 +47,26 @@ public class DefaultApprovalProvider implements ApprovalProvider {
 
     @Override
     public ApprovalHandler getHandlerByRequest(String requestId, RealmModel realmModel) {
-        return null;
+        ApprovalRequestModel request = getRequestStore().getRequestById(requestId, realmModel);
+
+        if (request == null) {
+            return null;
+        }
+
+        return getHandlerByRequest(request);
+    }
+
+    @Override
+    public ApprovalHandler getHandlerByRequest(ApprovalRequestModel requestModel) {
+        Class protectedClass;
+        try {
+            protectedClass = Class.forName(requestModel.getRequester());
+        }
+        catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+        return getHandlerByProtectedClass(protectedClass);
     }
 
     @Override

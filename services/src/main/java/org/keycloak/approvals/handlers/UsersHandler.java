@@ -17,24 +17,27 @@
 
 package org.keycloak.approvals.handlers;
 
-import com.google.common.collect.ImmutableSet;
 import org.keycloak.approvals.ApprovalContext;
+import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.authentication.forms.RegistrationApproval;
 import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.resources.admin.UserResource;
 import org.keycloak.services.resources.admin.UsersResource;
+import org.keycloak.util.JsonSerialization;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.Set;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class UsersHandler extends AbstractApprovalHandler {
+    private static final Class[] protectedClasses = new Class[] {UsersResource.class, UserResource.class, RegistrationApproval.class};
+
     @Override
-    public Set<Class> getProtectedClasses() {
-        return ImmutableSet.of(UsersResource.class, UserResource.class, RegistrationApproval.class);
+    public Class[] getProtectedClasses() {
+        return protectedClasses;
     }
 
     @Override
@@ -52,5 +55,27 @@ public class UsersHandler extends AbstractApprovalHandler {
         }
 
         super.handleRequest(protectedMethod, context);
+    }
+
+    @Override
+    protected void executeRequestedActions(ApprovalRequestModel request) {
+        if (RegistrationApproval.class.getName().equals(request.getRequester())) {
+            handleUserRegistration(request);
+        }
+    }
+
+    private void handleUserRegistration(ApprovalRequestModel request) {
+        UserRepresentation userRep;
+
+        try {
+            userRep = JsonSerialization.readValue(
+                    request.getAttribute(ApprovalContext.REPRESENTATION_ATTR),
+                    UserRepresentation.class);
+        }
+        catch (IOException e) {
+            throw new RuntimeException();
+        }
+
+        session.users().getUserById(userRep.getId(), request.getRealm()).setEnabled(true);
     }
 }

@@ -17,6 +17,7 @@
 
 package org.keycloak.approvals.jpa;
 
+import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.jpa.entities.RequestEntity;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.RealmModel;
@@ -64,6 +65,11 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
         if (value != null) {
             setAttribute(name, value);
         }
+    }
+
+    @Override
+    public String getActionAttribute() {
+        return entity.getAttributes().get(ApprovalContext.ACTION_ATTR);
     }
 
     @Override

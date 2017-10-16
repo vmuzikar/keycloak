@@ -17,9 +17,7 @@
 
 package org.keycloak.services.resources.admin;
 
-import org.keycloak.approvals.ApprovalHandler;
 import org.keycloak.approvals.ApprovalProvider;
-import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
@@ -46,14 +44,11 @@ public class ApprovalsResource {
     @GET
     @Path("{id}")
     public Response approveRequest(final @PathParam("id") String requestId) {
-        ApprovalRequestModel requestModel = session.getProvider(ApprovalProvider.class).getRequestStore().getRequestById(requestId, realm);
+        ApprovalProvider approval = session.getProvider(ApprovalProvider.class);
 
-        if (requestModel == null) {
+        if (!approval.approveRequest(requestId, realm)) {
             throw new NotFoundException("Approval request not found");
         }
-
-        ApprovalHandler handler = session.getProvider(ApprovalProvider.class).getHandlerByRequest(requestModel);
-        handler.approveRequest(requestModel);
 
         return Response.noContent().build();
     }

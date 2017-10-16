@@ -70,6 +70,17 @@ public class DefaultApprovalProvider implements ApprovalProvider {
     }
 
     @Override
+    public boolean approveRequest(String requestId, RealmModel realm) {
+        ApprovalRequestModel requestModel = getRequestStore().getRequestById(requestId, realm);
+        if (requestModel == null) {
+            return false;
+        }
+
+        getHandlerByRequest(requestModel).approveRequest(requestModel);
+        return true;
+    }
+
+    @Override
     public void close() {
 
     }

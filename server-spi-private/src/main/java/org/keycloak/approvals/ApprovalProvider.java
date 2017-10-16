@@ -30,4 +30,5 @@ public interface ApprovalProvider extends Provider {
     ApprovalHandler getHandlerByProtectedClass(Class protectedClass);
     ApprovalHandler getHandlerByRequest(String requestId, RealmModel realmModel);
     ApprovalHandler getHandlerByRequest(ApprovalRequestModel requestModel);
+    boolean approveRequest(String requestId, RealmModel realm);
 }

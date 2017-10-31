@@ -212,6 +212,7 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
     protected AdapterLogoutPage adapterLogoutPage;
 
     public static final String FORBIDDEN_TEXT = "HTTP status code: 403";
+    public static final String WEBSPHERE_FORBIDDEN_TEXT = "Error reported: 403";
 
     @Deployment(name = BadClientSalesPostSigServlet.DEPLOYMENT_NAME)
     protected static WebArchive badClientSalesPostSig() {
@@ -365,7 +366,10 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
     private void assertForbidden(AbstractPage page, String expectedNotContains) {
         page.navigateTo();
         waitUntilElement(By.xpath("//body")).text().not().contains(expectedNotContains);
-        assertTrue(driver.getPageSource().contains("Forbidden") || driver.getPageSource().contains(FORBIDDEN_TEXT));
+        //Different 403 status page on EAP and Wildfly
+        assertTrue(driver.getPageSource().contains("Forbidden")
+                || driver.getPageSource().contains(FORBIDDEN_TEXT)
+                || driver.getPageSource().contains(WEBSPHERE_FORBIDDEN_TEXT)); // WebSphere
     }
 
     private void assertSuccessfullyLoggedIn(AbstractPage page, String expectedText) {
@@ -379,7 +383,9 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
         loginPage.form().login(username, password);
         waitUntilElement(By.xpath("//body")).text().not().contains(expectedNotContains);
         //Different 403 status page on EAP and Wildfly
-        assertTrue(driver.getPageSource().contains("Forbidden") || driver.getPageSource().contains(FORBIDDEN_TEXT));
+        assertTrue(driver.getPageSource().contains("Forbidden")
+                || driver.getPageSource().contains(FORBIDDEN_TEXT)
+                || driver.getPageSource().contains(WEBSPHERE_FORBIDDEN_TEXT)); // WebSphere
     }
 
     private void assertSuccessfulLogin(AbstractPage page, UserRepresentation user, Login loginPage, String expectedString) {
@@ -471,7 +477,9 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
 
         waitUntilElement(By.xpath("//body")).text().not().contains("principal=");
         //Different 403 status page on EAP and Wildfly
-        assertTrue(driver.getPageSource().contains("Forbidden") || driver.getPageSource().contains(FORBIDDEN_TEXT));
+        assertTrue(driver.getPageSource().contains("Forbidden")
+                || driver.getPageSource().contains(FORBIDDEN_TEXT)
+                || driver.getPageSource().contains(WEBSPHERE_FORBIDDEN_TEXT)); // WebSphere
     }
 
     @Test
@@ -875,7 +883,10 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
         samlidpInitiatedLoginPage.form().login("unauthorized", "password");
 
         waitUntilElement(By.xpath("//body")).text().not().contains("bburke");
-        assertTrue(driver.getPageSource().contains("Forbidden") || driver.getPageSource().contains(FORBIDDEN_TEXT));
+        //Different 403 status page on EAP and Wildfly
+        assertTrue(driver.getPageSource().contains("Forbidden")
+                || driver.getPageSource().contains(FORBIDDEN_TEXT)
+                || driver.getPageSource().contains(WEBSPHERE_FORBIDDEN_TEXT)); // WebSphere
 
         assertForbidden(employee2ServletPage, "principal=");
         employee2ServletPage.logout();
@@ -1311,6 +1322,11 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
     }
 
     private void assertOnForbiddenPage() {
-        waitUntilElement(By.xpath("//body")).text().contains(FORBIDDEN_TEXT);
+        waitUntilElement(By.xpath("//body")).is().present();
+
+        //Different 403 status page on EAP and Wildfly
+        assertTrue(driver.getPageSource().contains("Forbidden")
+                || driver.getPageSource().contains(FORBIDDEN_TEXT)
+                || driver.getPageSource().contains(WEBSPHERE_FORBIDDEN_TEXT)); // WebSphere
     }
 }

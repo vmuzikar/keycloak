@@ -215,92 +215,92 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
 
     @Deployment(name = BadClientSalesPostSigServlet.DEPLOYMENT_NAME)
     protected static WebArchive badClientSalesPostSig() {
-        return samlServletDeployment(BadClientSalesPostSigServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(BadClientSalesPostSigServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = BadRealmSalesPostSigServlet.DEPLOYMENT_NAME)
     protected static WebArchive badRealmSalesPostSig() {
-        return samlServletDeployment(BadRealmSalesPostSigServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(BadRealmSalesPostSigServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = EmployeeAcsServlet.DEPLOYMENT_NAME)
     protected static WebArchive employeeAssertionConsumerServiceUrlSet() {
-        return samlServletDeployment(EmployeeAcsServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(EmployeeAcsServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = Employee2Servlet.DEPLOYMENT_NAME)
     protected static WebArchive employee2() {
-        return samlServletDeployment(Employee2Servlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(Employee2Servlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class, BaseApplication.class);
     }
 
     @Deployment(name = EmployeeSigServlet.DEPLOYMENT_NAME)
     protected static WebArchive employeeSig() {
-        return samlServletDeployment(EmployeeSigServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(EmployeeSigServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = EmployeeSigPostNoIdpKeyServlet.DEPLOYMENT_NAME)
     protected static WebArchive employeeSigPostNoIdpKeyServlet() {
-        return samlServletDeployment(EmployeeSigPostNoIdpKeyServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(EmployeeSigPostNoIdpKeyServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = EmployeeSigRedirNoIdpKeyServlet.DEPLOYMENT_NAME)
     protected static WebArchive employeeSigRedirNoIdpKeyServlet() {
-        return samlServletDeployment(EmployeeSigRedirNoIdpKeyServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(EmployeeSigRedirNoIdpKeyServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = EmployeeSigRedirOptNoIdpKeyServlet.DEPLOYMENT_NAME)
     protected static WebArchive employeeSigRedirOptNoIdpKeyServlet() {
-        return samlServletDeployment(EmployeeSigRedirOptNoIdpKeyServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(EmployeeSigRedirOptNoIdpKeyServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = EmployeeSigFrontServlet.DEPLOYMENT_NAME)
     protected static WebArchive employeeSigFront() {
-        return samlServletDeployment(EmployeeSigFrontServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(EmployeeSigFrontServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = SalesMetadataServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesMetadata() {
-        return samlServletDeployment(SalesMetadataServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesMetadataServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = SalesPostServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPost() {
-        return samlServletDeployment(SalesPostServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = SalesPostEncServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPostEnc() {
-        return samlServletDeployment(SalesPostEncServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostEncServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = SalesPostEncSignAssertionsOnlyServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPostEncSignAssertionsOnly() {
-        return samlServletDeployment(SalesPostEncSignAssertionsOnlyServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostEncSignAssertionsOnlyServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = SalesPostPassiveServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPostPassive() {
-        return samlServletDeployment(SalesPostPassiveServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostPassiveServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = SalesPostSigServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPostSig() {
-        return samlServletDeployment(SalesPostSigServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostSigServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = SalesPostSigEmailServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPostSigEmail() {
-        return samlServletDeployment(SalesPostSigEmailServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostSigEmailServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = SalesPostSigPersistentServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPostSigPersistent() {
-        return samlServletDeployment(SalesPostSigPersistentServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostSigPersistentServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = SalesPostSigTransientServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPostSigTransient() {
-        return samlServletDeployment(SalesPostSigTransientServlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostSigTransientServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = InputPortal.DEPLOYMENT_NAME)
@@ -310,7 +310,7 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
 
     @Deployment(name = SalesPost2Servlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPost2() {
-        return samlServletDeployment(SalesPost2Servlet.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPost2Servlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = DifferentCookieNameServlet.DEPLOYMENT_NAME)
@@ -320,17 +320,17 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
 
     @Deployment(name = SalesPostAssertionAndResponseSig.DEPLOYMENT_NAME)
     protected static WebArchive salesPostAssertionAndResponseSig() {
-        return samlServletDeployment(SalesPostAssertionAndResponseSig.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostAssertionAndResponseSig.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = BadAssertionSalesPostSig.DEPLOYMENT_NAME)
     protected static WebArchive badAssertionSalesPostSig() {
-        return samlServletDeployment(BadAssertionSalesPostSig.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(BadAssertionSalesPostSig.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = MissingAssertionSig.DEPLOYMENT_NAME)
     protected static WebArchive missingAssertionSig() {
-        return samlServletDeployment(MissingAssertionSig.DEPLOYMENT_NAME, SendUsernameServlet.class);
+        return samlServletDeployment(MissingAssertionSig.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Deployment(name = EmployeeServlet.DEPLOYMENT_NAME)
@@ -346,7 +346,7 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
 
     @Deployment(name = SalesPostAutodetectServlet.DEPLOYMENT_NAME)
     protected static WebArchive salesPostAutodetect() {
-        return samlServletDeployment(SalesPostAutodetectServlet.DEPLOYMENT_NAME, "sales-post-autodetect/WEB-INF/web.xml", SendUsernameServlet.class);
+        return samlServletDeployment(SalesPostAutodetectServlet.DEPLOYMENT_NAME, SendUsernameServlet.class, BaseApplication.class);
     }
 
     @Override
@@ -476,6 +476,13 @@ public abstract class AbstractSAMLServletsAdapterTest extends AbstractServletsAd
 
     @Test
     public void employee2Test() {
+        ClientResource clientResource = ApiUtil.findClientResourceByClientId(testRealmResource(), "http://localhost:8081/employee2/");
+        ClientRepresentation client = clientResource.toRepresentation();
+        Map<String, String> attr = client.getAttributes();
+        attr.put("saml_assertion_consumer_url_post", "http://localhost:8280/employee2/saml");
+        client.setAttributes(attr);
+        clientResource.update(client);
+
         testSuccessfulAndUnauthorizedLogin(employee2ServletPage, testRealmSAMLPostLoginPage);
     }
 

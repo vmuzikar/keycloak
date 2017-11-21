@@ -27,15 +27,8 @@ import org.keycloak.saml.processing.core.saml.v2.constants.X500SAMLProfileConsta
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Arrays;
@@ -48,7 +41,7 @@ import java.util.List;
  * @version $Revision: 1 $
  */
 @Path("/")
-public class SendUsernameServlet extends HttpServlet {
+public class SendUsernameServlet {
 
     private static boolean checkRoles = false;
     private static SamlAuthenticationError authError;

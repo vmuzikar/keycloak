@@ -20,6 +20,7 @@ package org.keycloak.testsuite.adapter.example;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.graphene.page.Page;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.resource.ClientResource;
@@ -458,6 +459,7 @@ public abstract class AbstractJSConsoleExampleAdapterTest extends AbstractExampl
     }
 
     @Test
+    @Ignore
     public void spaceInRealmNameTest() {
         String SPACE_REALM_NAME = "Example realm";
         adminClient.realm(EXAMPLE).update(RealmBuilder.edit(adminClient.realm(EXAMPLE).toRepresentation()).name(SPACE_REALM_NAME).build());

@@ -34,6 +34,8 @@ public class SalesPost2Servlet extends SAMLServlet {
 
     @Override
     public URL getInjectedUrl() {
-        return url;
+        //EAP6 + WLS + WAS URL fix
+        URL fixedUrl = createInjectedURL(DEPLOYMENT_NAME);
+        return fixedUrl != null ? fixedUrl : url;
     }
 }

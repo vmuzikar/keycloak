@@ -19,7 +19,7 @@
     <parent>
         <groupId>org.keycloak</groupId>
         <artifactId>feature-packs-parent</artifactId>
-        <version>3.4.0.CR1-SNAPSHOT</version>
+        <version>3.4.2.Final-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -32,17 +32,10 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.jboss.integration-platform</groupId>
-                <artifactId>jboss-integration-platform-bom</artifactId>
-                <type>pom</type>
-                <scope>import</scope>
-                <version>${version.jboss-integration-platform}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.drools</groupId>
+                <groupId>org.keycloak</groupId>
                 <artifactId>drools-bom</artifactId>
                 <type>pom</type>
-                <version>${version.org.drools}</version>
+                <version>${project.version}</version>
                 <scope>import</scope>
             </dependency>
         </dependencies>
@@ -765,6 +758,11 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-distribution-licenses-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

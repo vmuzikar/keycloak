@@ -21,7 +21,10 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.commons.api.BasicCache;
+import org.jboss.logging.Logger;
+import org.keycloak.common.util.Retry;
 import org.keycloak.models.CodeToTokenStoreProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.sessions.infinispan.entities.ActionTokenValueEntity;
@@ -30,6 +33,8 @@ import org.keycloak.models.sessions.infinispan.entities.ActionTokenValueEntity;
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanCodeToTokenStoreProvider implements CodeToTokenStoreProvider {
+
+    public static final Logger logger = Logger.getLogger(InfinispanCodeToTokenStoreProvider.class);
 
     private final Supplier<BasicCache<UUID, ActionTokenValueEntity>> codeCache;
     private final KeycloakSession session;
@@ -45,9 +50,20 @@ public class InfinispanCodeToTokenStoreProvider implements CodeToTokenStoreProvi
 
         int lifespanInSeconds = session.getContext().getRealm().getAccessCodeLifespan();
 
-        BasicCache<UUID, ActionTokenValueEntity> cache = codeCache.get();
-        ActionTokenValueEntity existing = cache.putIfAbsent(codeId, tokenValue, lifespanInSeconds, TimeUnit.SECONDS);
-        return existing == null;
+        try {
+            BasicCache<UUID, ActionTokenValueEntity> cache = codeCache.get();
+            ActionTokenValueEntity existing = cache.putIfAbsent(codeId, tokenValue, lifespanInSeconds, TimeUnit.SECONDS);
+            return existing == null;
+        } catch (HotRodClientException re) {
+            // No need to retry. The hotrod (remoteCache) has some retries in itself in case of some random network error happened.
+            // In case of lock conflict, we don't want to retry anyway as there was likely an attempt to use the code from different place.
+            if (logger.isDebugEnabled()) {
+                logger.debugf(re, "Failed when adding code %s", codeId);
+            }
+
+            return false;
+        }
+
     }
 
     @Override

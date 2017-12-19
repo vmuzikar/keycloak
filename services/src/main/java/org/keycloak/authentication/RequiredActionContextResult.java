@@ -139,6 +139,7 @@ public class RequiredActionContextResult implements RequiredActionContext {
                 .queryParam(OAuth2Constants.CODE, code)
                 .queryParam(Constants.EXECUTION, getExecution())
                 .queryParam(Constants.CLIENT_ID, client.getClientId())
+                .queryParam(Constants.TAB_ID, authenticationSession.getTabId())
                 .build(getRealm().getName());
     }
 
@@ -149,7 +150,7 @@ public class RequiredActionContextResult implements RequiredActionContext {
     @Override
     public String generateCode() {
         ClientSessionCode<AuthenticationSessionModel> accessCode = new ClientSessionCode<>(session, getRealm(), getAuthenticationSession());
-        authenticationSession.setTimestamp(Time.currentTime());
+        authenticationSession.getParentSession().setTimestamp(Time.currentTime());
         return accessCode.getOrGenerateCode();
     }
 
@@ -166,6 +167,7 @@ public class RequiredActionContextResult implements RequiredActionContext {
         String accessCode = generateCode();
         URI action = getActionUrl(accessCode);
         LoginFormsProvider provider = getSession().getProvider(LoginFormsProvider.class)
+                .setAuthenticationSession(getAuthenticationSession())
                 .setUser(getUser())
                 .setActionUri(action)
                 .setExecution(getExecution())

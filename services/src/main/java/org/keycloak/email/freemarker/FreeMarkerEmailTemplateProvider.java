@@ -29,12 +29,14 @@ import org.keycloak.events.EventType;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.theme.FreeMarkerException;
 import org.keycloak.theme.FreeMarkerUtil;
 import org.keycloak.theme.Theme;
 import org.keycloak.theme.ThemeProvider;
 import org.keycloak.theme.beans.MessageFormatterMethod;
 
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,6 +52,8 @@ import java.util.Properties;
 public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
 
     protected KeycloakSession session;
+    /** authenticationSession can be null for some email sendings, it is filled only for email sendings performed as part of the authentication session (email verification, password reset, broker link etc.)! */
+    protected AuthenticationSessionModel authenticationSession;
     protected FreeMarkerUtil freeMarker;
     protected RealmModel realm;
     protected UserModel user;
@@ -75,6 +79,12 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     @Override
     public EmailTemplateProvider setAttribute(String name, Object value) {
         attributes.put(name, value);
+        return this;
+    }
+    
+    @Override
+    public EmailTemplateProvider setAuthenticationSession(AuthenticationSessionModel authenticationSession) {
+        this.authenticationSession = authenticationSession;
         return this;
     }
 
@@ -150,7 +160,6 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
         attributes.put("realmName", getRealmName());
 
         send("executeActionsSubject", "executeActions.ftl", attributes);
-
     }
 
     @Override
@@ -171,8 +180,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
 
     protected EmailTemplate processTemplate(String subjectKey, List<Object> subjectAttributes, String template, Map<String, Object> attributes) throws EmailException {
         try {
-            ThemeProvider themeProvider = session.getProvider(ThemeProvider.class, "extending");
-            Theme theme = themeProvider.getTheme(realm.getEmailTheme(), Theme.Type.EMAIL);
+            Theme theme = getTheme();
             Locale locale = session.getContext().resolveLocale(user);
             attributes.put("locale", locale);
             Properties rb = theme.getMessages(locale);
@@ -198,10 +206,18 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
             throw new EmailException("Failed to template email", e);
         }
     }
+
+    protected Theme getTheme() throws IOException {
+        ThemeProvider themeProvider = session.getProvider(ThemeProvider.class, "extending");
+        return themeProvider.getTheme(realm.getEmailTheme(), Theme.Type.EMAIL);
+    }
+    
     protected void send(String subjectKey, List<Object> subjectAttributes, String template, Map<String, Object> attributes) throws EmailException {
         try {
             EmailTemplate email = processTemplate(subjectKey, subjectAttributes, template, attributes);
             send(email.getSubject(), email.getTextBody(), email.getHtmlBody());
+        } catch (EmailException e){
+            throw e;
         } catch (Exception e) {
             throw new EmailException("Failed to template email", e);
         }

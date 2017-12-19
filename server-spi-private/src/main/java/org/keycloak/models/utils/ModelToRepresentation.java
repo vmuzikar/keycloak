@@ -282,6 +282,7 @@ public class ModelToRepresentation {
         rep.setOtpPolicyInitialCounter(otpPolicy.getInitialCounter());
         rep.setOtpPolicyType(otpPolicy.getType());
         rep.setOtpPolicyLookAheadWindow(otpPolicy.getLookAheadWindow());
+        rep.setOtpSupportedApplications(otpPolicy.getSupportedApplications());
         if (realm.getBrowserFlow() != null) rep.setBrowserFlow(realm.getBrowserFlow().getAlias());
         if (realm.getRegistrationFlow() != null) rep.setRegistrationFlow(realm.getRegistrationFlow().getAlias());
         if (realm.getDirectGrantFlow() != null) rep.setDirectGrantFlow(realm.getDirectGrantFlow().getAlias());
@@ -356,7 +357,9 @@ public class ModelToRepresentation {
         Collections.sort(authenticationFlows, new Comparator<AuthenticationFlowModel>() {
             @Override
             public int compare(AuthenticationFlowModel left, AuthenticationFlowModel right) {
-                return left.getAlias().compareTo(right.getAlias());
+                String l = left.getAlias() != null ? left.getAlias() : "\0";
+                String r = right.getAlias() != null ? right.getAlias() : "\0";
+                return l.compareTo(r);
             }
         });
 
@@ -370,7 +373,9 @@ public class ModelToRepresentation {
         Collections.sort(authenticatorConfigs, new Comparator<AuthenticatorConfigModel>() {
             @Override
             public int compare(AuthenticatorConfigModel left, AuthenticatorConfigModel right) {
-                return left.getAlias().compareTo(right.getAlias());
+                String l = left.getAlias() != null ? left.getAlias() : "\0";
+                String r = right.getAlias() != null ? right.getAlias() : "\0";
+                return l.compareTo(r);
             }
         });
 
@@ -392,7 +397,9 @@ public class ModelToRepresentation {
         Collections.sort(requiredActionProviders, new Comparator<RequiredActionProviderModel>() {
             @Override
             public int compare(RequiredActionProviderModel left, RequiredActionProviderModel right) {
-                return left.getAlias().compareTo(right.getAlias());
+                String l = left.getAlias() != null ? left.getAlias() : "\0";
+                String r = right.getAlias() != null ? right.getAlias() : "\0";
+                return l.compareTo(r);
             }
         });
 
@@ -748,20 +755,27 @@ public class ModelToRepresentation {
         return server;
     }
 
-    public static <R extends AbstractPolicyRepresentation> R toRepresentation(Policy policy, Class<R> representationType, AuthorizationProvider authorization) {
-        return toRepresentation(policy, representationType, authorization, false);
+    public static <R extends AbstractPolicyRepresentation> R toRepresentation(Policy policy, AuthorizationProvider authorization) {
+        return toRepresentation(policy, authorization, false, true);
     }
 
-    public static <R extends AbstractPolicyRepresentation> R toRepresentation(Policy policy, Class<R> representationType, AuthorizationProvider authorization, boolean export) {
+    public static <R extends AbstractPolicyRepresentation> R toRepresentation(Policy policy, AuthorizationProvider authorization, boolean genericRepresentation, boolean export) {
+        PolicyProviderFactory providerFactory = authorization.getProviderFactory(policy.getType());
         R representation;
 
-        try {
-            representation = representationType.newInstance();
-        } catch (Exception cause) {
-            throw new RuntimeException("Could not create policy [" + policy.getType() + "] representation", cause);
+        if (genericRepresentation || export) {
+            representation = (R) new PolicyRepresentation();
+            PolicyRepresentation.class.cast(representation).setConfig(policy.getConfig());
+            if (export) {
+                providerFactory.onExport(policy, PolicyRepresentation.class.cast(representation), authorization);
+            }
+        } else {
+            try {
+                representation = (R) providerFactory.toRepresentation(policy);
+            } catch (Exception cause) {
+                throw new RuntimeException("Could not create policy [" + policy.getType() + "] representation", cause);
+            }
         }
-
-        PolicyProviderFactory providerFactory = authorization.getProviderFactory(policy.getType());
 
         representation.setId(policy.getId());
         representation.setName(policy.getName());
@@ -769,16 +783,6 @@ public class ModelToRepresentation {
         representation.setType(policy.getType());
         representation.setDecisionStrategy(policy.getDecisionStrategy());
         representation.setLogic(policy.getLogic());
-
-        if (representation instanceof PolicyRepresentation) {
-            if (providerFactory != null && export) {
-                providerFactory.onExport(policy, PolicyRepresentation.class.cast(representation), authorization);
-            } else {
-                PolicyRepresentation.class.cast(representation).setConfig(policy.getConfig());
-            }
-        } else {
-            representation = (R) providerFactory.toRepresentation(policy, representation);
-        }
 
         return representation;
     }

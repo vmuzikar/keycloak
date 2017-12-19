@@ -16,6 +16,7 @@
  */
 package org.keycloak.testsuite.admin;
 
+import org.apache.directory.api.ldap.aci.UserPermission;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Assert;
@@ -293,8 +294,18 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         clientConfigurePolicy.addAssociatedPolicy(userPolicy);
 
 
+        UserModel groupViewer = session.users().addUser(realm, "groupViewer");
+        groupViewer.grantRole(queryGroupsRole);
+        groupViewer.grantRole(queryUsersRole);
+        groupViewer.setEnabled(true);
+        session.userCredentialManager().updateCredential(realm, groupViewer, UserCredentialModel.password("password"));
 
-
+        UserPolicyRepresentation groupViewMembersRep = new UserPolicyRepresentation();
+        groupViewMembersRep.setName("groupMemberViewers");
+        groupViewMembersRep.addUser("groupViewer");
+        Policy groupViewMembersPolicy = permissions.authz().getStoreFactory().getPolicyStore().create(groupViewMembersRep, server);
+        Policy groupViewMembersPermission = permissions.groups().viewMembersPermission(group);
+        groupViewMembersPermission.addAssociatedPolicy(groupViewMembersPolicy);
 
 
     }
@@ -599,7 +610,19 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
             }
         }
 
+        // KEYCLOAK-5878
 
+        {
+            Keycloak realmClient = AdminClientUtil.createAdminClient(suiteContext.isAdapterCompatTesting(),
+                    TEST, "groupViewer", "password", Constants.ADMIN_CLI_CLIENT_ID, null);
+            // Should only return the list of users that belong to "top" group
+            List<UserRepresentation> queryUsers = realmClient.realm(TEST).users().list();
+            Assert.assertEquals(queryUsers.size(), 1);
+            Assert.assertEquals("groupmember", queryUsers.get(0).getUsername());
+            for (UserRepresentation user : queryUsers) {
+                System.out.println(user.getUsername());
+            }
+        }
     }
 
     @Test
@@ -715,13 +738,14 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         management.roles().setPermissionsEnabled(removedClientRole, true);
         management.groups().setPermissionsEnabled(removedGroup, true);
         management.clients().setPermissionsEnabled(client, true);
+        management.users().setPermissionsEnabled(true);
     }
 
     public static void invokeDelete(KeycloakSession session)  {
         RealmModel realm = session.realms().getRealmByName(TEST);
         AdminPermissionManagement management = AdminPermissions.management(session, realm);
         List<Resource> byResourceServer = management.authz().getStoreFactory().getResourceStore().findByResourceServer(management.realmResourceServer().getId());
-        Assert.assertEquals(4, byResourceServer.size());
+        Assert.assertEquals(5, byResourceServer.size());
         RoleModel removedRole = realm.getRole("removedRole");
         realm.removeRole(removedRole);
         ClientModel client = realm.getClientByClientId("removedClient");
@@ -730,8 +754,13 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         GroupModel group = KeycloakModelUtils.findGroupByPath(realm, "removedGroup");
         realm.removeGroup(group);
         byResourceServer = management.authz().getStoreFactory().getResourceStore().findByResourceServer(management.realmResourceServer().getId());
-        Assert.assertEquals(1, byResourceServer.size());
+        Assert.assertEquals(2, byResourceServer.size());
         realm.removeClient(client.getId());
+        byResourceServer = management.authz().getStoreFactory().getResourceStore().findByResourceServer(management.realmResourceServer().getId());
+        Assert.assertEquals(1, byResourceServer.size());
+        management.users().setPermissionsEnabled(false);
+        Resource userResource = management.authz().getStoreFactory().getResourceStore().findByName("Users", management.realmResourceServer().getId());
+        Assert.assertNull(userResource);
         byResourceServer = management.authz().getStoreFactory().getResourceStore().findByResourceServer(management.realmResourceServer().getId());
         Assert.assertEquals(0, byResourceServer.size());
     }

@@ -33,7 +33,6 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.models.UserManager;
-import org.keycloak.sessions.CommonClientSessionModel;
 import org.keycloak.testsuite.rule.KeycloakRule;
 
 import java.util.Arrays;
@@ -182,6 +181,30 @@ public class UserSessionProviderTest {
     }
 
     @Test
+    public void testUpdateClientSessionWithGetByClientId() {
+        UserSessionModel[] sessions = createSessions();
+
+        String userSessionId = sessions[0].getId();
+        String clientUUID = realm.getClientByClientId("test-app").getId();
+
+        UserSessionModel userSession = session.sessions().getUserSession(realm, userSessionId);
+        AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(clientUUID);
+
+        int time = clientSession.getTimestamp();
+        assertEquals(null, clientSession.getAction());
+
+        clientSession.setAction(AuthenticatedClientSessionModel.Action.LOGGED_OUT.name());
+        clientSession.setTimestamp(time + 10);
+
+        kc.stopSession(session, true);
+        session = kc.startSession();
+
+        AuthenticatedClientSessionModel updated = session.sessions().getUserSession(realm, userSessionId).getAuthenticatedClientSessionByClient(clientUUID);
+        assertEquals(AuthenticatedClientSessionModel.Action.LOGGED_OUT.name(), updated.getAction());
+        assertEquals(time + 10, updated.getTimestamp());
+    }
+
+    @Test
     public void testUpdateClientSessionInSameTransaction() {
         UserSessionModel[] sessions = createSessions();
 
@@ -189,12 +212,12 @@ public class UserSessionProviderTest {
         String clientUUID = realm.getClientByClientId("test-app").getId();
 
         UserSessionModel userSession = session.sessions().getUserSession(realm, userSessionId);
-        AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessions().get(clientUUID);
+        AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(clientUUID);
 
         clientSession.setAction(AuthenticatedClientSessionModel.Action.LOGGED_OUT.name());
         clientSession.setNote("foo", "bar");
 
-        AuthenticatedClientSessionModel updated = session.sessions().getUserSession(realm, userSessionId).getAuthenticatedClientSessions().get(clientUUID);
+        AuthenticatedClientSessionModel updated = session.sessions().getUserSession(realm, userSessionId).getAuthenticatedClientSessionByClient(clientUUID);
         assertEquals(AuthenticatedClientSessionModel.Action.LOGGED_OUT.name(), updated.getAction());
         assertEquals("bar", updated.getNote("foo"));
     }
@@ -289,13 +312,13 @@ public class UserSessionProviderTest {
             Set<String> expired = new HashSet<String>();
 
             Time.setOffset(-(realm.getSsoSessionMaxLifespan() + 1));
-            UserSessionModel userSession = session.sessions().createUserSession(KeycloakModelUtils.generateId(), realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.1", "form", true, null, null);
+            UserSessionModel userSession = session.sessions().createUserSession(realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.1", "form", true, null, null);
             expired.add(userSession.getId());
             AuthenticatedClientSessionModel clientSession = session.sessions().createClientSession(realm, client, userSession);
             Assert.assertEquals(userSession, clientSession.getUserSession());
 
             Time.setOffset(0);
-            UserSessionModel s = session.sessions().createUserSession(KeycloakModelUtils.generateId(), realm, session.users().getUserByUsername("user2", realm), "user2", "127.0.0.1", "form", true, null, null);
+            UserSessionModel s = session.sessions().createUserSession(realm, session.users().getUserByUsername("user2", realm), "user2", "127.0.0.1", "form", true, null, null);
             //s.setLastSessionRefresh(Time.currentTime() - (realm.getSsoSessionIdleTimeout() + 1));
             s.setLastSessionRefresh(0);
             expired.add(s.getId());
@@ -303,7 +326,7 @@ public class UserSessionProviderTest {
             Set<String> valid = new HashSet<String>();
             Set<String> validClientSessions = new HashSet<String>();
 
-            userSession = session.sessions().createUserSession(KeycloakModelUtils.generateId(), realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.1", "form", true, null, null);
+            userSession = session.sessions().createUserSession(realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.1", "form", true, null, null);
             valid.add(userSession.getId());
             validClientSessions.add(session.sessions().createClientSession(realm, client, userSession).getId());
 
@@ -359,9 +382,8 @@ public class UserSessionProviderTest {
         try {
             for (int i = 0; i < 25; i++) {
                 Time.setOffset(i);
-                UserSessionModel userSession = session.sessions().createUserSession(KeycloakModelUtils.generateId(), realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0." + i, "form", false, null, null);
+                UserSessionModel userSession = session.sessions().createUserSession(realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0." + i, "form", false, null, null);
                 AuthenticatedClientSessionModel clientSession = session.sessions().createClientSession(realm, realm.getClientByClientId("test-app"), userSession);
-                clientSession.setUserSession(userSession);
                 clientSession.setRedirectUri("http://redirect");
                 clientSession.setRoles(new HashSet<String>());
                 clientSession.setNote(OIDCLoginProtocol.STATE_PARAM, "state");
@@ -384,7 +406,7 @@ public class UserSessionProviderTest {
     @Test
     public void testCreateAndGetInSameTransaction() {
         ClientModel client = realm.getClientByClientId("test-app");
-        UserSessionModel userSession = session.sessions().createUserSession(KeycloakModelUtils.generateId(), realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.2", "form", true, null, null);
+        UserSessionModel userSession = session.sessions().createUserSession(realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.2", "form", true, null, null);
         AuthenticatedClientSessionModel clientSession = createClientSession(client, userSession, "http://redirect", "state", new HashSet<String>(), new HashSet<String>());
 
         UserSessionModel userSessionLoaded = session.sessions().getUserSession(realm, userSession.getId());
@@ -398,7 +420,7 @@ public class UserSessionProviderTest {
 
     @Test
     public void testAuthenticatedClientSessions() {
-        UserSessionModel userSession = session.sessions().createUserSession(KeycloakModelUtils.generateId(), realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.2", "form", true, null, null);
+        UserSessionModel userSession = session.sessions().createUserSession(realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.2", "form", true, null, null);
 
         ClientModel client1 = realm.getClientByClientId("test-app");
         ClientModel client2 = realm.getClientByClientId("third-party");
@@ -451,7 +473,7 @@ public class UserSessionProviderTest {
 
         // remove session
         clientSession1 = userSession.getAuthenticatedClientSessions().get(client1.getId());
-        clientSession1.setUserSession(null);
+        clientSession1.detachFromUserSession();
 
         // Commit and ensure removed
         resetSession();
@@ -577,7 +599,7 @@ public class UserSessionProviderTest {
 
     private UserSessionModel[] createSessions() {
         UserSessionModel[] sessions = new UserSessionModel[3];
-        sessions[0] = session.sessions().createUserSession(KeycloakModelUtils.generateId(), realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.1", "form", true, null, null);
+        sessions[0] = session.sessions().createUserSession(realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.1", "form", true, null, null);
 
         Set<String> roles = new HashSet<String>();
         roles.add("one");
@@ -590,10 +612,10 @@ public class UserSessionProviderTest {
         createClientSession(realm.getClientByClientId("test-app"), sessions[0], "http://redirect", "state", roles, protocolMappers);
         createClientSession(realm.getClientByClientId("third-party"), sessions[0], "http://redirect", "state", new HashSet<String>(), new HashSet<String>());
 
-        sessions[1] = session.sessions().createUserSession(KeycloakModelUtils.generateId(), realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.2", "form", true, null, null);
+        sessions[1] = session.sessions().createUserSession(realm, session.users().getUserByUsername("user1", realm), "user1", "127.0.0.2", "form", true, null, null);
         createClientSession(realm.getClientByClientId("test-app"), sessions[1], "http://redirect", "state", new HashSet<String>(), new HashSet<String>());
 
-        sessions[2] = session.sessions().createUserSession(KeycloakModelUtils.generateId(), realm, session.users().getUserByUsername("user2", realm), "user2", "127.0.0.3", "form", true, null, null);
+        sessions[2] = session.sessions().createUserSession(realm, session.users().getUserByUsername("user2", realm), "user2", "127.0.0.3", "form", true, null, null);
         createClientSession(realm.getClientByClientId("test-app"), sessions[2], "http://redirect", "state", new HashSet<String>(), new HashSet<String>());
 
         resetSession();

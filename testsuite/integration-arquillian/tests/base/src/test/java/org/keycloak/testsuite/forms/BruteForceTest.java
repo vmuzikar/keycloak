@@ -45,6 +45,7 @@ import org.keycloak.testsuite.util.RealmRepUtil;
 import org.keycloak.testsuite.util.UserBuilder;
 
 import java.net.MalformedURLException;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
@@ -67,6 +68,10 @@ public class BruteForceTest extends AbstractTestRealmKeycloakTest {
 
         testRealm.setBruteForceProtected(true);
         testRealm.setFailureFactor(2);
+        testRealm.setMaxDeltaTimeSeconds(20);
+        testRealm.setMaxFailureWaitSeconds(100);
+        testRealm.setWaitIncrementSeconds(5);
+        //testRealm.setQuickLoginCheckMilliSeconds(0L);
 
         userId = user.getId();
 
@@ -76,11 +81,40 @@ public class BruteForceTest extends AbstractTestRealmKeycloakTest {
 
     @Before
     public void config() {
+        try {
+            clearUserFailures();
+            clearAllUserFailures();
+            RealmRepresentation realm = adminClient.realm("test").toRepresentation();
+            realm.setFailureFactor(2);
+            realm.setMaxDeltaTimeSeconds(20);
+            realm.setMaxFailureWaitSeconds(100);
+            realm.setWaitIncrementSeconds(5);
+            adminClient.realm("test").update(realm);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        events.clear();
 
     }
 
     @After
     public void slowItDown() throws Exception {
+        try {
+            clearUserFailures();
+            clearAllUserFailures();
+            RealmRepresentation realm = adminClient.realm("test").toRepresentation();
+            realm.setMaxFailureWaitSeconds(900);
+            realm.setMinimumQuickLoginWaitSeconds(60);
+            realm.setWaitIncrementSeconds(60);
+            realm.setQuickLoginCheckMilliSeconds(1000L);
+            realm.setMaxDeltaTimeSeconds(60 * 60 * 12); // 12 hours
+            realm.setFailureFactor(30);
+            adminClient.realm("test").update(realm);
+            testingClient.testing().setTimeOffset(Collections.singletonMap("offset", String.valueOf(0)));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        events.clear();
         Thread.sleep(100);
     }
 
@@ -164,7 +198,8 @@ public class BruteForceTest extends AbstractTestRealmKeycloakTest {
             Assert.assertNull(response.getAccessToken());
             Assert.assertNotNull(response.getError());
             Assert.assertEquals("invalid_grant", response.getError());
-            Assert.assertEquals("Account temporarily disabled", response.getErrorDescription());
+            Assert.assertEquals("Invalid user credentials", response.getErrorDescription());
+            assertUserDisabledEvent();
             events.clear();
         }
         clearUserFailures();
@@ -207,7 +242,8 @@ public class BruteForceTest extends AbstractTestRealmKeycloakTest {
             assertTokenNull(response);
             Assert.assertNotNull(response.getError());
             Assert.assertEquals(response.getError(), "invalid_grant");
-            Assert.assertEquals(response.getErrorDescription(), "Account temporarily disabled");
+            Assert.assertEquals("Invalid user credentials", response.getErrorDescription());
+            assertUserDisabledEvent();
             events.clear();
         }
         clearUserFailures();
@@ -254,7 +290,8 @@ public class BruteForceTest extends AbstractTestRealmKeycloakTest {
             assertTokenNull(response);
             Assert.assertNotNull(response.getError());
             Assert.assertEquals(response.getError(), "invalid_grant");
-            Assert.assertEquals(response.getErrorDescription(), "Account temporarily disabled");
+            Assert.assertEquals("Invalid user credentials", response.getErrorDescription());
+            assertUserDisabledEvent();
             events.clear();
         }
         clearUserFailures();
@@ -281,6 +318,23 @@ public class BruteForceTest extends AbstractTestRealmKeycloakTest {
         expectTemporarilyDisabled();
         clearAllUserFailures();
         loginSuccess();
+    }
+
+    @Test
+    public void testWait() throws Exception {
+        loginSuccess();
+        loginInvalidPassword();
+        loginInvalidPassword();
+        expectTemporarilyDisabled();
+        // KEYCLOAK-5420
+        // Test to make sure that temporarily disabled doesn't increment failure count
+        testingClient.testing().setTimeOffset(Collections.singletonMap("offset", String.valueOf(6)));
+        // should be unlocked now
+        loginSuccess();
+        clearUserFailures();
+        clearAllUserFailures();
+        loginSuccess();
+        testingClient.testing().setTimeOffset(Collections.singletonMap("offset", String.valueOf(0)));
     }
 
     @Test
@@ -541,4 +595,7 @@ public class BruteForceTest extends AbstractTestRealmKeycloakTest {
         events.clear();
     }
 
+    private void assertUserDisabledEvent() {
+        events.expect(EventType.LOGIN_ERROR).error(Errors.USER_TEMPORARILY_DISABLED).assertEvent();
+    }
 }

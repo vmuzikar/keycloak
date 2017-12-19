@@ -35,6 +35,7 @@ import org.keycloak.models.*;
 import org.keycloak.services.Urls;
 import org.keycloak.services.validation.Validation;
 
+import org.keycloak.sessions.AuthenticationSessionCompoundId;
 import org.keycloak.sessions.AuthenticationSessionModel;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -131,17 +132,20 @@ public class VerifyEmail implements RequiredActionProvider, RequiredActionFactor
         RealmModel realm = session.getContext().getRealm();
         UriInfo uriInfo = session.getContext().getUri();
 
-        int validityInSecs = realm.getActionTokenGeneratedByUserLifespan();
+        int validityInSecs = realm.getActionTokenGeneratedByUserLifespan(VerifyEmailActionToken.TOKEN_TYPE);
         int absoluteExpirationInSecs = Time.currentTime() + validityInSecs;
 
-        VerifyEmailActionToken token = new VerifyEmailActionToken(user.getId(), absoluteExpirationInSecs, authSession.getId(), user.getEmail());
-        UriBuilder builder = Urls.actionTokenBuilder(uriInfo.getBaseUri(), token.serialize(session, realm, uriInfo));
+        String authSessionEncodedId = AuthenticationSessionCompoundId.fromAuthSession(authSession).getEncodedId();
+        VerifyEmailActionToken token = new VerifyEmailActionToken(user.getId(), absoluteExpirationInSecs, authSessionEncodedId, user.getEmail());
+        UriBuilder builder = Urls.actionTokenBuilder(uriInfo.getBaseUri(), token.serialize(session, realm, uriInfo),
+                authSession.getClient().getClientId(), authSession.getTabId());
         String link = builder.build(realm.getName()).toString();
         long expirationInMinutes = TimeUnit.SECONDS.toMinutes(validityInSecs);
 
         try {
             session
               .getProvider(EmailTemplateProvider.class)
+              .setAuthenticationSession(authSession)
               .setRealm(realm)
               .setUser(user)
               .sendVerifyEmail(link, expirationInMinutes);

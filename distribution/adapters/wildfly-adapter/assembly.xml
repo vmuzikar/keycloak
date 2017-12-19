@@ -39,7 +39,7 @@
             <outputDirectory/>
             <filtered>false</filtered>
             <excludes>
-                <exclude>docs/**</exclude>
+                <exclude>docs/schema/**</exclude>
                 <exclude>README.md</exclude>
             </excludes>
         </fileSet>

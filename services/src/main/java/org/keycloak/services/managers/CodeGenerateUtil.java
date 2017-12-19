@@ -32,6 +32,7 @@ import org.keycloak.events.Details;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.jose.jwe.JWEException;
 import org.keycloak.models.AuthenticatedClientSessionModel;
+import org.keycloak.models.ClientModel;
 import org.keycloak.models.CodeToTokenStoreProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -43,6 +44,7 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.util.TokenUtil;
 
 /**
+ * TODO: Remove this and probably also ClientSessionParser. It's uneccessary genericity and abstraction, which is not needed anymore when clientSessionModel was fully removed.
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -78,7 +80,7 @@ class CodeGenerateUtil {
 
     interface ClientSessionParser<CS extends CommonClientSessionModel> {
 
-        CS parseSession(String code, KeycloakSession session, RealmModel realm, EventBuilder event);
+        CS parseSession(String code, String tabId, KeycloakSession session, RealmModel realm, ClientModel client, EventBuilder event);
 
         String retrieveCode(KeycloakSession session, CS clientSession);
 
@@ -87,6 +89,9 @@ class CodeGenerateUtil {
         boolean verifyCode(KeycloakSession session, String code, CS clientSession);
 
         boolean isExpired(KeycloakSession session, String code, CS clientSession);
+
+        int getTimestamp(CS clientSession);
+        void setTimestamp(CS clientSession, int timestamp);
 
     }
 
@@ -97,9 +102,9 @@ class CodeGenerateUtil {
     private static class AuthenticationSessionModelParser implements ClientSessionParser<AuthenticationSessionModel> {
 
         @Override
-        public AuthenticationSessionModel parseSession(String code, KeycloakSession session, RealmModel realm, EventBuilder event) {
+        public AuthenticationSessionModel parseSession(String code, String tabId, KeycloakSession session, RealmModel realm, ClientModel client, EventBuilder event) {
             // Read authSessionID from cookie. Code is ignored for now
-            return new AuthenticationSessionManager(session).getCurrentAuthenticationSession(realm);
+            return new AuthenticationSessionManager(session).getCurrentAuthenticationSession(realm, client, tabId);
         }
 
         @Override
@@ -141,6 +146,16 @@ class CodeGenerateUtil {
         public boolean isExpired(KeycloakSession session, String code, AuthenticationSessionModel clientSession) {
             return false;
         }
+
+        @Override
+        public int getTimestamp(AuthenticationSessionModel clientSession) {
+            return clientSession.getParentSession().getTimestamp();
+        }
+
+        @Override
+        public void setTimestamp(AuthenticationSessionModel clientSession, int timestamp) {
+            clientSession.getParentSession().setTimestamp(timestamp);
+        }
     }
 
 
@@ -149,7 +164,7 @@ class CodeGenerateUtil {
         private CodeJWT codeJWT;
 
         @Override
-        public AuthenticatedClientSessionModel parseSession(String code, KeycloakSession session, RealmModel realm, EventBuilder event) {
+        public AuthenticatedClientSessionModel parseSession(String code, String tabId, KeycloakSession session, RealmModel realm, ClientModel client, EventBuilder event) {
             SecretKey aesKey = session.keys().getActiveAesKey(realm).getSecretKey();
             SecretKey hmacKey = session.keys().getActiveHmacKey(realm).getSecretKey();
 
@@ -172,7 +187,7 @@ class CodeGenerateUtil {
                 }
             }
 
-            return userSession.getAuthenticatedClientSessions().get(codeJWT.getIssuedFor());
+            return userSession.getAuthenticatedClientSessionByClient(codeJWT.getIssuedFor());
 
         }
 
@@ -240,6 +255,16 @@ class CodeGenerateUtil {
         @Override
         public boolean isExpired(KeycloakSession session, String code, AuthenticatedClientSessionModel clientSession) {
             return !codeJWT.isActive();
+        }
+
+        @Override
+        public int getTimestamp(AuthenticatedClientSessionModel clientSession) {
+            return clientSession.getTimestamp();
+        }
+
+        @Override
+        public void setTimestamp(AuthenticatedClientSessionModel clientSession, int timestamp) {
+            clientSession.setTimestamp(timestamp);
         }
     }
 

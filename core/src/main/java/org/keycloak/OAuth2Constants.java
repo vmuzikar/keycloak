@@ -79,8 +79,12 @@ public interface OAuth2Constants {
     String UI_LOCALES_PARAM = "ui_locales";
 
     String PROMPT = "prompt";
+    String ACR_VALUES = "acr_values";
 
     String MAX_AGE = "max_age";
+
+    // OIDC Session Management
+    String SESSION_STATE = "session_state";
 
     String JWT = "JWT";
 
@@ -105,7 +109,6 @@ public interface OAuth2Constants {
     String ACCESS_TOKEN_TYPE="urn:ietf:params:oauth:token-type:access_token";
     String REFRESH_TOKEN_TYPE="urn:ietf:params:oauth:token-type:refresh_token";
     String JWT_TOKEN_TYPE="urn:ietf:params:oauth:token-type:jwt";
-    String JWT_ACCESS_TOKEN_TYPE="urn:ietf:params:oauth:token-type:jwt:access_token";
     String ID_TOKEN_TYPE="urn:ietf:params:oauth:token-type:id_token";
 
 

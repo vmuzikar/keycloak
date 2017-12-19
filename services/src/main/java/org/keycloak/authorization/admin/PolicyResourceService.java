@@ -129,7 +129,7 @@ public class PolicyResourceService {
     }
 
     protected AbstractPolicyRepresentation toRepresentation(Policy policy, AuthorizationProvider authorization) {
-        return ModelToRepresentation.toRepresentation(policy, PolicyRepresentation.class, authorization);
+        return ModelToRepresentation.toRepresentation(policy, authorization, true, false);
     }
 
     @Path("/dependentPolicies")
@@ -215,6 +215,7 @@ public class PolicyResourceService {
             representation1.setId(policy.getId());
             representation1.setName(policy.getName());
             representation1.setType(policy.getType());
+            representation1.setDescription(policy.getDescription());
 
             return representation1;
         }).collect(Collectors.toList())).build();

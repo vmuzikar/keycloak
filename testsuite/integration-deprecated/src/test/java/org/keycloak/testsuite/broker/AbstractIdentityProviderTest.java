@@ -356,10 +356,10 @@ public abstract class AbstractIdentityProviderTest {
         assertEquals("text/html; charset=UTF-8", htmlContentType);
 
         final String htmlBody = (String) multipart.getBodyPart(1).getContent();
-        final String htmlVerificationUrl = MailUtil.getLink(htmlBody);
 
-        assertEquals(htmlVerificationUrl, textVerificationUrl);
+        final String htmlChangePwdUrl = MailUtil.getLink(htmlBody);
+        assertEquals(htmlChangePwdUrl, textVerificationUrl);
 
-        return htmlVerificationUrl;
+        return htmlChangePwdUrl;
     }
 }

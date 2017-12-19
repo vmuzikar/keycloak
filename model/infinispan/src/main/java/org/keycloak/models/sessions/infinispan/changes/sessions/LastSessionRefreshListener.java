@@ -20,8 +20,6 @@ package org.keycloak.models.sessions.infinispan.changes.sessions;
 import java.util.Map;
 
 import org.infinispan.Cache;
-import org.infinispan.client.hotrod.RemoteCache;
-import org.infinispan.client.hotrod.event.ClientEvent;
 import org.jboss.logging.Logger;
 import org.keycloak.cluster.ClusterEvent;
 import org.keycloak.cluster.ClusterListener;
@@ -30,6 +28,7 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.sessions.infinispan.changes.SessionEntityWrapper;
+import org.keycloak.models.sessions.infinispan.entities.UserSessionEntity;
 import org.keycloak.models.sessions.infinispan.util.InfinispanUtil;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
@@ -45,11 +44,11 @@ public class LastSessionRefreshListener implements ClusterListener {
     private final boolean offline;
 
     private final KeycloakSessionFactory sessionFactory;
-    private final Cache<String, SessionEntityWrapper> cache;
+    private final Cache<String, SessionEntityWrapper<UserSessionEntity>> cache;
     private final boolean distributed;
     private final String myAddress;
 
-    public LastSessionRefreshListener(KeycloakSession session, Cache<String, SessionEntityWrapper> cache, boolean offline) {
+    public LastSessionRefreshListener(KeycloakSession session, Cache<String, SessionEntityWrapper<UserSessionEntity>> cache, boolean offline) {
         this.sessionFactory = session.getKeycloakSessionFactory();
         this.cache = cache;
         this.offline = offline;
@@ -80,9 +79,9 @@ public class LastSessionRefreshListener implements ClusterListener {
                 KeycloakModelUtils.runJobInTransaction(sessionFactory, (kcSession) -> {
 
                     RealmModel realm = kcSession.realms().getRealm(realmId);
-                    UserSessionModel userSession = kcSession.sessions().getUserSession(realm, sessionId);
+                    UserSessionModel userSession = offline ? kcSession.sessions().getOfflineUserSession(realm, sessionId) : kcSession.sessions().getUserSession(realm, sessionId);
                     if (userSession == null) {
-                        logger.debugf("User session %s not available on node %s", sessionId, myAddress);
+                        logger.debugf("User session '%s' not available on node '%s' offline '%b'", sessionId, myAddress, offline);
                     } else {
                         // Update just if lastSessionRefresh from event is bigger than ours
                         if (lastSessionRefresh > userSession.getLastSessionRefresh()) {

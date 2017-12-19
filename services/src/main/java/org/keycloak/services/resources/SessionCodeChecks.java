@@ -47,6 +47,7 @@ import org.keycloak.services.messages.Messages;
 import org.keycloak.services.util.BrowserHistoryHelper;
 import org.keycloak.services.util.AuthenticationFlowURLHelper;
 import org.keycloak.sessions.AuthenticationSessionModel;
+import org.keycloak.sessions.RootAuthenticationSessionModel;
 
 
 public class SessionCodeChecks {
@@ -68,10 +69,12 @@ public class SessionCodeChecks {
     private final String code;
     private final String execution;
     private final String clientId;
+    private final String tabId;
     private final String flowPath;
 
 
-    public SessionCodeChecks(RealmModel realm, UriInfo uriInfo, HttpRequest request, ClientConnection clientConnection, KeycloakSession session, EventBuilder event, String code, String execution, String clientId, String flowPath) {
+    public SessionCodeChecks(RealmModel realm, UriInfo uriInfo, HttpRequest request, ClientConnection clientConnection, KeycloakSession session, EventBuilder event,
+                             String code, String execution, String clientId, String tabId, String flowPath) {
         this.realm = realm;
         this.uriInfo = uriInfo;
         this.request = request;
@@ -82,6 +85,7 @@ public class SessionCodeChecks {
         this.code = code;
         this.execution = execution;
         this.clientId = clientId;
+        this.tabId = tabId;
         this.flowPath = flowPath;
     }
 
@@ -123,19 +127,13 @@ public class SessionCodeChecks {
         // Basic realm checks
         if (!checkSsl()) {
             event.error(Errors.SSL_REQUIRED);
-            response = ErrorPage.error(session, Messages.HTTPS_REQUIRED);
+            response = ErrorPage.error(session, null, Response.Status.BAD_REQUEST, Messages.HTTPS_REQUIRED);
             return null;
         }
         if (!realm.isEnabled()) {
             event.error(Errors.REALM_DISABLED);
-            response = ErrorPage.error(session, Messages.REALM_NOT_ENABLED);
+            response = ErrorPage.error(session, null, Response.Status.BAD_REQUEST, Messages.REALM_NOT_ENABLED);
             return null;
-        }
-
-        // object retrieve
-        AuthenticationSessionModel authSession = ClientSessionCode.getClientSession(code, session, realm, event, AuthenticationSessionModel.class);
-        if (authSession != null) {
-            return authSession;
         }
 
         // Setup client to be shown on error/info page based on "client_id" parameter
@@ -148,13 +146,22 @@ public class SessionCodeChecks {
             session.getContext().setClient(client);
         }
 
+        // object retrieve
+        AuthenticationSessionManager authSessionManager = new AuthenticationSessionManager(session);
+        AuthenticationSessionModel authSession = authSessionManager.getCurrentAuthenticationSession(realm, client, tabId);
+        if (authSession != null) {
+            session.getProvider(LoginFormsProvider.class).setAuthenticationSession(authSession);
+            return authSession;
+        }
+
         // See if we are already authenticated and userSession with same ID exists.
-        String sessionId = new AuthenticationSessionManager(session).getCurrentAuthenticationSessionId(realm);
+        String sessionId = authSessionManager.getCurrentAuthenticationSessionId(realm);
+        RootAuthenticationSessionModel existingRootAuthSession = null;
         if (sessionId != null) {
             UserSessionModel userSession = session.sessions().getUserSession(realm, sessionId);
             if (userSession != null) {
 
-                LoginFormsProvider loginForm = session.getProvider(LoginFormsProvider.class)
+                LoginFormsProvider loginForm = session.getProvider(LoginFormsProvider.class).setAuthenticationSession(authSession)
                         .setSuccess(Messages.ALREADY_LOGGED_IN);
 
                 if (client == null) {
@@ -164,10 +171,13 @@ public class SessionCodeChecks {
                 response = loginForm.createInfoPage();
                 return null;
             }
+
+
+            existingRootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, sessionId);
         }
 
         // Otherwise just try to restart from the cookie
-        response = restartAuthenticationSessionFromCookie();
+        response = restartAuthenticationSessionFromCookie(existingRootAuthSession);
         return null;
     }
 
@@ -186,11 +196,11 @@ public class SessionCodeChecks {
         }
 
         // Client checks
-        event.detail(Details.CODE_ID, authSession.getId());
+        event.detail(Details.CODE_ID, authSession.getParentSession().getId());
         ClientModel client = authSession.getClient();
         if (client == null) {
             event.error(Errors.CLIENT_NOT_FOUND);
-            response = ErrorPage.error(session, Messages.UNKNOWN_LOGIN_REQUESTER);
+            response = ErrorPage.error(session, authSession, Response.Status.BAD_REQUEST, Messages.UNKNOWN_LOGIN_REQUESTER);
             clientCode.removeExpiredClientSession();
             return false;
         }
@@ -200,7 +210,7 @@ public class SessionCodeChecks {
 
         if (!client.isEnabled()) {
             event.error(Errors.CLIENT_DISABLED);
-            response = ErrorPage.error(session, Messages.LOGIN_REQUESTER_NOT_ENABLED);
+            response = ErrorPage.error(session,authSession, Response.Status.BAD_REQUEST, Messages.LOGIN_REQUESTER_NOT_ENABLED);
             clientCode.removeExpiredClientSession();
             return false;
         }
@@ -240,14 +250,14 @@ public class SessionCodeChecks {
                 return false;
             }
         } else {
-            ClientSessionCode.ParseResult<AuthenticationSessionModel> result = ClientSessionCode.parseResult(code, session, realm, event, AuthenticationSessionModel.class);
+            ClientSessionCode.ParseResult<AuthenticationSessionModel> result = ClientSessionCode.parseResult(code, tabId, session, realm, client, event, AuthenticationSessionModel.class);
             clientCode = result.getCode();
             if (clientCode == null) {
 
                 // In case that is replayed action, but sent to the same FORM like actual FORM, we just re-render the page
                 if (ObjectUtil.isEqualOrBothNull(execution, authSession.getAuthNote(AuthenticationProcessor.CURRENT_AUTHENTICATION_EXECUTION))) {
                     String latestFlowPath = authSession.getAuthNote(AuthenticationProcessor.CURRENT_FLOW_PATH);
-                    URI redirectUri = getLastExecutionUrl(latestFlowPath, execution, client.getClientId());
+                    URI redirectUri = getLastExecutionUrl(latestFlowPath, execution, tabId);
 
                     logger.debugf("Invalid action code, but execution matches. So just redirecting to %s", redirectUri);
                     authSession.setAuthNote(LoginActionsService.FORWARDED_ERROR_MESSAGE_NOTE, Messages.EXPIRED_ACTION);
@@ -285,7 +295,7 @@ public class SessionCodeChecks {
                 return false;
             } else {
                 logger.errorf("Bad action. Expected action '%s', current action '%s'", expectedAction, authSession.getAction());
-                response = ErrorPage.error(session, Messages.EXPIRED_CODE);
+                response = ErrorPage.error(session, authSession, Response.Status.BAD_REQUEST, Messages.EXPIRED_CODE);
                 return false;
             }
         }
@@ -302,7 +312,7 @@ public class SessionCodeChecks {
 
             authSession.setAuthNote(LoginActionsService.FORWARDED_ERROR_MESSAGE_NOTE, Messages.LOGIN_TIMEOUT);
 
-            URI redirectUri = getLastExecutionUrl(LoginActionsService.AUTHENTICATE_PATH, null, authSession.getClient().getClientId());
+            URI redirectUri = getLastExecutionUrl(LoginActionsService.AUTHENTICATE_PATH, null, tabId);
             logger.debugf("Flow restart after timeout. Redirecting to %s", redirectUri);
             response = Response.status(Response.Status.FOUND).location(redirectUri).build();
             return false;
@@ -341,11 +351,12 @@ public class SessionCodeChecks {
     }
 
 
-    private Response restartAuthenticationSessionFromCookie() {
+    private Response restartAuthenticationSessionFromCookie(RootAuthenticationSessionModel existingRootSession) {
         logger.debug("Authentication session not found. Trying to restart from cookie.");
         AuthenticationSessionModel authSession = null;
+
         try {
-            authSession = RestartLoginCookie.restartSession(session, realm);
+            authSession = RestartLoginCookie.restartSession(session, realm, existingRootSession, clientId);
         } catch (Exception e) {
             ServicesLogger.LOGGER.failedToParseRestartLoginCookie(e);
         }
@@ -364,13 +375,13 @@ public class SessionCodeChecks {
                 flowPath = LoginActionsService.AUTHENTICATE_PATH;
             }
 
-            URI redirectUri = getLastExecutionUrl(flowPath, null, authSession.getClient().getClientId());
+            URI redirectUri = getLastExecutionUrl(flowPath, null, authSession.getTabId());
             logger.debugf("Authentication session restart from cookie succeeded. Redirecting to %s", redirectUri);
             return Response.status(Response.Status.FOUND).location(redirectUri).build();
         } else {
             // Finally need to show error as all the fallbacks failed
             event.error(Errors.INVALID_CODE);
-            return ErrorPage.error(session, Messages.INVALID_CODE);
+            return ErrorPage.error(session, authSession, Response.Status.BAD_REQUEST, Messages.INVALID_CODE);
         }
     }
 
@@ -385,15 +396,16 @@ public class SessionCodeChecks {
 
         ClientModel client = authSession.getClient();
         uriBuilder.queryParam(Constants.CLIENT_ID, client.getClientId());
+        uriBuilder.queryParam(Constants.TAB_ID, authSession.getTabId());
 
         URI redirect = uriBuilder.build(realm.getName());
         return Response.status(302).location(redirect).build();
     }
 
 
-    private URI getLastExecutionUrl(String flowPath, String executionId, String clientId) {
+    private URI getLastExecutionUrl(String flowPath, String executionId, String tabId) {
         return new AuthenticationFlowURLHelper(session, realm, uriInfo)
-                .getLastExecutionUrl(flowPath, executionId, clientId);
+                .getLastExecutionUrl(flowPath, executionId, clientId, tabId);
     }
 
 

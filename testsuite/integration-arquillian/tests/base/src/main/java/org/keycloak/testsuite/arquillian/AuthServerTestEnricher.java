@@ -135,6 +135,11 @@ public class AuthServerTestEnricher {
 
         return managementClient;
     }
+    
+    public void distinguishContainersInConsoleOutput(@Observes(precedence = 5) StartContainer event) {
+        log.info("*****************************************************************"
+                + "*****************************************************************************");
+    }
 
     public void initializeSuiteContext(@Observes(precedence = 2) BeforeSuite event) {
         Set<ContainerInfo> containers = containerRegistry.get().getContainers().stream()
@@ -165,15 +170,16 @@ public class AuthServerTestEnricher {
             }
 
             containers.stream()
-              .filter(c -> c.getQualifier().startsWith(AUTH_SERVER_CONTAINER + "-cross-dc-"))
-              .sorted((a, b) -> a.getQualifier().compareTo(b.getQualifier()))
-              .forEach(c -> {
-                String portOffsetString = c.getArquillianContainer().getContainerConfiguration().getContainerProperties().getOrDefault("bindHttpPortOffset", "0");
-                String dcString = c.getArquillianContainer().getContainerConfiguration().getContainerProperties().getOrDefault("dataCenter", "0");
-                updateWithAuthServerInfo(c, Integer.valueOf(portOffsetString));
-                suiteContext.addAuthServerBackendsInfo(Integer.valueOf(dcString), c);
-              });
+                    .filter(c -> c.getQualifier().startsWith("auth-server-" + System.getProperty("node.name") + "-"))
+                    .sorted((a, b) -> a.getQualifier().compareTo(b.getQualifier()))
+                    .forEach(c -> {
+                        String portOffsetString = c.getArquillianContainer().getContainerConfiguration().getContainerProperties().getOrDefault("bindHttpPortOffset", "0");
+                        updateWithAuthServerInfo(c, Integer.valueOf(portOffsetString));
 
+                        String dcString = c.getArquillianContainer().getContainerConfiguration().getContainerProperties().getOrDefault("dataCenter", "0");
+                        suiteContext.addAuthServerBackendsInfo(Integer.valueOf(dcString), c);
+                    });
+            
             containers.stream()
                     .filter(c -> c.getQualifier().startsWith("cache-server-cross-dc-"))
                     .sorted((a, b) -> a.getQualifier().compareTo(b.getQualifier()))
@@ -210,12 +216,13 @@ public class AuthServerTestEnricher {
             suiteContext.setAuthServerInfo(container);
 
             containers.stream()
-              .filter(c -> c.getQualifier().startsWith(AUTH_SERVER_BACKEND))
-              .forEach(c -> {
-                String portOffsetString = c.getArquillianContainer().getContainerConfiguration().getContainerProperties().getOrDefault("bindHttpPortOffset", "0");
-                updateWithAuthServerInfo(c, Integer.valueOf(portOffsetString));
-                suiteContext.addAuthServerBackendsInfo(0, c);
-              });
+                .filter(c -> c.getQualifier().startsWith(AUTH_SERVER_BACKEND))
+                .sorted((a, b) -> a.getQualifier().compareTo(b.getQualifier())) // ordering is expected by the cluster tests
+                .forEach(c -> {
+                    int portOffset = Integer.parseInt(c.getQualifier().substring(AUTH_SERVER_BACKEND.length()));
+                    updateWithAuthServerInfo(c, portOffset);
+                    suiteContext.addAuthServerBackendsInfo(0, c);
+                });
 
             if (suiteContext.getAuthServerBackendsInfo().isEmpty()) {
                 throw new RuntimeException(String.format("No auth server container matching '%s' found in arquillian.xml.", AUTH_SERVER_BACKEND));

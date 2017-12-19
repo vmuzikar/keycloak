@@ -25,14 +25,13 @@ class DefaultSimulation extends Simulation {
 
 
 
-  println("Using test parameters:")
-  println("  runUsers: " + TestConfig.runUsers)
-  println("  numOfIterations: " + TestConfig.numOfIterations)
-  println("  rampUpPeriod: " + TestConfig.rampUpPeriod)
-  println("  userThinkTime: " + TestConfig.userThinkTime)
-  println("  badLoginAttempts: " + TestConfig.badLoginAttempts)
+  println()
+  println("Target servers: " + TestConfig.serverUrisList)
+  println()
+
+  println("Using test parameters:\n" + TestConfig.toStringCommonTestParameters);
   println("  refreshTokenCount: " + TestConfig.refreshTokenCount)
-  println("  refreshTokenPeriod: " + TestConfig.refreshTokenPeriod)
+  println("  badLoginAttempts: " + TestConfig.badLoginAttempts)
   println()
   println("Using dataset properties:\n" + TestConfig.toStringDatasetProperties)
 
@@ -81,7 +80,7 @@ class DefaultSimulation extends Simulation {
       .queryParam("client_id", "${clientId}")
       .queryParam("state", "${state}")
       .queryParam("redirect_uri", "${appUrl}")
-      .check(status.is(200), regex("action=\"([^\"]*)\"").saveAs("login-form-uri")))
+      .check(status.is(200), regex("action=\"([^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("login-form-uri")))
     .exitHereIfFailed
     .pause(TestConfig.userThinkTime, Normal(TestConfig.userThinkTime * 0.2))
 
@@ -92,7 +91,7 @@ class DefaultSimulation extends Simulation {
         .formParam("username", "${username}")
         .formParam("password", _ => Util.randomString(10))
         .formParam("login", "Log in")
-        .check(status.is(200), regex("action=\"([^\"]*)\"").saveAs("login-form-uri")))
+        .check(status.is(200), regex("action=\"([^\"]*)\"").find.transform(_.replaceAll("&amp;", "&")).saveAs("login-form-uri")))
         .exitHereIfFailed
         .pause(TestConfig.userThinkTime, Normal(TestConfig.userThinkTime * 0.2))
     }
@@ -134,20 +133,14 @@ class DefaultSimulation extends Simulation {
       .check(status.is(302), header("Location").is("${appUrl}")))
 
   val usersScenario = scenario("users")
-    .repeat(TestConfig.numOfIterations) {
+    .asLongAs(s => rampDownPeriodNotReached(), null, TestConfig.rampDownASAP) {
+      pace(TestConfig.pace)
       userSession
     }
 
-  setUp(usersScenario.inject( {
-    if (TestConfig.rampUpPeriod > 0) {
-      rampUsers(TestConfig.runUsers) over TestConfig.rampUpPeriod
-    } else {
-      atOnceUsers(TestConfig.runUsers)
-    }
-  }).protocols(httpDefault))
-
-
-
+  setUp(usersScenario
+    .inject(rampUsers(TestConfig.runUsers) over TestConfig.rampUpPeriod)
+    .protocols(httpDefault))
 
   //
   // Function definitions
@@ -160,4 +153,9 @@ class DefaultSimulation extends Simulation {
     }
     missCounter.getAndDecrement() > 0
   }
+
+  def rampDownPeriodNotReached(): Validation[Boolean] = {
+    System.currentTimeMillis < TestConfig.rampDownPeriodStartTime
+  }
+
 }

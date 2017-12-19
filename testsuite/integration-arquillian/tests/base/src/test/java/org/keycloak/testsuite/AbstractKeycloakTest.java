@@ -64,12 +64,14 @@ import org.keycloak.testsuite.auth.page.login.OIDCLogin;
 import org.keycloak.testsuite.auth.page.login.UpdatePassword;
 import org.keycloak.testsuite.client.KeycloakTestingClient;
 import org.keycloak.testsuite.util.AdminClientUtil;
+import org.keycloak.testsuite.util.DroneUtils;
 import org.keycloak.testsuite.util.OAuthClient;
 import org.keycloak.testsuite.util.TestCleanup;
 import org.keycloak.testsuite.util.TestEventsLogger;
 import org.openqa.selenium.WebDriver;
 import org.wildfly.extras.creaper.commands.undertow.AddUndertowListener;
 import org.wildfly.extras.creaper.commands.undertow.RemoveUndertowListener;
+import org.wildfly.extras.creaper.commands.undertow.SslVerifyClient;
 import org.wildfly.extras.creaper.commands.undertow.UndertowListenerType;
 import org.wildfly.extras.creaper.core.CommandFailedException;
 import org.wildfly.extras.creaper.core.online.CliException;
@@ -213,6 +215,9 @@ public abstract class AbstractKeycloakTest {
             }
             testContext.getCleanups().clear();
         }
+
+        // Remove all browsers from queue
+        DroneUtils.resetQueue();
     }
 
     protected TestCleanup getCleanup(String realmName) {
@@ -429,6 +434,10 @@ public abstract class AbstractKeycloakTest {
         }
     }
 
+    public Logger getLogger() {
+        return log;
+    }
+
     private static void enableHTTPSForAuthServer() throws IOException, CommandFailedException, TimeoutException, InterruptedException, CliException, OperationException {
         OnlineManagementClient client = AuthServerTestEnricher.getManagementClient();
         Administration administration = new Administration(client);
@@ -437,6 +446,7 @@ public abstract class AbstractKeycloakTest {
         if(!operations.exists(Address.coreService("management").and("security-realm", "UndertowRealm"))) {
             client.execute("/core-service=management/security-realm=UndertowRealm:add()");
             client.execute("/core-service=management/security-realm=UndertowRealm/server-identity=ssl:add(keystore-relative-to=jboss.server.config.dir,keystore-password=secret,keystore-path=keycloak.jks");
+            client.execute("/core-service=management/security-realm=UndertowRealm/authentication=truststore:add(keystore-relative-to=jboss.server.config.dir,keystore-password=secret,keystore-path=keycloak.truststore");
         }
 
         client.apply(new RemoveUndertowListener.Builder(UndertowListenerType.HTTPS_LISTENER, "https")
@@ -446,6 +456,7 @@ public abstract class AbstractKeycloakTest {
 
         client.apply(new AddUndertowListener.HttpsBuilder("https", "default-server", "https")
                 .securityRealm("UndertowRealm")
+                .verifyClient(SslVerifyClient.REQUESTED)
                 .build());
 
         administration.reloadIfRequired();

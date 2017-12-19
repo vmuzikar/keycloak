@@ -33,14 +33,14 @@ import org.keycloak.models.UserSessionProvider;
 import org.keycloak.models.UserSessionProviderFactory;
 import org.keycloak.models.sessions.infinispan.changes.sessions.LastSessionRefreshStore;
 import org.keycloak.models.sessions.infinispan.changes.sessions.LastSessionRefreshStoreFactory;
-import org.keycloak.models.sessions.infinispan.initializer.BaseCacheInitializer;
 import org.keycloak.models.sessions.infinispan.initializer.CacheInitializer;
 import org.keycloak.models.sessions.infinispan.initializer.DBLockBasedCacheInitializer;
-import org.keycloak.models.sessions.infinispan.initializer.SingleWorkerCacheInitializer;
 import org.keycloak.models.sessions.infinispan.remotestore.RemoteCacheInvoker;
 import org.keycloak.models.sessions.infinispan.changes.SessionEntityWrapper;
+import org.keycloak.models.sessions.infinispan.entities.AuthenticatedClientSessionEntity;
 import org.keycloak.models.sessions.infinispan.entities.LoginFailureEntity;
 import org.keycloak.models.sessions.infinispan.entities.LoginFailureKey;
+import org.keycloak.models.sessions.infinispan.entities.SessionEntity;
 import org.keycloak.models.sessions.infinispan.entities.UserSessionEntity;
 import org.keycloak.models.sessions.infinispan.events.AbstractUserSessionClusterListener;
 import org.keycloak.models.sessions.infinispan.events.ClientRemovedSessionEvent;
@@ -51,6 +51,7 @@ import org.keycloak.models.sessions.infinispan.initializer.InfinispanCacheInitia
 import org.keycloak.models.sessions.infinispan.initializer.OfflinePersistentUserSessionLoader;
 import org.keycloak.models.sessions.infinispan.remotestore.RemoteCacheSessionListener;
 import org.keycloak.models.sessions.infinispan.remotestore.RemoteCacheSessionsLoader;
+import org.keycloak.models.sessions.infinispan.util.InfinispanKeyGenerator;
 import org.keycloak.models.sessions.infinispan.util.InfinispanUtil;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.PostMigrationEvent;
@@ -59,6 +60,7 @@ import org.keycloak.provider.ProviderEventListener;
 
 import java.io.Serializable;
 import java.util.Set;
+import java.util.UUID;
 
 public class InfinispanUserSessionProviderFactory implements UserSessionProviderFactory {
 
@@ -79,15 +81,19 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
     private RemoteCacheInvoker remoteCacheInvoker;
     private LastSessionRefreshStore lastSessionRefreshStore;
     private LastSessionRefreshStore offlineLastSessionRefreshStore;
+    private InfinispanKeyGenerator keyGenerator;
 
     @Override
     public InfinispanUserSessionProvider create(KeycloakSession session) {
         InfinispanConnectionProvider connections = session.getProvider(InfinispanConnectionProvider.class);
-        Cache<String, SessionEntityWrapper<UserSessionEntity>> cache = connections.getCache(InfinispanConnectionProvider.SESSION_CACHE_NAME);
-        Cache<String, SessionEntityWrapper<UserSessionEntity>> offlineSessionsCache = connections.getCache(InfinispanConnectionProvider.OFFLINE_SESSION_CACHE_NAME);
+        Cache<String, SessionEntityWrapper<UserSessionEntity>> cache = connections.getCache(InfinispanConnectionProvider.USER_SESSION_CACHE_NAME);
+        Cache<String, SessionEntityWrapper<UserSessionEntity>> offlineSessionsCache = connections.getCache(InfinispanConnectionProvider.OFFLINE_USER_SESSION_CACHE_NAME);
+        Cache<UUID, SessionEntityWrapper<AuthenticatedClientSessionEntity>> clientSessionCache = connections.getCache(InfinispanConnectionProvider.CLIENT_SESSION_CACHE_NAME);
+        Cache<UUID, SessionEntityWrapper<AuthenticatedClientSessionEntity>> offlineClientSessionsCache = connections.getCache(InfinispanConnectionProvider.OFFLINE_CLIENT_SESSION_CACHE_NAME);
         Cache<LoginFailureKey, SessionEntityWrapper<LoginFailureEntity>> loginFailures = connections.getCache(InfinispanConnectionProvider.LOGIN_FAILURE_CACHE_NAME);
 
-        return new InfinispanUserSessionProvider(session, remoteCacheInvoker, lastSessionRefreshStore, offlineLastSessionRefreshStore, cache, offlineSessionsCache, loginFailures);
+        return new InfinispanUserSessionProvider(session, remoteCacheInvoker, lastSessionRefreshStore, offlineLastSessionRefreshStore, keyGenerator,
+          cache, offlineSessionsCache, clientSessionCache, offlineClientSessionsCache, loginFailures);
     }
 
     @Override
@@ -105,6 +111,7 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
                 if (event instanceof PostMigrationEvent) {
                     KeycloakSession session = ((PostMigrationEvent) event).getSession();
 
+                    keyGenerator = new InfinispanKeyGenerator();
                     checkRemoteCaches(session);
                     loadPersistentSessions(factory, getMaxErrors(), getSessionsPerSegment());
                     registerClusterListeners(session);
@@ -206,17 +213,23 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
 
         InfinispanConnectionProvider ispn = session.getProvider(InfinispanConnectionProvider.class);
 
-        Cache sessionsCache = ispn.getCache(InfinispanConnectionProvider.SESSION_CACHE_NAME);
+        Cache<String, SessionEntityWrapper<UserSessionEntity>> sessionsCache = ispn.getCache(InfinispanConnectionProvider.USER_SESSION_CACHE_NAME);
         boolean sessionsRemoteCache = checkRemoteCache(session, sessionsCache, (RealmModel realm) -> {
-            return realm.getSsoSessionIdleTimeout() * 1000;
+            // We won't write to the remoteCache during token refresh, so the timeout needs to be longer.
+            return realm.getSsoSessionMaxLifespan() * 1000;
         });
 
         if (sessionsRemoteCache) {
             lastSessionRefreshStore = new LastSessionRefreshStoreFactory().createAndInit(session, sessionsCache, false);
         }
 
+        Cache<UUID, SessionEntityWrapper<AuthenticatedClientSessionEntity>> clientSessionsCache = ispn.getCache(InfinispanConnectionProvider.CLIENT_SESSION_CACHE_NAME);
+        checkRemoteCache(session, clientSessionsCache, (RealmModel realm) -> {
+            // We won't write to the remoteCache during token refresh, so the timeout needs to be longer.
+            return realm.getSsoSessionMaxLifespan() * 1000;
+        });
 
-        Cache offlineSessionsCache = ispn.getCache(InfinispanConnectionProvider.OFFLINE_SESSION_CACHE_NAME);
+        Cache<String, SessionEntityWrapper<UserSessionEntity>> offlineSessionsCache = ispn.getCache(InfinispanConnectionProvider.OFFLINE_USER_SESSION_CACHE_NAME);
         boolean offlineSessionsRemoteCache = checkRemoteCache(session, offlineSessionsCache, (RealmModel realm) -> {
             return realm.getOfflineSessionIdleTimeout() * 1000;
         });
@@ -225,13 +238,18 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
             offlineLastSessionRefreshStore = new LastSessionRefreshStoreFactory().createAndInit(session, offlineSessionsCache, true);
         }
 
-        Cache loginFailuresCache = ispn.getCache(InfinispanConnectionProvider.LOGIN_FAILURE_CACHE_NAME);
-        boolean loginFailuresRemoteCache = checkRemoteCache(session, loginFailuresCache, (RealmModel realm) -> {
+        Cache<UUID, SessionEntityWrapper<AuthenticatedClientSessionEntity>> offlineClientSessionsCache = ispn.getCache(InfinispanConnectionProvider.OFFLINE_CLIENT_SESSION_CACHE_NAME);
+        checkRemoteCache(session, offlineClientSessionsCache, (RealmModel realm) -> {
+            return realm.getOfflineSessionIdleTimeout() * 1000;
+        });
+
+        Cache<LoginFailureKey, SessionEntityWrapper<LoginFailureEntity>> loginFailuresCache = ispn.getCache(InfinispanConnectionProvider.LOGIN_FAILURE_CACHE_NAME);
+        checkRemoteCache(session, loginFailuresCache, (RealmModel realm) -> {
             return realm.getMaxDeltaTimeSeconds() * 1000;
         });
     }
 
-    private boolean checkRemoteCache(KeycloakSession session, Cache ispnCache, RemoteCacheInvoker.MaxIdleTimeLoader maxIdleLoader) {
+    private <K, V extends SessionEntity> boolean checkRemoteCache(KeycloakSession session, Cache<K, SessionEntityWrapper<V>> ispnCache, RemoteCacheInvoker.MaxIdleTimeLoader maxIdleLoader) {
         Set<RemoteStore> remoteStores = InfinispanUtil.getRemoteStores(ispnCache);
 
         if (remoteStores.isEmpty()) {
@@ -240,7 +258,11 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
         } else {
             log.infof("Remote store configured for cache '%s'", ispnCache.getName());
 
-            RemoteCache remoteCache = remoteStores.iterator().next().getRemoteCache();
+            RemoteCache<K, SessionEntityWrapper<V>> remoteCache = (RemoteCache) remoteStores.iterator().next().getRemoteCache();
+
+            if (remoteCache == null) {
+                throw new IllegalStateException("No remote cache available for the infinispan cache: " + ispnCache.getName());
+            }
 
             remoteCacheInvoker.addRemoteCache(ispnCache.getName(), remoteCache, maxIdleLoader);
 
@@ -259,7 +281,7 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
 
 
     private void loadSessionsFromRemoteCache(final KeycloakSessionFactory sessionFactory, String cacheName, final int sessionsPerSegment, final int maxErrors) {
-        log.debugf("Check pre-loading userSessions from remote cache '%s'", cacheName);
+        log.debugf("Check pre-loading sessions from remote cache '%s'", cacheName);
 
         KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
 
@@ -276,7 +298,7 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
 
         });
 
-        log.debugf("Pre-loading userSessions from remote cache '%s' finished", cacheName);
+        log.debugf("Pre-loading sessions from remote cache '%s' finished", cacheName);
     }
 
 

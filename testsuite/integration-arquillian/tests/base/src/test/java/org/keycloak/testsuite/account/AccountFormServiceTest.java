@@ -68,6 +68,9 @@ import java.util.Map;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
@@ -205,6 +208,17 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
         Assert.assertTrue(appPage.isCurrent());
 
         events.clear();
+    }
+
+    @Test
+    public void referrerEscaped() {
+        profilePage.open();
+        loginPage.login("test-user@localhost", "password");
+
+        driver.navigate().to(profilePage.getPath() + "?referrer=test-app&referrer_uri=http://localhost:8180/auth/realms/master/app/auth/test%2Ffkrenu%22%3E%3Cscript%3Ealert%281%29%3C%2fscript%3E");
+        Assert.assertTrue(profilePage.isCurrent());
+
+        assertFalse(driver.getPageSource().contains("<script>alert"));
     }
 
     @Test
@@ -556,7 +570,7 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
 
         profilePage.open();
         loginPage.login("test-user@localhost", "password");
-        Assert.assertFalse(driver.findElements(By.id("username")).size() > 0);
+        assertFalse(driver.findElements(By.id("username")).size() > 0);
 
         // Revert
         setRegistrationEmailAsUsername(false);
@@ -756,7 +770,40 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
 
         Assert.assertTrue(totpPage.isCurrent());
 
-        Assert.assertFalse(driver.getPageSource().contains("Remove Google"));
+        assertFalse(driver.getPageSource().contains("Remove Google"));
+
+        String pageSource = driver.getPageSource();
+
+        assertTrue(pageSource.contains("Install one of the following applications on your mobile"));
+        assertTrue(pageSource.contains("FreeOTP"));
+        assertTrue(pageSource.contains("Google Authenticator"));
+
+        assertTrue(pageSource.contains("Open the application and scan the barcode"));
+        assertFalse(pageSource.contains("Open the application and enter the key"));
+
+        assertTrue(pageSource.contains("Unable to scan?"));
+        assertFalse(pageSource.contains("Scan barcode?"));
+
+        totpPage.clickManual();
+
+        pageSource = driver.getPageSource();
+
+        assertTrue(pageSource.contains("Install one of the following applications on your mobile"));
+        assertTrue(pageSource.contains("FreeOTP"));
+        assertTrue(pageSource.contains("Google Authenticator"));
+
+        assertFalse(pageSource.contains("Open the application and scan the barcode"));
+        assertTrue(pageSource.contains("Open the application and enter the key"));
+
+        assertFalse(pageSource.contains("Unable to scan?"));
+        assertTrue(pageSource.contains("Scan barcode?"));
+
+        assertTrue(driver.findElement(By.id("kc-totp-secret-key")).getText().matches("[\\w]{4}( [\\w]{4}){7}"));
+
+        assertEquals("Type: Time-based", driver.findElement(By.id("kc-totp-type")).getText());
+        assertEquals("Algorithm: HmacSHA1", driver.findElement(By.id("kc-totp-algorithm")).getText());
+        assertEquals("Digits: 6", driver.findElement(By.id("kc-totp-digits")).getText());
+        assertEquals("Interval: 30", driver.findElement(By.id("kc-totp-period")).getText());
 
         // Error with false code
         totpPage.configure(totp.generateTOTP(totpPage.getTotpSecret() + "123"));
@@ -774,6 +821,10 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
         totpPage.removeTotp();
 
         events.expectAccount(EventType.REMOVE_TOTP).assertEvent();
+
+        accountPage.logOut();
+
+        assertFalse(errorPage.isCurrent());
     }
 
     @Test
@@ -982,7 +1033,7 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
     public void testIdentityProviderHiddenOnLoginPageIsVisbleInAccount(){
         federatedIdentityPage.open();
         loginPage.login("test-user@localhost", "password");
-        Assert.assertNotNull(federatedIdentityPage.findAddProviderButton("myhiddenoidc"));
+        Assert.assertNotNull(federatedIdentityPage.findAddProvider("myhiddenoidc"));
     }
 
     @Test

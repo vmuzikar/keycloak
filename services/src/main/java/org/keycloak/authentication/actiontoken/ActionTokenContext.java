@@ -21,6 +21,7 @@ import org.keycloak.authentication.AuthenticationProcessor;
 import org.keycloak.common.ClientConnection;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.models.*;
+import org.keycloak.models.utils.SystemClientUtil;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.representations.JsonWebToken;
 import org.keycloak.services.Urls;
@@ -30,6 +31,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilderException;
 import javax.ws.rs.core.UriInfo;
 import org.jboss.resteasy.spi.HttpRequest;
+import org.keycloak.sessions.RootAuthenticationSessionModel;
 
 /**
  *
@@ -44,7 +46,7 @@ public class ActionTokenContext<T extends JsonWebToken> {
 
     @FunctionalInterface
     public interface ProcessBrokerFlow {
-        Response brokerLoginFlow(String code, String execution, String clientId, String flowPath);
+        Response brokerLoginFlow(String code, String execution, String clientId, String tabId, String flowPath);
     };
 
     private final KeycloakSession session;
@@ -109,9 +111,11 @@ public class ActionTokenContext<T extends JsonWebToken> {
         AuthenticationSessionModel authSession;
 
         // set up the account service as the endpoint to call.
-        ClientModel client = realm.getClientByClientId(clientId == null ? Constants.ACCOUNT_MANAGEMENT_CLIENT_ID : clientId);
+        ClientModel client = clientId != null ? realm.getClientByClientId(clientId) : SystemClientUtil.getSystemClient(realm);
         
-        authSession = new AuthenticationSessionManager(session).createAuthenticationSession(realm, client, true);
+        RootAuthenticationSessionModel rootAuthSession = new AuthenticationSessionManager(session).createAuthenticationSession(realm, true);
+        authSession = rootAuthSession.createAuthenticationSession(client);
+
         authSession.setAction(AuthenticationSessionModel.Action.AUTHENTICATE.name());
         authSession.setProtocol(OIDCLoginProtocol.LOGIN_PROTOCOL);
         String redirectUri = Urls.accountBase(uriInfo.getBaseUri()).path("/").build(realm.getName()).toString();
@@ -158,6 +162,6 @@ public class ActionTokenContext<T extends JsonWebToken> {
 
     public Response brokerFlow(String code, String flowPath) {
         ClientModel client = authenticationSession.getClient();
-        return processBrokerFlow.brokerLoginFlow(code, getExecutionId(), client.getClientId(), flowPath);
+        return processBrokerFlow.brokerLoginFlow(code, getExecutionId(), client.getClientId(), authenticationSession.getTabId(), flowPath);
     }
 }

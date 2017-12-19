@@ -25,9 +25,11 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 
 import org.infinispan.Cache;
 import org.infinispan.client.hotrod.RemoteCache;
@@ -35,6 +37,7 @@ import org.infinispan.remoting.transport.Transport;
 import org.jgroups.JChannel;
 import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.sessions.infinispan.changes.SessionEntityWrapper;
 import org.keycloak.models.sessions.infinispan.entities.UserSessionEntity;
 import org.keycloak.models.sessions.infinispan.util.InfinispanUtil;
 import org.keycloak.testsuite.rest.representation.JGroupsStats;
@@ -95,6 +98,13 @@ public class TestCacheResource {
         cache.clear();
     }
 
+    @POST
+    @Path("/remove-key/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public void removeKey(@PathParam("id") String id) {
+        cache.remove(id);
+    }
+
     @GET
     @Path("/jgroups-stats")
     @Produces(MediaType.APPLICATION_JSON)
@@ -136,11 +146,11 @@ public class TestCacheResource {
         if (remoteCache == null) {
             return -1;
         } else {
-            UserSessionEntity userSession = (UserSessionEntity) remoteCache.get(userSessionId);
+            SessionEntityWrapper<UserSessionEntity> userSession = (SessionEntityWrapper<UserSessionEntity>) remoteCache.get(userSessionId);
             if (userSession == null) {
                 return -1;
             } else {
-                return userSession.getLastSessionRefresh();
+                return userSession.getEntity().getLastSessionRefresh();
             }
         }
     }

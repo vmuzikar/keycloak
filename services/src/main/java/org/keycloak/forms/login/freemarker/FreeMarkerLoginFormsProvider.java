@@ -39,6 +39,7 @@ import org.keycloak.models.*;
 import org.keycloak.models.utils.FormMessage;
 import org.keycloak.services.Urls;
 import org.keycloak.services.messages.Messages;
+import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.theme.BrowserSecurityHeaderSetup;
 import org.keycloak.theme.FreeMarkerException;
 import org.keycloak.theme.FreeMarkerUtil;
@@ -61,6 +62,8 @@ import java.net.URI;
 import java.text.MessageFormat;
 import java.util.*;
 
+import static org.keycloak.models.UserModel.RequiredAction.UPDATE_PASSWORD;
+
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
@@ -68,42 +71,52 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
 
     private static final Logger logger = Logger.getLogger(FreeMarkerLoginFormsProvider.class);
 
-    private String accessCode;
-    private Response.Status status;
-    private List<RoleModel> realmRolesRequested;
-    private MultivaluedMap<String, RoleModel> resourceRolesRequested;
-    private List<ProtocolMapperModel> protocolMappersRequested;
-    private Map<String, String> httpResponseHeaders = new HashMap<String, String>();
-    private String accessRequestMessage;
-    private URI actionUri;
-    private String execution;
+    protected String accessCode;
+    protected Response.Status status;
+    protected List<RoleModel> realmRolesRequested;
+    protected MultivaluedMap<String, RoleModel> resourceRolesRequested;
+    protected List<ProtocolMapperModel> protocolMappersRequested;
+    protected Map<String, String> httpResponseHeaders = new HashMap<String, String>();
+    protected String accessRequestMessage;
+    protected URI actionUri;
+    protected String execution;
 
-    private List<FormMessage> messages = null;
-    private MessageType messageType = MessageType.ERROR;
+    protected List<FormMessage> messages = null;
+    protected MessageType messageType = MessageType.ERROR;
 
-    private MultivaluedMap<String, String> formData;
+    protected MultivaluedMap<String, String> formData;
 
-    private KeycloakSession session;
-    private FreeMarkerUtil freeMarker;
+    protected KeycloakSession session;
+    /** authenticationSession can be null for some renderings, mainly error pages */
+    protected AuthenticationSessionModel authenticationSession;
+    protected RealmModel realm;
+    protected ClientModel client;
+    protected UriInfo uriInfo;
 
-    private UserModel user;
+    protected FreeMarkerUtil freeMarker;
 
-    private final Map<String, Object> attributes = new HashMap<String, Object>();
+    protected UserModel user;
+
+    protected final Map<String, Object> attributes = new HashMap<String, Object>();
 
     public FreeMarkerLoginFormsProvider(KeycloakSession session, FreeMarkerUtil freeMarker) {
         this.session = session;
         this.freeMarker = freeMarker;
         this.attributes.put("scripts", new LinkedList<String>());
+        this.realm = session.getContext().getRealm();
+        this.client = session.getContext().getClient();
+        this.uriInfo = session.getContext().getUri();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void addScript(String scriptUrl) {
-        List<String> scripts = (List<String>)this.attributes.get("scripts");
+        List<String> scripts = (List<String>) this.attributes.get("scripts");
         scripts.add(scriptUrl);
     }
 
+    @Override
     public Response createResponse(UserModel.RequiredAction action) {
-        RealmModel realm = session.getContext().getRealm();
 
         String actionMessage;
         LoginFormsPages page;
@@ -121,7 +134,8 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
                 page = LoginFormsPages.LOGIN_UPDATE_PROFILE;
                 break;
             case UPDATE_PASSWORD:
-                actionMessage = Messages.UPDATE_PASSWORD;
+                boolean isRequestedByAdmin = user.getRequiredActions().stream().filter(Objects::nonNull).anyMatch(UPDATE_PASSWORD.toString()::contains);
+                actionMessage = isRequestedByAdmin ? Messages.UPDATE_PASSWORD : Messages.RESET_PASSWORD;
                 page = LoginFormsPages.LOGIN_UPDATE_PASSWORD;
                 break;
             case VERIFY_EMAIL:
@@ -139,116 +153,34 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
         return createResponse(page);
     }
 
-    private Response createResponse(LoginFormsPages page) {
-        RealmModel realm = session.getContext().getRealm();
-        ClientModel client = session.getContext().getClient();
-        UriInfo uriInfo = session.getContext().getUri();
-
-        String requestURI = uriInfo.getBaseUri().getPath();
-        UriBuilder uriBuilder = UriBuilder.fromUri(requestURI);
-        if (page == LoginFormsPages.OAUTH_GRANT) {
-            // for some reason Resteasy 2.3.7 doesn't like query params and form params with the same name and will null out the code form param
-            uriBuilder.replaceQuery(null);
-        }
-
-        if (client != null) {
-            uriBuilder.queryParam(Constants.CLIENT_ID, client.getClientId());
-        }
-
-        URI baseUri = uriBuilder.build();
-
-        if (accessCode != null) {
-            uriBuilder.queryParam(OAuth2Constants.CODE, accessCode);
-        }
-
-        URI baseUriWithCodeAndClientId = uriBuilder.build();
-
-        ThemeProvider themeProvider = session.getProvider(ThemeProvider.class, "extending");
+    @SuppressWarnings("incomplete-switch")
+    protected Response createResponse(LoginFormsPages page) {
         Theme theme;
         try {
-            theme = themeProvider.getTheme(realm.getLoginTheme(), Theme.Type.LOGIN);
+            theme = getTheme();
         } catch (IOException e) {
             logger.error("Failed to create theme", e);
             return Response.serverError().build();
         }
 
-        try {
-            attributes.put("properties", theme.getProperties());
-        } catch (IOException e) {
-            logger.warn("Failed to load properties", e);
-        }
-
-        Properties messagesBundle;
         Locale locale = session.getContext().resolveLocale(user);
-        try {
-            messagesBundle = theme.getMessages(locale);
-            attributes.put("msg", new MessageFormatterMethod(locale, messagesBundle));
-        } catch (IOException e) {
-            logger.warn("Failed to load messages", e);
-            messagesBundle = new Properties();
-        }
+        Properties messagesBundle = handleThemeResources(theme, locale);
 
-        MessagesPerFieldBean messagesPerField = new MessagesPerFieldBean();
-        if (messages != null) {
-            MessageBean wholeMessage = new MessageBean(null, messageType);
-            for (FormMessage message : this.messages) {
-                String formattedMessageText = formatMessage(message, messagesBundle, locale);
-                if (formattedMessageText != null) {
-                    wholeMessage.appendSummaryLine(formattedMessageText);
-                    messagesPerField.addMessage(message.getField(), formattedMessageText, messageType);
-                }
-            }
-            attributes.put("message", wholeMessage);
-        } else {
-            attributes.put("message", null);
-        }
-        attributes.put("messagesPerField", messagesPerField);
+        handleMessages(locale, messagesBundle);
 
-        attributes.put("requiredActionUrl", new RequiredActionUrlFormatterMethod(realm, baseUri));
-        if (realm != null && user != null && session != null) {
-            attributes.put("authenticatorConfigured", new AuthenticatorConfiguredMethod(realm, user, session));
-        }
-
-        if (realm != null) {
-            attributes.put("realm", new RealmBean(realm));
-
-            List<IdentityProviderModel> identityProviders = realm.getIdentityProviders();
-            identityProviders = LoginFormsUtil.filterIdentityProviders(identityProviders, session, realm, attributes, formData);
-            attributes.put("social", new IdentityProviderBean(realm, session, identityProviders, baseUriWithCodeAndClientId));
-
-            attributes.put("url", new UrlBean(realm, theme, baseUri, this.actionUri));
-
-            if (realm.isInternationalizationEnabled()) {
-                UriBuilder b;
-                switch (page) {
-                    case LOGIN:
-                        b = UriBuilder.fromUri(Urls.realmLoginPage(baseUri, realm.getName()));
-                        break;
-                    case REGISTER:
-                        b = UriBuilder.fromUri(Urls.realmRegisterPage(baseUri, realm.getName()));
-                        break;
-                    default:
-                        b = UriBuilder.fromUri(baseUri).path(uriInfo.getPath());
-                        break;
-                }
-
-                if (execution != null) {
-                    b.queryParam(Constants.EXECUTION, execution);
-                }
-
-                attributes.put("locale", new LocaleBean(realm, locale, b, messagesBundle));
-            }
-        }
-
-        if (client != null) {
-            attributes.put("client", new ClientBean(client, baseUri));
-        }
+        // for some reason Resteasy 2.3.7 doesn't like query params and form params with the same name and will null out the code form param
+        UriBuilder uriBuilder = prepareBaseUriBuilder(page == LoginFormsPages.OAUTH_GRANT);
+        createCommonAttributes(theme, locale, messagesBundle, uriBuilder, page);
 
         attributes.put("login", new LoginBean(formData));
 
+        if (status != null) {
+            attributes.put("statusCode", status.getStatusCode());
+        }
+
         switch (page) {
             case LOGIN_CONFIG_TOTP:
-                attributes.put("totp", new TotpBean(session, realm, user));
+                attributes.put("totp", new TotpBean(session, realm, user, uriInfo.getRequestUriBuilder()));
                 break;
             case LOGIN_UPDATE_PROFILE:
                 UpdateProfileContext userCtx = (UpdateProfileContext) attributes.get(LoginFormsProvider.UPDATE_PROFILE_CONTEXT_ATTR);
@@ -267,7 +199,8 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
                 attributes.put("register", new RegisterBean(formData));
                 break;
             case OAUTH_GRANT:
-                attributes.put("oauth", new OAuthGrantBean(accessCode, client, realmRolesRequested, resourceRolesRequested, protocolMappersRequested, this.accessRequestMessage));
+                attributes.put("oauth",
+                        new OAuthGrantBean(accessCode, client, realmRolesRequested, resourceRolesRequested, protocolMappersRequested, this.accessRequestMessage));
                 attributes.put("advancedMsg", new AdvancedMessageFormatterMethod(locale, messagesBundle));
                 break;
             case CODE:
@@ -275,66 +208,72 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
                 break;
         }
 
-        if (status == null) {
-            status = Response.Status.OK;
-        }
-
-        try {
-            String result = freeMarker.processTemplate(attributes, Templates.getTemplate(page), theme);
-            Response.ResponseBuilder builder = Response.status(status).type(MediaType.TEXT_HTML_UTF_8).entity(result);
-            BrowserSecurityHeaderSetup.headers(builder, realm);
-            for (Map.Entry<String, String> entry : httpResponseHeaders.entrySet()) {
-                builder.header(entry.getKey(), entry.getValue());
-            }
-            return builder.build();
-        } catch (FreeMarkerException e) {
-            logger.error("Failed to process template", e);
-            return Response.serverError().build();
-        }
+        return processTemplate(theme, Templates.getTemplate(page), locale);
     }
 
     @Override
     public Response createForm(String form) {
-
-        RealmModel realm = session.getContext().getRealm();
-        ClientModel client = session.getContext().getClient();
-        UriInfo uriInfo = session.getContext().getUri();
-
-        String requestURI = uriInfo.getBaseUri().getPath();
-        UriBuilder uriBuilder = UriBuilder.fromUri(requestURI);
-
-        if (client != null) {
-            uriBuilder.queryParam(Constants.CLIENT_ID, client.getClientId());
-        }
-
-        URI baseUri = uriBuilder.build();
-
-        if (accessCode != null) {
-            uriBuilder.queryParam(OAuth2Constants.CODE, accessCode);
-        }
-
-        URI baseUriWithCode = uriBuilder.build();
-
-        ThemeProvider themeProvider = session.getProvider(ThemeProvider.class, "extending");
         Theme theme;
         try {
-            theme = themeProvider.getTheme(realm.getLoginTheme(), Theme.Type.LOGIN);
+            theme = getTheme();
         } catch (IOException e) {
             logger.error("Failed to create theme", e);
             return Response.serverError().build();
         }
 
-        try {
-            attributes.put("properties", theme.getProperties());
-        } catch (IOException e) {
-            logger.warn("Failed to load properties", e);
-        }
-        if (client != null) {
-            attributes.put("client", new ClientBean(client, baseUri));
+        Locale locale = session.getContext().resolveLocale(user);
+        Properties messagesBundle = handleThemeResources(theme, locale);
+
+        handleMessages(locale, messagesBundle);
+
+        UriBuilder uriBuilder = prepareBaseUriBuilder(false);
+        createCommonAttributes(theme, locale, messagesBundle, uriBuilder, null);
+
+        return processTemplate(theme, form, locale);
+    }
+
+    /**
+     * Prepare base uri builder for later use
+     * 
+     * @param resetRequestUriParams - for some reason Resteasy 2.3.7 doesn't like query params and form params with the same name and will null out the code form param, so we have to reset them for some pages
+     * @return base uri builder  
+     */
+    protected UriBuilder prepareBaseUriBuilder(boolean resetRequestUriParams) {
+        String requestURI = uriInfo.getBaseUri().getPath();
+        UriBuilder uriBuilder = UriBuilder.fromUri(requestURI);
+        if (resetRequestUriParams) {
+            uriBuilder.replaceQuery(null);
         }
 
+        if (client != null) {
+            uriBuilder.queryParam(Constants.CLIENT_ID, client.getClientId());
+        }
+        if (authenticationSession != null) {
+            uriBuilder.queryParam(Constants.TAB_ID, authenticationSession.getTabId());
+        }
+        return uriBuilder;
+    }
+
+    /**
+     * Get Theme used for page rendering.
+     * 
+     * @return theme for page rendering, never null
+     * @throws IOException in case of Theme loading problem
+     */
+    protected Theme getTheme() throws IOException {
+        ThemeProvider themeProvider = session.getProvider(ThemeProvider.class, "extending");
+        return themeProvider.getTheme(realm.getLoginTheme(), Theme.Type.LOGIN);
+    }
+
+    /**
+     * Load message bundle and place it into <code>msg</code> template attribute. Also load Theme properties and place them into <code>properties</code> template attribute.
+     * 
+     * @param theme actual Theme to load bundle from
+     * @param locale to load bundle for
+     * @return message bundle for other use
+     */
+    protected Properties handleThemeResources(Theme theme, Locale locale) {
         Properties messagesBundle;
-        Locale locale = session.getContext().resolveLocale(user);
         try {
             messagesBundle = theme.getMessages(locale);
             attributes.put("msg", new MessageFormatterMethod(locale, messagesBundle));
@@ -343,6 +282,24 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
             messagesBundle = new Properties();
         }
 
+        try {
+            attributes.put("properties", theme.getProperties());
+        } catch (IOException e) {
+            logger.warn("Failed to load properties", e);
+        }
+
+        return messagesBundle;
+    }
+
+    /**
+     * Handle messages to be shown on the page - set them to template attributes
+     * 
+     * @param locale to be used for message text loading
+     * @param messagesBundle to be used for message text loading
+     * @see #messageType
+     * @see #messages
+     */
+    protected void handleMessages(Locale locale, Properties messagesBundle) {
         MessagesPerFieldBean messagesPerField = new MessagesPerFieldBean();
         if (messages != null) {
             MessageBean wholeMessage = new MessageBean(null, messageType);
@@ -354,11 +311,31 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
                 }
             }
             attributes.put("message", wholeMessage);
+        } else {
+            attributes.put("message", null);
         }
         attributes.put("messagesPerField", messagesPerField);
+    }
+    
+    /**
+     * Create common attributes used in all templates.
+     * 
+     * @param theme actual Theme used (provided by <code>getTheme()</code>) 
+     * @param locale actual locale
+     * @param messagesBundle actual message bundle (provided by <code>handleThemeResources()</code>)
+     * @param baseUriBuilder actual base uri builder (provided by <code>prepareBaseUriBuilder()</code>)
+     * @param page in case if common page is rendered, is null if called from <code>createForm()</code>
+     * 
+     */
+    protected void createCommonAttributes(Theme theme, Locale locale, Properties messagesBundle, UriBuilder baseUriBuilder, LoginFormsPages page) {
+        URI baseUri = baseUriBuilder.build();
+        if (accessCode != null) {
+            baseUriBuilder.queryParam(OAuth2Constants.CODE, accessCode);
+        }
+        URI baseUriWithCodeAndClientId = baseUriBuilder.build();
 
-        if (status == null) {
-            status = Response.Status.OK;
+        if (client != null) {
+            attributes.put("client", new ClientBean(client, baseUri));
         }
 
         if (realm != null) {
@@ -366,14 +343,29 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
 
             List<IdentityProviderModel> identityProviders = realm.getIdentityProviders();
             identityProviders = LoginFormsUtil.filterIdentityProviders(identityProviders, session, realm, attributes, formData);
-            attributes.put("social", new IdentityProviderBean(realm, session, identityProviders, baseUriWithCode));
+            attributes.put("social", new IdentityProviderBean(realm, session, identityProviders, baseUriWithCodeAndClientId));
 
             attributes.put("url", new UrlBean(realm, theme, baseUri, this.actionUri));
             attributes.put("requiredActionUrl", new RequiredActionUrlFormatterMethod(realm, baseUri));
 
             if (realm.isInternationalizationEnabled()) {
-                UriBuilder b = UriBuilder.fromUri(baseUri)
-                        .path(uriInfo.getPath());
+                UriBuilder b;
+                if (page != null) {
+                    switch (page) {
+                        case LOGIN:
+                            b = UriBuilder.fromUri(Urls.realmLoginPage(baseUri, realm.getName()));
+                            break;
+                        case REGISTER:
+                            b = UriBuilder.fromUri(Urls.realmRegisterPage(baseUri, realm.getName()));
+                            break;
+                        default:
+                            b = UriBuilder.fromUri(baseUri).path(uriInfo.getPath());
+                            break;
+                    }
+                } else {
+                    b = UriBuilder.fromUri(baseUri)
+                            .path(uriInfo.getPath());
+                }
 
                 if (execution != null) {
                     b.queryParam(Constants.EXECUTION, execution);
@@ -385,9 +377,20 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
         if (realm != null && user != null && session != null) {
             attributes.put("authenticatorConfigured", new AuthenticatorConfiguredMethod(realm, user, session));
         }
+    }
+
+    /**
+     * Process FreeMarker template and prepare Response. Some fields are used for rendering also.
+     * 
+     * @param theme to be used (provided by <code>getTheme()</code>)
+     * @param templateName name of the template to be rendered
+     * @param locale to be used
+     * @return Response object to be returned to the browser, never null
+     */
+    protected Response processTemplate(Theme theme, String templateName, Locale locale) {
         try {
-            String result = freeMarker.processTemplate(attributes, form, theme);
-            Response.ResponseBuilder builder = Response.status(status).type(MediaType.TEXT_HTML_UTF_8_TYPE).language(locale).entity(result);
+            String result = freeMarker.processTemplate(attributes, templateName, theme);
+            Response.ResponseBuilder builder = Response.status(status == null ? Response.Status.OK : status).type(MediaType.TEXT_HTML_UTF_8_TYPE).language(locale).entity(result);
             BrowserSecurityHeaderSetup.headers(builder, realm);
             for (Map.Entry<String, String> entry : httpResponseHeaders.entrySet()) {
                 builder.header(entry.getKey(), entry.getValue());
@@ -439,7 +442,6 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
         return createResponse(LoginFormsPages.LOGIN_UPDATE_PROFILE);
     }
 
-
     @Override
     public Response createIdpLinkConfirmLinkPage() {
         return createResponse(LoginFormsPages.LOGIN_IDP_LINK_CONFIRM);
@@ -461,10 +463,8 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     @Override
-    public Response createErrorPage() {
-        if (status == null) {
-            status = Response.Status.INTERNAL_SERVER_ERROR;
-        }
+    public Response createErrorPage(Response.Status status) {
+        this.status = status;
         return createResponse(LoginFormsPages.ERROR);
     }
 
@@ -509,7 +509,8 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
 
     @Override
     public LoginFormsProvider setErrors(List<FormMessage> messages) {
-        if (messages == null) return this;
+        if (messages == null)
+            return this;
         this.messageType = MessageType.ERROR;
         this.messages = new ArrayList<>(messages);
         return this;
@@ -558,6 +559,12 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     @Override
+    public LoginFormsProvider setAuthenticationSession(AuthenticationSessionModel authenticationSession) {
+        this.authenticationSession = authenticationSession;
+        return this;
+    }
+
+    @Override
     public FreeMarkerLoginFormsProvider setUser(UserModel user) {
         this.user = user;
         return this;
@@ -576,7 +583,8 @@ public class FreeMarkerLoginFormsProvider implements LoginFormsProvider {
     }
 
     @Override
-    public LoginFormsProvider setAccessRequest(List<RoleModel> realmRolesRequested, MultivaluedMap<String, RoleModel> resourceRolesRequested, List<ProtocolMapperModel> protocolMappersRequested) {
+    public LoginFormsProvider setAccessRequest(List<RoleModel> realmRolesRequested, MultivaluedMap<String, RoleModel> resourceRolesRequested,
+            List<ProtocolMapperModel> protocolMappersRequested) {
         this.realmRolesRequested = realmRolesRequested;
         this.resourceRolesRequested = resourceRolesRequested;
         this.protocolMappersRequested = protocolMappersRequested;

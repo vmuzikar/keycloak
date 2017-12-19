@@ -17,6 +17,7 @@
 package org.keycloak.services.resources.account;
 
 import org.jboss.logging.Logger;
+import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.common.util.Base64Url;
 import org.keycloak.common.util.Time;
 import org.keycloak.common.util.UriUtils;
@@ -44,6 +45,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.utils.CredentialValidation;
 import org.keycloak.models.utils.FormMessage;
+import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.protocol.oidc.utils.RedirectUtils;
 import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.ServicesLogger;
@@ -51,6 +53,7 @@ import org.keycloak.services.Urls;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.Auth;
 import org.keycloak.services.managers.AuthenticationManager;
+import org.keycloak.services.managers.AuthenticationSessionManager;
 import org.keycloak.services.managers.UserSessionManager;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.services.resources.AbstractSecuredLocalService;
@@ -59,6 +62,7 @@ import org.keycloak.services.resources.RealmsResource;
 import org.keycloak.services.util.ResolveRelative;
 import org.keycloak.services.validation.Validation;
 import org.keycloak.sessions.AuthenticationSessionModel;
+import org.keycloak.sessions.RootAuthenticationSessionModel;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.util.JsonSerialization;
 
@@ -119,8 +123,8 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
         AuthenticationManager.AuthResult authResult = authManager.authenticateIdentityCookie(session, realm);
         if (authResult != null) {
+            stateChecker = (String) session.getAttribute("state_checker");
             auth = new Auth(realm, authResult.getToken(), authResult.getUser(), client, authResult.getSession(), true);
-            updateCsrfChecks();
             account.setStateChecker(stateChecker);
         }
 
@@ -141,7 +145,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
         if (authResult != null) {
             UserSessionModel userSession = authResult.getSession();
             if (userSession != null) {
-                AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessions().get(client.getId());
+                AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(client.getId());
                 if (clientSession == null) {
                     clientSession = session.sessions().createClientSession(userSession.getRealm(), client, userSession);
                 }
@@ -172,22 +176,26 @@ public class AccountFormService extends AbstractSecuredLocalService {
             try {
                 auth.require(AccountRoles.MANAGE_ACCOUNT);
             } catch (ForbiddenException e) {
-                return session.getProvider(LoginFormsProvider.class).setError(Messages.NO_ACCESS).createErrorPage();
+                return session.getProvider(LoginFormsProvider.class).setError(Messages.NO_ACCESS).createErrorPage(Response.Status.FORBIDDEN);
             }
 
             setReferrerOnPage();
 
             UserSessionModel userSession = auth.getSession();
-            AuthenticationSessionModel authSession = session.authenticationSessions().getAuthenticationSession(realm, userSession.getId());
-            if (authSession != null) {
-                String forwardedError = authSession.getAuthNote(ACCOUNT_MGMT_FORWARDED_ERROR_NOTE);
-                if (forwardedError != null) {
-                    try {
-                        FormMessage errorMessage = JsonSerialization.readValue(forwardedError, FormMessage.class);
-                        account.setError(errorMessage.getMessage(), errorMessage.getParameters());
-                        authSession.removeAuthNote(ACCOUNT_MGMT_FORWARDED_ERROR_NOTE);
-                    } catch (IOException ioe) {
-                        throw new RuntimeException(ioe);
+
+            String tabId = request.getUri().getQueryParameters().getFirst(org.keycloak.models.Constants.TAB_ID);
+            if (tabId != null) {
+                AuthenticationSessionModel authSession = new AuthenticationSessionManager(session).getAuthenticationSessionByIdAndClient(realm, userSession.getId(), client, tabId);
+                if (authSession != null) {
+                    String forwardedError = authSession.getAuthNote(ACCOUNT_MGMT_FORWARDED_ERROR_NOTE);
+                    if (forwardedError != null) {
+                        try {
+                            FormMessage errorMessage = JsonSerialization.readValue(forwardedError, FormMessage.class);
+                            account.setError(Response.Status.INTERNAL_SERVER_ERROR, errorMessage.getMessage(), errorMessage.getParameters());
+                            authSession.removeAuthNote(ACCOUNT_MGMT_FORWARDED_ERROR_NOTE);
+                        } catch (IOException ioe) {
+                            throw new RuntimeException(ioe);
+                        }
                     }
                 }
             }
@@ -223,6 +231,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
     @Path("totp")
     @GET
     public Response totpPage() {
+        account.setAttribute("mode", uriInfo.getQueryParameters().getFirst("mode"));
         return forwardToPage("totp", AccountPages.TOTP);
     }
 
@@ -317,7 +326,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
         List<FormMessage> errors = Validation.validateUpdateProfileForm(realm.isEditUsernameAllowed(), formData);
         if (errors != null && !errors.isEmpty()) {
             setReferrerOnPage();
-            return account.setErrors(errors).setProfileFormData(formData).createResponse(AccountPages.ACCOUNT);
+            return account.setErrors(Response.Status.BAD_REQUEST, errors).setProfileFormData(formData).createResponse(AccountPages.ACCOUNT);
         }
 
         try {
@@ -335,43 +344,22 @@ public class AccountFormService extends AbstractSecuredLocalService {
             return account.setSuccess(Messages.ACCOUNT_UPDATED).createResponse(AccountPages.ACCOUNT);
         } catch (ReadOnlyException roe) {
             setReferrerOnPage();
-            return account.setError(Messages.READ_ONLY_USER).setProfileFormData(formData).createResponse(AccountPages.ACCOUNT);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.READ_ONLY_USER).setProfileFormData(formData).createResponse(AccountPages.ACCOUNT);
         } catch (ModelDuplicateException mde) {
             setReferrerOnPage();
-            return account.setError(mde.getMessage()).setProfileFormData(formData).createResponse(AccountPages.ACCOUNT);
+            return account.setError(Response.Status.CONFLICT, mde.getMessage()).setProfileFormData(formData).createResponse(AccountPages.ACCOUNT);
         }
     }
 
-    @Path("totp-remove")
-    @GET
-    public Response processTotpRemove(@QueryParam("stateChecker") String stateChecker) {
-        if (auth == null) {
-            return login("totp");
-        }
-
-        auth.require(AccountRoles.MANAGE_ACCOUNT);
-
-        csrfCheck(stateChecker);
-
-        UserModel user = auth.getUser();
-        session.userCredentialManager().disableCredentialType(realm, user, CredentialModel.OTP);
-
-        event.event(EventType.REMOVE_TOTP).client(auth.getClient()).user(auth.getUser()).success();
-
-        setReferrerOnPage();
-        return account.setSuccess(Messages.SUCCESS_TOTP_REMOVED).createResponse(AccountPages.TOTP);
-    }
-
-
-    @Path("sessions-logout")
-    @GET
-    public Response processSessionsLogout(@QueryParam("stateChecker") String stateChecker) {
+    @Path("sessions")
+    @POST
+    public Response processSessionsLogout(final MultivaluedMap<String, String> formData) {
         if (auth == null) {
             return login("sessions");
         }
 
         auth.require(AccountRoles.MANAGE_ACCOUNT);
-        csrfCheck(stateChecker);
+        csrfCheck(formData);
 
         UserModel user = auth.getUser();
 
@@ -394,7 +382,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
         return Response.seeOther(location).build();
     }
 
-    @Path("revoke-grant")
+    @Path("applications")
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response processRevokeGrant(final MultivaluedMap<String, String> formData) {
@@ -407,11 +395,11 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
         String clientId = formData.getFirst("clientId");
         if (clientId == null) {
-            return account.setError(Messages.CLIENT_NOT_FOUND).createResponse(AccountPages.APPLICATIONS);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.CLIENT_NOT_FOUND).createResponse(AccountPages.APPLICATIONS);
         }
         ClientModel client = realm.getClientById(clientId);
         if (client == null) {
-            return account.setError(Messages.CLIENT_NOT_FOUND).createResponse(AccountPages.APPLICATIONS);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.CLIENT_NOT_FOUND).createResponse(AccountPages.APPLICATIONS);
         }
 
         // Revoke grant in UserModel
@@ -456,6 +444,8 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
+        account.setAttribute("mode", uriInfo.getQueryParameters().getFirst("mode"));
+
         String action = formData.getFirst("submitAction");
         if (action != null && action.equals("Cancel")) {
             setReferrerOnPage();
@@ -466,32 +456,41 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
         UserModel user = auth.getUser();
 
-        String totp = formData.getFirst("totp");
-        String totpSecret = formData.getFirst("totpSecret");
+        if (action != null && action.equals("Delete")) {
+            session.userCredentialManager().disableCredentialType(realm, user, CredentialModel.OTP);
 
-        if (Validation.isBlank(totp)) {
+            event.event(EventType.REMOVE_TOTP).client(auth.getClient()).user(auth.getUser()).success();
+
             setReferrerOnPage();
-            return account.setError(Messages.MISSING_TOTP).createResponse(AccountPages.TOTP);
-        } else if (!CredentialValidation.validOTP(realm, totp, totpSecret)) {
+            return account.setSuccess(Messages.SUCCESS_TOTP_REMOVED).createResponse(AccountPages.TOTP);
+        } else {
+            String totp = formData.getFirst("totp");
+            String totpSecret = formData.getFirst("totpSecret");
+
+            if (Validation.isBlank(totp)) {
+                setReferrerOnPage();
+                return account.setError(Response.Status.BAD_REQUEST, Messages.MISSING_TOTP).createResponse(AccountPages.TOTP);
+            } else if (!CredentialValidation.validOTP(realm, totp, totpSecret)) {
+                setReferrerOnPage();
+                return account.setError(Response.Status.BAD_REQUEST, Messages.INVALID_TOTP).createResponse(AccountPages.TOTP);
+            }
+
+            UserCredentialModel credentials = new UserCredentialModel();
+            credentials.setType(realm.getOTPPolicy().getType());
+            credentials.setValue(totpSecret);
+            session.userCredentialManager().updateCredential(realm, user, credentials);
+
+            // to update counter
+            UserCredentialModel cred = new UserCredentialModel();
+            cred.setType(realm.getOTPPolicy().getType());
+            cred.setValue(totp);
+            session.userCredentialManager().isValid(realm, user, cred);
+
+            event.event(EventType.UPDATE_TOTP).client(auth.getClient()).user(auth.getUser()).success();
+
             setReferrerOnPage();
-            return account.setError(Messages.INVALID_TOTP).createResponse(AccountPages.TOTP);
+            return account.setSuccess(Messages.SUCCESS_TOTP).createResponse(AccountPages.TOTP);
         }
-
-        UserCredentialModel credentials = new UserCredentialModel();
-        credentials.setType(realm.getOTPPolicy().getType());
-        credentials.setValue(totpSecret);
-        session.userCredentialManager().updateCredential(realm, user, credentials);
-
-        // to update counter
-        UserCredentialModel cred = new UserCredentialModel();
-        cred.setType(realm.getOTPPolicy().getType());
-        cred.setValue(totp);
-        session.userCredentialManager().isValid(realm, user, cred);
-
-        event.event(EventType.UPDATE_TOTP).client(auth.getClient()).user(auth.getUser()).success();
-
-        setReferrerOnPage();
-        return account.setSuccess(Messages.SUCCESS_TOTP).createResponse(AccountPages.TOTP);
     }
 
     /**
@@ -534,27 +533,27 @@ public class AccountFormService extends AbstractSecuredLocalService {
             if (Validation.isBlank(password)) {
                 setReferrerOnPage();
                 errorEvent.error(Errors.PASSWORD_MISSING);
-                return account.setError(Messages.MISSING_PASSWORD).createResponse(AccountPages.PASSWORD);
+                return account.setError(Response.Status.BAD_REQUEST, Messages.MISSING_PASSWORD).createResponse(AccountPages.PASSWORD);
             }
 
             UserCredentialModel cred = UserCredentialModel.password(password);
             if (!session.userCredentialManager().isValid(realm, user, cred)) {
                 setReferrerOnPage();
                 errorEvent.error(Errors.INVALID_USER_CREDENTIALS);
-                return account.setError(Messages.INVALID_PASSWORD_EXISTING).createResponse(AccountPages.PASSWORD);
+                return account.setError(Response.Status.BAD_REQUEST, Messages.INVALID_PASSWORD_EXISTING).createResponse(AccountPages.PASSWORD);
             }
         }
 
         if (Validation.isBlank(passwordNew)) {
             setReferrerOnPage();
             errorEvent.error(Errors.PASSWORD_MISSING);
-            return account.setError(Messages.MISSING_PASSWORD).createResponse(AccountPages.PASSWORD);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.MISSING_PASSWORD).createResponse(AccountPages.PASSWORD);
         }
 
         if (!passwordNew.equals(passwordConfirm)) {
             setReferrerOnPage();
             errorEvent.error(Errors.PASSWORD_CONFIRM_ERROR);
-            return account.setError(Messages.INVALID_PASSWORD_CONFIRM).createResponse(AccountPages.PASSWORD);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.INVALID_PASSWORD_CONFIRM).createResponse(AccountPages.PASSWORD);
         }
 
         try {
@@ -562,17 +561,17 @@ public class AccountFormService extends AbstractSecuredLocalService {
         } catch (ReadOnlyException mre) {
             setReferrerOnPage();
             errorEvent.error(Errors.NOT_ALLOWED);
-            return account.setError(Messages.READ_ONLY_PASSWORD).createResponse(AccountPages.PASSWORD);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.READ_ONLY_PASSWORD).createResponse(AccountPages.PASSWORD);
         } catch (ModelException me) {
             ServicesLogger.LOGGER.failedToUpdatePassword(me);
             setReferrerOnPage();
             errorEvent.detail(Details.REASON, me.getMessage()).error(Errors.PASSWORD_REJECTED);
-            return account.setError(me.getMessage(), me.getParameters()).createResponse(AccountPages.PASSWORD);
+            return account.setError(Response.Status.INTERNAL_SERVER_ERROR, me.getMessage(), me.getParameters()).createResponse(AccountPages.PASSWORD);
         } catch (Exception ape) {
             ServicesLogger.LOGGER.failedToUpdatePassword(ape);
             setReferrerOnPage();
             errorEvent.detail(Details.REASON, ape.getMessage()).error(Errors.PASSWORD_REJECTED);
-            return account.setError(ape.getMessage()).createResponse(AccountPages.PASSWORD);
+            return account.setError(Response.Status.INTERNAL_SERVER_ERROR, ape.getMessage()).createResponse(AccountPages.PASSWORD);
         }
 
         List<UserSessionModel> sessions = session.sessions().getUserSessions(realm, user);
@@ -588,27 +587,29 @@ public class AccountFormService extends AbstractSecuredLocalService {
         return account.setPasswordSet(true).setSuccess(Messages.ACCOUNT_PASSWORD_UPDATED).createResponse(AccountPages.PASSWORD);
     }
 
-    @Path("federated-identity-update")
-    @GET
-    public Response processFederatedIdentityUpdate(@QueryParam("action") String action,
-                                                   @QueryParam("provider_id") String providerId,
-                                                   @QueryParam("stateChecker") String stateChecker) {
+    @Path("identity")
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public Response processFederatedIdentityUpdate(final MultivaluedMap<String, String> formData) {
         if (auth == null) {
             return login("identity");
         }
 
         auth.require(AccountRoles.MANAGE_ACCOUNT);
-        csrfCheck(stateChecker);
+        csrfCheck(formData);
         UserModel user = auth.getUser();
+
+        String action = formData.getFirst("action");
+        String providerId = formData.getFirst("providerId");
 
         if (Validation.isEmpty(providerId)) {
             setReferrerOnPage();
-            return account.setError(Messages.MISSING_IDENTITY_PROVIDER).createResponse(AccountPages.FEDERATED_IDENTITY);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.MISSING_IDENTITY_PROVIDER).createResponse(AccountPages.FEDERATED_IDENTITY);
         }
         AccountSocialAction accountSocialAction = AccountSocialAction.getAction(action);
         if (accountSocialAction == null) {
             setReferrerOnPage();
-            return account.setError(Messages.INVALID_FEDERATED_IDENTITY_ACTION).createResponse(AccountPages.FEDERATED_IDENTITY);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.INVALID_FEDERATED_IDENTITY_ACTION).createResponse(AccountPages.FEDERATED_IDENTITY);
         }
 
         boolean hasProvider = false;
@@ -621,12 +622,12 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
         if (!hasProvider) {
             setReferrerOnPage();
-            return account.setError(Messages.IDENTITY_PROVIDER_NOT_FOUND).createResponse(AccountPages.FEDERATED_IDENTITY);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.IDENTITY_PROVIDER_NOT_FOUND).createResponse(AccountPages.FEDERATED_IDENTITY);
         }
 
         if (!user.isEnabled()) {
             setReferrerOnPage();
-            return account.setError(Messages.ACCOUNT_DISABLED).createResponse(AccountPages.FEDERATED_IDENTITY);
+            return account.setError(Response.Status.BAD_REQUEST, Messages.ACCOUNT_DISABLED).createResponse(AccountPages.FEDERATED_IDENTITY);
         }
 
         switch (accountSocialAction) {
@@ -650,7 +651,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
                             .build();
                 } catch (Exception spe) {
                     setReferrerOnPage();
-                    return account.setError(Messages.IDENTITY_PROVIDER_REDIRECT_ERROR).createResponse(AccountPages.FEDERATED_IDENTITY);
+                    return account.setError(Response.Status.INTERNAL_SERVER_ERROR, Messages.IDENTITY_PROVIDER_REDIRECT_ERROR).createResponse(AccountPages.FEDERATED_IDENTITY);
                 }
             case REMOVE:
                 FederatedIdentityModel link = session.users().getFederatedIdentity(user, providerId, realm);
@@ -672,11 +673,11 @@ public class AccountFormService extends AbstractSecuredLocalService {
                         return account.setSuccess(Messages.IDENTITY_PROVIDER_REMOVED).createResponse(AccountPages.FEDERATED_IDENTITY);
                     } else {
                         setReferrerOnPage();
-                        return account.setError(Messages.FEDERATED_IDENTITY_REMOVING_LAST_PROVIDER).createResponse(AccountPages.FEDERATED_IDENTITY);
+                        return account.setError(Response.Status.BAD_REQUEST, Messages.FEDERATED_IDENTITY_REMOVING_LAST_PROVIDER).createResponse(AccountPages.FEDERATED_IDENTITY);
                     }
                 } else {
                     setReferrerOnPage();
-                    return account.setError(Messages.FEDERATED_IDENTITY_NOT_ACTIVE).createResponse(AccountPages.FEDERATED_IDENTITY);
+                    return account.setError(Response.Status.BAD_REQUEST, Messages.FEDERATED_IDENTITY_NOT_ACTIVE).createResponse(AccountPages.FEDERATED_IDENTITY);
                 }
             default:
                 throw new IllegalArgumentException();
@@ -794,5 +795,13 @@ public class AccountFormService extends AbstractSecuredLocalService {
             user.setUsername(email);
         }
     }
+
+    private void csrfCheck(final MultivaluedMap<String, String> formData) {
+        String formStateChecker = formData.getFirst("stateChecker");
+        if (formStateChecker == null || !formStateChecker.equals(this.stateChecker)) {
+            throw new ForbiddenException();
+        }
+    }
+
 
 }

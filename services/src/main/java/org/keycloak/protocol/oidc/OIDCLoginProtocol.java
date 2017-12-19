@@ -19,7 +19,10 @@ package org.keycloak.protocol.oidc;
 import org.jboss.logging.Logger;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.OAuthErrorException;
+import org.keycloak.TokenIdGenerator;
 import org.keycloak.common.util.Time;
+import org.keycloak.connections.httpclient.HttpClientProvider;
+import org.keycloak.constants.AdapterConstants;
 import org.keycloak.events.Details;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.events.EventType;
@@ -33,6 +36,7 @@ import org.keycloak.protocol.oidc.utils.OIDCRedirectUriBuilder;
 import org.keycloak.protocol.oidc.utils.OIDCResponseMode;
 import org.keycloak.protocol.oidc.utils.OIDCResponseType;
 import org.keycloak.representations.AccessTokenResponse;
+import org.keycloak.representations.adapters.action.PushNotBeforeAction;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.managers.AuthenticationSessionManager;
@@ -41,6 +45,8 @@ import org.keycloak.services.managers.ResourceAdminManager;
 import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.util.TokenUtil;
 
+import java.io.IOException;
+import java.net.URI;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -69,6 +75,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
     public static final String REQUEST_URI_PARAM = "request_uri";
     public static final String UI_LOCALES_PARAM = OAuth2Constants.UI_LOCALES_PARAM;
     public static final String CLAIMS_PARAM = "claims";
+    public static final String ACR_PARAM = "acr_values";
 
     public static final String LOGOUT_REDIRECT_URI = "OIDC_LOGOUT_REDIRECT_URI";
     public static final String ISSUER = "iss";
@@ -182,6 +189,8 @@ public class OIDCLoginProtocol implements LoginProtocol {
         if (state != null)
             redirectUri.addParam(OAuth2Constants.STATE, state);
 
+        redirectUri.addParam(OAuth2Constants.SESSION_STATE, userSession.getId());
+
         // Standard or hybrid flow
         String code = null;
         if (responseType.hasResponseType(OIDCResponseType.CODE)) {
@@ -218,7 +227,6 @@ public class OIDCLoginProtocol implements LoginProtocol {
             if (responseType.hasResponseType(OIDCResponseType.TOKEN)) {
                 redirectUri.addParam(OAuth2Constants.ACCESS_TOKEN, res.getToken());
                 redirectUri.addParam("token_type", res.getTokenType());
-                redirectUri.addParam("session_state", res.getSessionState());
                 redirectUri.addParam("expires_in", String.valueOf(res.getExpiresIn()));
             }
 
@@ -319,6 +327,23 @@ public class OIDCLoginProtocol implements LoginProtocol {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean sendPushRevocationPolicyRequest(RealmModel realm, ClientModel resource, int notBefore, String managementUrl) {
+        PushNotBeforeAction adminAction = new PushNotBeforeAction(TokenIdGenerator.generateId(), Time.currentTime() + 30, resource.getClientId(), notBefore);
+        String token = new TokenManager().encodeToken(session, realm, adminAction);
+        logger.debugv("pushRevocation resource: {0} url: {1}", resource.getClientId(), managementUrl);
+        URI target = UriBuilder.fromUri(managementUrl).path(AdapterConstants.K_PUSH_NOT_BEFORE).build();
+        try {
+            int status = session.getProvider(HttpClientProvider.class).postText(target.toString(), token);
+            boolean success = status == 204 || status == 200;
+            logger.debugf("pushRevocation success for %s: %s", managementUrl, success);
+            return success;
+        } catch (IOException e) {
+            ServicesLogger.LOGGER.failedToSendRevocation(e);
+            return false;
+        }
     }
 
     @Override

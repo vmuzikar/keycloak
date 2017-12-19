@@ -461,6 +461,20 @@ module.service('LastFlowSelected', function() {
     this.alias = null;
 });
 
+module.service('RealmRoleRemover', function() {
+   this.remove = function (role, realm, Dialog, $location, Notifications) {
+        Dialog.confirmDelete(role.name, 'role', function () {
+            role.$remove({
+                realm: realm.realm,
+                role: role.id
+            }, function () {
+                $location.url("/realms/" + realm.realm + "/roles");
+                Notifications.success("The role has been deleted.");
+            });
+        });
+    };
+});
+
 module.factory('UserSessionStats', function($resource) {
     return $resource(authUrl + '/admin/realms/:realm/users/:user/session-stats', {
         realm : '@realm',
@@ -840,6 +854,7 @@ function roleControl($scope, realm, role, roles, clients,
                 }
             }
             $scope.selectedClientRoles = [];
+            Notifications.success("Client role added.");
         });
     };
 
@@ -856,6 +871,7 @@ function roleControl($scope, realm, role, roles, clients,
                 }
             }
             $scope.selectedClientMappings = [];
+            Notifications.success("Client role removed.");
         });
     };
 
@@ -1786,6 +1802,10 @@ module.factory('UserStorageOperations', function($resource) {
         componentId : '@componentId'
     });
     object.unlinkUsers = $resource(authUrl + '/admin/realms/:realm/user-storage/:componentId/unlink-users', {
+        realm : '@realm',
+        componentId : '@componentId'
+    });
+    object.simpleName = $resource(authUrl + '/admin/realms/:realm/user-storage/:componentId/name', {
         realm : '@realm',
         componentId : '@componentId'
     });

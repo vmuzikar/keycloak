@@ -24,10 +24,10 @@ import org.keycloak.models.KeycloakSessionFactory;
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class DefaultApprovalInterceptorFactory implements ApprovalInterceptorFactory {
+public class DefaultApprovalManagerFactory implements ApprovalManagerFactory {
     @Override
-    public ApprovalInterceptor create(KeycloakSession session) {
-        return new DefaultApprovalInterceptor(session);
+    public ApprovalManager create(KeycloakSession session) {
+        return new DefaultApprovalManager(session);
     }
 
     @Override

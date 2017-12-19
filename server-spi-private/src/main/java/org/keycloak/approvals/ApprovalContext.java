@@ -26,33 +26,32 @@ import java.util.Map;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class ApprovalContext {
-    public static final String REALM_ATTR = "realm";
+
+    public interface Action {
+        String getDescription();
+    }
+
     public static final String REPRESENTATION_ATTR = "representation";
     public static final String MODEL_ATTR = "model";
-    public static final String ACTION_ATTR = "action";
 
+    private RealmModel realm;
+    private String handlerId;
+    private Action action;
     private Map<String, Object> attributes = new HashMap<>();
 
-    protected ApprovalContext() {
+    public ApprovalContext(RealmModel realm, String handlerId, Action action) {
+        setRealm(realm);
+        setHandlerId(handlerId);
+        setAction(action);
     }
 
-
-    // Factories
-
-    public static ApprovalContext empty(RealmModel realm) {
-        return new ApprovalContext().setAttribute(REALM_ATTR, realm);
+    public static ApprovalContext withRepresentation(RealmModel realm, String handlerId, Action action, Object representation) {
+        return (new ApprovalContext(realm, handlerId, action)).setRepresentation(representation);
     }
 
-    public static ApprovalContext fromRep(Object representation, RealmModel realm) {
-        return empty(realm).setAttribute(REPRESENTATION_ATTR, representation);
+    public static ApprovalContext withModel(RealmModel realm, String handlerId, Action action, Object model) {
+        return (new ApprovalContext(realm, handlerId, action)).setModel(model);
     }
-
-    public static ApprovalContext fromModel(Object model, RealmModel realm) {
-        return empty(realm).setAttribute(MODEL_ATTR, model);
-    }
-
-
-    // Generic getter and setter
 
     public ApprovalContext setAttribute(String name, Object value) {
         attributes.put(name, value);
@@ -64,26 +63,48 @@ public class ApprovalContext {
     }
 
 
-    // Some common getters/setters
-
-    public String getAction() {
-        return (String)getAttribute(ACTION_ATTR);
+    public RealmModel getRealm() {
+        return realm;
     }
 
-    public ApprovalContext setAction(String value) {
-        setAttribute(ACTION_ATTR, value);
+    public ApprovalContext setRealm(RealmModel realm) {
+        this.realm = realm;
         return this;
     }
 
-    public RealmModel getRealm() {
-        return (RealmModel)getAttribute(REALM_ATTR);
+    public String getHandlerId() {
+        return handlerId;
+    }
+
+    public ApprovalContext setHandlerId(String handlerId) {
+        this.handlerId = handlerId;
+        return this;
+    }
+
+    public Action getAction() {
+        return action;
+    }
+
+    public ApprovalContext setAction(Action action) {
+        this.action = action;
+        return this;
     }
 
     public Object getRepresentation() {
         return getAttribute(REPRESENTATION_ATTR);
     }
 
+    public ApprovalContext setRepresentation(Object representation) {
+        setAttribute(REPRESENTATION_ATTR, representation);
+        return this;
+    }
+
     public Object getModel() {
         return getAttribute(MODEL_ATTR);
+    }
+
+    public ApprovalContext setModel(Object model) {
+        setAttribute(MODEL_ATTR, model);
+        return this;
     }
 }

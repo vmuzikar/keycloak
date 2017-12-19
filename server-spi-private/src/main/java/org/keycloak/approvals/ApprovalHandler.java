@@ -19,14 +19,14 @@ package org.keycloak.approvals;
 
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.provider.Provider;
-
-import java.lang.reflect.Method;
+import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalHandler extends Provider {
-    Class[] getProtectedClasses();
-    void handleRequest(Method protectedMethod, ApprovalContext context);
-    void approveRequest(ApprovalRequestModel request);
+    ApprovalEvaluator getEvaluator(ApprovalContext context);
+    ApprovalRequestRepresentation handleRequestCreation(ApprovalContext context);
+    boolean handleRequestApproval(ApprovalRequestModel request);
+    boolean handleRequestRejection(ApprovalRequestModel request);
 }

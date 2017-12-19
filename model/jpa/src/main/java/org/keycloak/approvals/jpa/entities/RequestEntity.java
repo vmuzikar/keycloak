@@ -52,8 +52,11 @@ public class RequestEntity {
     @JoinColumn(name = "REALM_ID")
     private RealmEntity realm;
 
-    @Column(name = "REQUESTER")
-    private String requester;
+    @Column(name = "HANDLER_ID")
+    private String handlerId;
+
+    @Column(name = "ACTION_ID")
+    private String actionId;
 
     @ElementCollection
     @MapKeyColumn(name = "NAME")
@@ -77,12 +80,20 @@ public class RequestEntity {
         this.realm = realm;
     }
 
-    public String getRequester() {
-        return requester;
+    public String getHandlerId() {
+        return handlerId;
     }
 
-    public void setRequester(String requester) {
-        this.requester = requester;
+    public void setHandlerId(String requester) {
+        this.handlerId = requester;
+    }
+
+    public String getActionId() {
+        return actionId;
+    }
+
+    public void setActionId(String actionId) {
+        this.actionId = actionId;
     }
 
     public Map<String, String> getAttributes() {

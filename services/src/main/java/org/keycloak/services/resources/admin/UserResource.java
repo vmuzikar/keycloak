@@ -21,9 +21,7 @@ import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.BadRequestException;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
-import org.keycloak.approvals.ApprovalContext;
-import org.keycloak.approvals.ApprovalInterceptor;
-import org.keycloak.approvals.InterceptedException;
+import org.keycloak.approvals.ApprovalManager;
 import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.authentication.actiontoken.execactions.ExecuteActionsActionToken;
 import org.keycloak.common.ClientConnection;
@@ -125,7 +123,7 @@ public class UserResource {
     private AdminEventBuilder adminEvent;
     private UserModel user;
 
-    protected ApprovalInterceptor approval;
+    protected ApprovalManager approval;
 
     @Context
     protected ClientConnection clientConnection;
@@ -139,12 +137,18 @@ public class UserResource {
     @Context
     protected HttpHeaders headers;
 
-    public UserResource(RealmModel realm, UserModel user, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent, ApprovalInterceptor approval) {
+    public UserResource(RealmModel realm, UserModel user, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.auth = auth;
         this.realm = realm;
         this.user = user;
         this.adminEvent = adminEvent.resource(ResourceType.USER);
-        this.approval = approval;
+    }
+
+    protected ApprovalManager getApprovalsManager() {
+        if (approval == null) {
+            approval = session.getProvider(ApprovalManager.class);
+        }
+        return approval;
     }
 
     /**
@@ -159,8 +163,6 @@ public class UserResource {
 
         auth.users().requireManage(user);
         try {
-            approval.intercept(ApprovalContext.fromRep(rep, realm));
-
             Set<String> attrsToRemove;
             if (rep.getAttributes() != null) {
                 attrsToRemove = new HashSet<>(user.getAttributes().keySet());
@@ -183,8 +185,6 @@ public class UserResource {
                 session.getTransactionManager().commit();
             }
             return Response.noContent().build();
-        } catch (InterceptedException e) {
-            return Response.accepted().build();
         } catch (ModelDuplicateException e) {
             return ErrorResponse.exists("User exists with same username or email");
         } catch (ReadOnlyException re) {

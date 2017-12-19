@@ -17,9 +17,9 @@
 
 package org.keycloak.authentication.forms;
 
-import org.keycloak.approvals.ApprovalContext;
-import org.keycloak.approvals.ApprovalInterceptor;
+import org.keycloak.approvals.ApprovalManager;
 import org.keycloak.approvals.InterceptedException;
+import org.keycloak.approvals.handlers.UsersHandler;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.Authenticator;
 import org.keycloak.models.KeycloakSession;
@@ -32,11 +32,11 @@ import org.keycloak.models.UserModel;
 public class RegistrationApproval implements Authenticator {
     public void authenticate(AuthenticationFlowContext context) {
         final KeycloakSession session = context.getSession();
-        final ApprovalInterceptor approval = session.getProvider(ApprovalInterceptor.class);
+        final ApprovalManager approval = session.getProvider(ApprovalManager.class);
         final UserModel userModel = context.getUser();
 
         try {
-            approval.intercept(ApprovalContext.fromModel(userModel, context.getRealm()));
+            approval.interceptAction(UsersHandler.registerUserCtx(userModel, context.getRealm()));
         }
         catch (InterceptedException e) {
             context.challenge(context.form().createRegisterApprovalNeededPage());

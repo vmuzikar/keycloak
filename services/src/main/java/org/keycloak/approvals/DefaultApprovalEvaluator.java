@@ -17,27 +17,15 @@
 
 package org.keycloak.approvals;
 
-import java.lang.reflect.Method;
-
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class DefaultApprovalEvaluator implements ApprovalEvaluator {
-    private boolean disabled = false;
+    public static final String PROVIDER_ID = "default";
 
     @Override
-    public boolean needsApproval(Method protectedMethod, ApprovalContext context) {
+    public boolean needsApproval(ApprovalContext context) {
         return true; // TODO make it dynamic!!!
-    }
-
-    @Override
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
-    }
-
-    @Override
-    public boolean isDisabled() {
-        return disabled;
     }
 
     @Override

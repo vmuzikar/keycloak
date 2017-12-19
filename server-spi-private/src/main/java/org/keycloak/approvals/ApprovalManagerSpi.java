@@ -24,7 +24,7 @@ import org.keycloak.provider.Spi;
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class ApprovalInterceptorSpi implements Spi {
+public class ApprovalManagerSpi implements Spi {
     @Override
     public boolean isInternal() {
         return true;
@@ -32,16 +32,16 @@ public class ApprovalInterceptorSpi implements Spi {
 
     @Override
     public String getName() {
-        return "approvalInterceptor";
+        return "approvalHandlerProvider";
     }
 
     @Override
     public Class<? extends Provider> getProviderClass() {
-        return ApprovalInterceptor.class;
+        return ApprovalManager.class;
     }
 
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
-        return ApprovalInterceptorFactory.class;
+        return ApprovalManagerFactory.class;
     }
 }

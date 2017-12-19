@@ -21,14 +21,17 @@ import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.approvals.store.ApprovalRequestStore;
 import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
+import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public interface ApprovalProvider extends Provider {
+public interface ApprovalManager extends Provider {
     ApprovalRequestStore getRequestStore();
-    ApprovalHandler getHandlerByProtectedClass(Class protectedClass);
     ApprovalHandler getHandlerByRequest(String requestId, RealmModel realmModel);
     ApprovalHandler getHandlerByRequest(ApprovalRequestModel requestModel);
+    void interceptAction(ApprovalContext context) throws InterceptedException;
+    ApprovalRequestModel createRequest(ApprovalRequestRepresentation requestRep, RealmModel realm);
     boolean approveRequest(String requestId, RealmModel realm);
+    boolean rejectRequest(String requestId, RealmModel realm);
 }

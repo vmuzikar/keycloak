@@ -19,15 +19,14 @@ package org.keycloak.approvals.handlers;
 
 import org.jboss.logging.Logger;
 import org.keycloak.approvals.ApprovalContext;
+import org.keycloak.approvals.ApprovalEvaluator;
 import org.keycloak.approvals.ApprovalHandler;
-import org.keycloak.approvals.ApprovalProvider;
-import org.keycloak.approvals.store.ApprovalRequestModel;
-import org.keycloak.approvals.store.ApprovalRequestStore;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
+import java.util.HashMap;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -36,49 +35,32 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
     private final Logger log = Logger.getLogger(this.getClass());
 
     protected KeycloakSession session;
-    protected ApprovalRequestStore requestStore;
 
-    public void setKeycloakSession(KeycloakSession session) {
+    public AbstractApprovalHandler(KeycloakSession session) {
         this.session = session;
-        this.requestStore = session.getProvider(ApprovalProvider.class).getRequestStore();
     }
 
     @Override
-    public void handleRequest(Method protectedMethod, ApprovalContext context) {
-        ApprovalRequestModel request  = storeRequest(
-                protectedMethod.getDeclaringClass().getName(),
-                protectedMethod.getName(),
-                context);
-
-        log.info("Created request: " + request.getId());
+    public ApprovalEvaluator getEvaluator(ApprovalContext context) {
+        return null;
     }
 
-    protected ApprovalRequestModel storeRequest(String requester, String action, ApprovalContext context) {
-        ApprovalRequestModel request = requestStore.createRequest(requester, context.getRealm());
+    protected ApprovalRequestRepresentation contextToRepresentation(ApprovalContext context) {
+        ApprovalRequestRepresentation rep = new ApprovalRequestRepresentation();
 
+        rep.setHandlerId(context.getHandlerId());
+        rep.setActionId(context.getAction().toString().toLowerCase());
+
+        rep.setAttributes(new HashMap<>());
         try {
-            request.setAttributeIfNotNull(ApprovalContext.REPRESENTATION_ATTR, JsonSerialization.writeValueAsString(context.getRepresentation()));
-            request.setAttributeIfNotNull(ApprovalContext.ACTION_ATTR, action);
+            rep.getAttributes().put(ApprovalContext.REPRESENTATION_ATTR, JsonSerialization.writeValueAsString(context.getRepresentation()));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        return request;
+        return rep;
     }
-
-    @Override
-    public void approveRequest(ApprovalRequestModel request) {
-        executeRequestedActions(request);
-
-        String id = request.getId();
-        if (!requestStore.removeRequest(id, request.getRealm())) {
-            throw new IllegalStateException("Could not found the request");
-        }
-        log.info("Request approval handled: " + id);
-    }
-
-    abstract protected void executeRequestedActions(ApprovalRequestModel requestModel);
 
     @Override
     public void close() {

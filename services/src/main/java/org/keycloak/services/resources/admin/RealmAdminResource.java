@@ -24,7 +24,6 @@ import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.Config;
 import org.keycloak.KeyPairVerifier;
-import org.keycloak.approvals.ApprovalInterceptor;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionManagement;
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
@@ -123,7 +122,6 @@ public class RealmAdminResource {
     protected RealmModel realm;
     private TokenManager tokenManager;
     private AdminEventBuilder adminEvent;
-    protected ApprovalInterceptor approval;
 
     @Context
     protected KeycloakSession session;
@@ -137,12 +135,11 @@ public class RealmAdminResource {
     @Context
     protected HttpHeaders headers;
 
-    public RealmAdminResource(AdminPermissionEvaluator auth, RealmModel realm, TokenManager tokenManager, AdminEventBuilder adminEvent, ApprovalInterceptor approval) {
+    public RealmAdminResource(AdminPermissionEvaluator auth, RealmModel realm, TokenManager tokenManager, AdminEventBuilder adminEvent) {
         this.auth = auth;
         this.realm = realm;
         this.tokenManager = tokenManager;
         this.adminEvent = adminEvent.realm(realm).resource(ResourceType.REALM);
-        this.approval = approval;
     }
 
     /**
@@ -364,7 +361,7 @@ public class RealmAdminResource {
      */
     @Path("users")
     public UsersResource users() {
-        UsersResource users = new UsersResource(realm, auth, adminEvent, approval);
+        UsersResource users = new UsersResource(realm, auth, adminEvent);
         ResteasyProviderFactory.getInstance().injectProperties(users);
         //resourceContext.initResource(users);
         return users;

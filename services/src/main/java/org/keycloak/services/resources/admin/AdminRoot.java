@@ -23,7 +23,6 @@ import org.jboss.resteasy.spi.NoLogWebApplicationException;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.UnauthorizedException;
-import org.keycloak.approvals.ApprovalInterceptor;
 import org.keycloak.common.ClientConnection;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
@@ -188,10 +187,6 @@ public class AdminRoot {
         return new AdminAuth(realm, authResult.getToken(), authResult.getUser(), client);
     }
 
-    protected ApprovalInterceptor getApprovalInterceptor() {
-        return session.getProvider(ApprovalInterceptor.class);
-    }
-
     public static UriBuilder realmsUrl(UriInfo uriInfo) {
         return realmsUrl(uriInfo.getBaseUriBuilder());
     }
@@ -218,7 +213,7 @@ public class AdminRoot {
 
         Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
 
-        RealmsAdminResource adminResource = new RealmsAdminResource(auth, tokenManager, getApprovalInterceptor());
+        RealmsAdminResource adminResource = new RealmsAdminResource(auth, tokenManager);
         ResteasyProviderFactory.getInstance().injectProperties(adminResource);
         return adminResource;
     }

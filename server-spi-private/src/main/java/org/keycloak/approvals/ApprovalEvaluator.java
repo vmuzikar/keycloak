@@ -19,13 +19,9 @@ package org.keycloak.approvals;
 
 import org.keycloak.provider.Provider;
 
-import java.lang.reflect.Method;
-
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalEvaluator extends Provider {
-    boolean needsApproval(Method protectedMethod, ApprovalContext context);
-    void setDisabled(boolean disabled);
-    boolean isDisabled();
+    boolean needsApproval(ApprovalContext context);
 }

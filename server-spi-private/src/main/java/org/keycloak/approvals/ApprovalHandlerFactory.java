@@ -17,12 +17,11 @@
 
 package org.keycloak.approvals;
 
-import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderFactory;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalHandlerFactory extends ProviderFactory<ApprovalHandler> {
-    ApprovalHandler create(KeycloakSession session, Class protectedClass);
+    ApprovalContext.Action[] getActions();
 }

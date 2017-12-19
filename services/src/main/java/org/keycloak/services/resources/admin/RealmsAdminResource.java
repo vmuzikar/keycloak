@@ -20,7 +20,6 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
-import org.keycloak.approvals.ApprovalInterceptor;
 import org.keycloak.common.ClientConnection;
 import org.keycloak.models.AdminRoles;
 import org.keycloak.models.ClientModel;
@@ -65,7 +64,6 @@ public class RealmsAdminResource {
     protected static final Logger logger = Logger.getLogger(RealmsAdminResource.class);
     protected AdminAuth auth;
     protected TokenManager tokenManager;
-    protected ApprovalInterceptor approval;
 
     @Context
     protected KeycloakSession session;
@@ -76,10 +74,9 @@ public class RealmsAdminResource {
     @Context
     protected ClientConnection clientConnection;
 
-    public RealmsAdminResource(AdminAuth auth, TokenManager tokenManager, ApprovalInterceptor approval) {
+    public RealmsAdminResource(AdminAuth auth, TokenManager tokenManager) {
         this.auth = auth;
         this.tokenManager = tokenManager;
-        this.approval = approval;
     }
 
     public static final CacheControl noCache = new CacheControl();
@@ -190,7 +187,7 @@ public class RealmsAdminResource {
         AdminEventBuilder adminEvent = new AdminEventBuilder(realm, auth, session, clientConnection);
         session.getContext().setRealm(realm);
 
-        RealmAdminResource adminResource = new RealmAdminResource(realmAuth, realm, tokenManager, adminEvent, approval);
+        RealmAdminResource adminResource = new RealmAdminResource(realmAuth, realm, tokenManager, adminEvent);
         ResteasyProviderFactory.getInstance().injectProperties(adminResource);
         //resourceContext.initResource(adminResource);
         return adminResource;

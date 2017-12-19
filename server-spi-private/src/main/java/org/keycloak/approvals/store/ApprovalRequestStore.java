@@ -26,8 +26,9 @@ import java.util.List;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalRequestStore extends Provider {
-    ApprovalRequestModel createRequest(String requester, RealmModel realm);
+    ApprovalRequestModel createRequest(RealmModel realm, String handlerId);
     boolean removeRequest(String id, RealmModel realm);
+    boolean removeRequest(ApprovalRequestModel requestModel);
     ApprovalRequestModel getRequestById(String id, RealmModel realm);
     List<ApprovalRequestModel> getRequestsForRealm(RealmModel realm);
 }

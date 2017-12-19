@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals;
+package org.keycloak.approvals.handlers;
 
 import org.keycloak.Config;
+import org.keycloak.approvals.ApprovalContext;
+import org.keycloak.approvals.ApprovalHandler;
+import org.keycloak.approvals.ApprovalHandlerFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class DefaultApprovalProviderFactory implements ApprovalProviderFactory {
+public class UsersHandlerFactory implements ApprovalHandlerFactory {
     @Override
-    public ApprovalProvider create(KeycloakSession session) {
-        return new DefaultApprovalProvider(session);
+    public ApprovalContext.Action[] getActions() {
+        return UsersHandler.Actions.values();
+    }
+
+    @Override
+    public ApprovalHandler create(KeycloakSession session) {
+        return new UsersHandler(session);
     }
 
     @Override
@@ -47,6 +55,6 @@ public class DefaultApprovalProviderFactory implements ApprovalProviderFactory {
 
     @Override
     public String getId() {
-        return "default";
+        return UsersHandler.HANDLER_ID;
     }
 }

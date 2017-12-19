@@ -17,7 +17,7 @@
 
 package org.keycloak.approvals.jpa;
 
-import org.keycloak.approvals.ApprovalProvider;
+import org.keycloak.approvals.ApprovalManager;
 import org.keycloak.approvals.jpa.entities.RequestEntity;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.approvals.store.ApprovalRequestStore;
@@ -38,30 +38,34 @@ import java.util.stream.Collectors;
 public class JpaRequestStore implements ApprovalRequestStore {
     protected KeycloakSession session;
     protected EntityManager em;
-    protected ApprovalProvider storeProvider;
+    protected ApprovalManager storeProvider;
 
-    public JpaRequestStore(KeycloakSession session, EntityManager em, ApprovalProvider storeProvider) {
+    public JpaRequestStore(KeycloakSession session, EntityManager em, ApprovalManager storeProvider) {
         this.session = session;
         this.em = em;
         this.storeProvider = storeProvider;
     }
 
     @Override
-    public ApprovalRequestModel createRequest(String requester, RealmModel realm) {
+    public ApprovalRequestModel createRequest(RealmModel realm, String handlerId) {
         RequestEntity entity = new RequestEntity();
         entity.setId(KeycloakModelUtils.generateId());
-        entity.setRequester(requester);
+        entity.setHandlerId(handlerId);
         entity.setRealm(em.getReference(RealmEntity.class, realm.getId()));
 
         em.persist(entity);
         em.flush();
 
-        return new RequestAdapter(entity, realm);
+        return new RequestAdapter(entity, em, realm);
     }
 
     @Override
     public boolean removeRequest(String id, RealmModel realm) {
-        ApprovalRequestModel requestModel = getRequestById(id, realm);
+        return removeRequest(getRequestById(id, realm));
+    }
+
+    @Override
+    public boolean removeRequest(ApprovalRequestModel requestModel) {
         if (requestModel == null) {
             return false;
         }
@@ -87,7 +91,7 @@ public class JpaRequestStore implements ApprovalRequestStore {
             return null;
         }
 
-        return new RequestAdapter(entity, realm);
+        return new RequestAdapter(entity, em, realm);
     }
 
     @Override

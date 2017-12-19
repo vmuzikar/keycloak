@@ -19,52 +19,97 @@ package org.keycloak.approvals.handlers;
 
 import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.store.ApprovalRequestModel;
-import org.keycloak.authentication.forms.RegistrationApproval;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.resources.admin.UserResource;
-import org.keycloak.services.resources.admin.UsersResource;
 import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class UsersHandler extends AbstractApprovalHandler {
-    private static final Class[] protectedClasses = new Class[] {UsersResource.class, UserResource.class, RegistrationApproval.class};
+    public enum Actions implements ApprovalContext.Action {
+        REGISTER_USER("User self-registers using login page"),
+        CREATE_USER("User is created using Admin Console");
 
-    @Override
-    public Class[] getProtectedClasses() {
-        return protectedClasses;
-    }
+        private String description;
 
-    @Override
-    public void handleRequest(Method protectedMethod, ApprovalContext context) {
-        if (protectedMethod.getDeclaringClass().equals(RegistrationApproval.class)) {
-            UserModel userModel = (UserModel)context.getModel();
-
-            userModel.setEnabled(false);
-
-            UserRepresentation userRep = new UserRepresentation();
-            userRep.setId(userModel.getId());
-            userRep.setEnabled(true);
-
-            context = ApprovalContext.fromRep(userRep, context.getRealm());
+        Actions(String description) {
+            this.description = description;
         }
 
-        super.handleRequest(protectedMethod, context);
-    }
-
-    @Override
-    protected void executeRequestedActions(ApprovalRequestModel request) {
-        if (RegistrationApproval.class.getName().equals(request.getRequester())) {
-            handleUserRegistration(request);
+        @Override
+        public String getDescription() {
+            return description;
         }
     }
 
-    private void handleUserRegistration(ApprovalRequestModel request) {
+    public static final String HANDLER_ID = "users";
+
+    public static ApprovalContext createUserCtx(UserRepresentation rep, RealmModel realm) {
+        return ApprovalContext.withRepresentation(realm, HANDLER_ID, Actions.CREATE_USER, rep);
+    }
+
+    public static ApprovalContext registerUserCtx(UserModel user, RealmModel realm) {
+        return ApprovalContext.withModel(realm, HANDLER_ID, Actions.REGISTER_USER, user);
+    }
+
+    public UsersHandler(KeycloakSession session) {
+        super(session);
+    }
+
+    @Override
+    public ApprovalRequestRepresentation handleRequestCreation(ApprovalContext context) {
+        switch ((Actions)context.getAction()) {
+            case REGISTER_USER:
+                return prepareUserRegistration(context);
+            case CREATE_USER:
+                return contextToRepresentation(context);
+        }
+
+        return null;
+    }
+
+    @Override
+    public boolean handleRequestApproval(ApprovalRequestModel request) {
+        Actions action = Actions.valueOf(request.getActionId().toUpperCase());
+
+        switch (action) {
+            case REGISTER_USER:
+                performUserRegistration(request);
+                return true;
+            case CREATE_USER:
+                return false; // TODO
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean handleRequestRejection(ApprovalRequestModel request) {
+        return true;
+    }
+
+    private ApprovalRequestRepresentation prepareUserRegistration(ApprovalContext context) {
+        UserModel userModel = (UserModel)context.getModel();
+
+        userModel.setEnabled(false);
+
+        UserRepresentation userRep = new UserRepresentation();
+        userRep.setId(userModel.getId());
+        userRep.setEnabled(true);
+
+        context.setRepresentation(userRep);
+
+        return contextToRepresentation(context);
+    }
+
+    private void performUserRegistration(ApprovalRequestModel request) {
         UserRepresentation userRep;
 
         try {
@@ -76,6 +121,7 @@ public class UsersHandler extends AbstractApprovalHandler {
             throw new RuntimeException();
         }
 
-        session.users().getUserById(userRep.getId(), request.getRealm()).setEnabled(true);
+        UserModel userModel = session.users().getUserById(userRep.getId(), request.getRealm());
+        UserResource.updateUserFromRep(userModel, userRep, null, request.getRealm(), session, false);
     }
 }

@@ -17,21 +17,25 @@
 
 package org.keycloak.approvals.jpa;
 
-import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.jpa.entities.RequestEntity;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.jpa.JpaModel;
+
+import javax.persistence.EntityManager;
+import java.util.Map;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEntity> {
     private RequestEntity entity;
+    private EntityManager em;
     private RealmModel realm;
 
-    public RequestAdapter(RequestEntity entity, RealmModel realm) {
+    public RequestAdapter(RequestEntity entity, EntityManager em, RealmModel realm) {
         this.entity = entity;
+        this.em = em;
         this.realm = realm;
     }
 
@@ -46,8 +50,19 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
     }
 
     @Override
-    public String getRequester() {
-        return entity.getRequester();
+    public String getHandlerId() {
+        return entity.getHandlerId();
+    }
+
+    @Override
+    public String getActionId() {
+        return entity.getActionId();
+    }
+
+    @Override
+    public void setActionId(String actionId) {
+        entity.setActionId(actionId);
+        em.flush();
     }
 
     @Override
@@ -58,23 +73,27 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
     @Override
     public void setAttribute(String name, String value) {
         entity.getAttributes().put(name, value);
+        em.flush();
     }
 
     @Override
     public void setAttributeIfNotNull(String name, String value) {
         if (value != null) {
             setAttribute(name, value);
+            em.flush();
         }
-    }
-
-    @Override
-    public String getActionAttribute() {
-        return entity.getAttributes().get(ApprovalContext.ACTION_ATTR);
     }
 
     @Override
     public void removeAttribute(String name) {
         entity.getAttributes().remove(name);
+        em.flush();
+    }
+
+    @Override
+    public void setAttributes(Map<String, String> attributes) {
+        entity.setAttributes(attributes);
+        em.flush();
     }
 
     @Override

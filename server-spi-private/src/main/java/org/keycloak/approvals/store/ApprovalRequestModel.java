@@ -19,17 +19,22 @@ package org.keycloak.approvals.store;
 
 import org.keycloak.models.RealmModel;
 
+import java.util.Map;
+
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalRequestModel {
     String getId();
     RealmModel getRealm();
-    String getRequester();
+    String getHandlerId();
+
+    String getActionId();
+    void setActionId(String actionId);
 
     String getAttribute(String name);
-    String getActionAttribute();
     void setAttribute(String name, String value);
     void setAttributeIfNotNull(String name, String value);
     void removeAttribute(String name);
+    void setAttributes(Map<String, String> attributes);
 }

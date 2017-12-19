@@ -20,9 +20,9 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
-import org.keycloak.approvals.ApprovalContext;
-import org.keycloak.approvals.ApprovalInterceptor;
+import org.keycloak.approvals.ApprovalManager;
 import org.keycloak.approvals.InterceptedException;
+import org.keycloak.approvals.handlers.UsersHandler;
 import org.keycloak.common.ClientConnection;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
@@ -74,7 +74,7 @@ public class UsersResource {
 
     private AdminEventBuilder adminEvent;
 
-    protected ApprovalInterceptor approval;
+    protected ApprovalManager approval;
 
     @Context
     protected ClientConnection clientConnection;
@@ -88,11 +88,17 @@ public class UsersResource {
     @Context
     protected HttpHeaders headers;
 
-    public UsersResource(RealmModel realm, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent, ApprovalInterceptor approval) {
+    public UsersResource(RealmModel realm, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.auth = auth;
         this.realm = realm;
         this.adminEvent = adminEvent.resource(ResourceType.USER);
-        this.approval = approval;
+    }
+
+    protected ApprovalManager getApprovalsManager() {
+        if (approval == null) {
+            approval = session.getProvider(ApprovalManager.class);
+        }
+        return approval;
     }
 
     /**
@@ -118,7 +124,7 @@ public class UsersResource {
         }
 
         try {
-            approval.intercept(ApprovalContext.fromRep(rep, realm));
+            getApprovalsManager().interceptAction(UsersHandler.createUserCtx(rep, realm));
 
             UserModel user = session.users().addUser(realm, rep.getUsername());
             Set<String> emptySet = Collections.emptySet();
@@ -161,7 +167,7 @@ public class UsersResource {
             if (auth.users().canQuery()) throw new NotFoundException("User not found");
             else throw new ForbiddenException();
         }
-        UserResource resource = new UserResource(realm, user, auth, adminEvent, approval);
+        UserResource resource = new UserResource(realm, user, auth, adminEvent);
         ResteasyProviderFactory.getInstance().injectProperties(resource);
         //resourceContext.initResource(users);
         return resource;

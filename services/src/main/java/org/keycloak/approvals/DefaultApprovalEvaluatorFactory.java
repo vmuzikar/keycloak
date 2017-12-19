@@ -47,6 +47,6 @@ public class DefaultApprovalEvaluatorFactory implements ApprovalEvaluatorFactory
 
     @Override
     public String getId() {
-        return "default";
+        return DefaultApprovalEvaluator.PROVIDER_ID;
     }
 }

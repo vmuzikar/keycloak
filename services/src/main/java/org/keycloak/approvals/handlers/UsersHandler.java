@@ -22,6 +22,7 @@ import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.resources.admin.UserResource;
@@ -106,7 +107,15 @@ public class UsersHandler extends AbstractApprovalHandler {
 
         context.setRepresentation(userRep);
 
-        return contextToRepresentation(context);
+        String desc;
+        try {
+            desc = JsonSerialization.writeValueAsPrettyString(ModelToRepresentation.toRepresentation(session, context.getRealm(), userModel));
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return contextToRepresentation(context, desc);
     }
 
     private void performUserRegistration(ApprovalRequestModel request) {

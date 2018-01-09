@@ -52,6 +52,9 @@ public class RequestEntity {
     @JoinColumn(name = "REALM_ID")
     private RealmEntity realm;
 
+    @Column(name = "DESCRIPTION")
+    private String description;
+
     @Column(name = "HANDLER_ID")
     private String handlerId;
 
@@ -78,6 +81,14 @@ public class RequestEntity {
 
     public void setRealm(RealmEntity realm) {
         this.realm = realm;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getHandlerId() {

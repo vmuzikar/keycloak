@@ -94,6 +94,7 @@ public class DefaultApprovalManager implements ApprovalManager {
         ApprovalRequestModel requestModel = getRequestStore().createRequest(realm, requestRep.getHandlerId());
 
         requestModel.setActionId(requestRep.getActionId());
+        requestModel.setDescription(requestRep.getDescription());
         requestModel.setAttributes(new HashMap<>(requestRep.getAttributes()));
 
         return requestModel;

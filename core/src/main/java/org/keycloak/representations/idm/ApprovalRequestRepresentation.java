@@ -24,6 +24,7 @@ import java.util.Map;
  */
 public class ApprovalRequestRepresentation {
     private String id;
+    private String description;
     private String handlerId;
     private String actionId;
     private Map<String, String> attributes;
@@ -34,6 +35,14 @@ public class ApprovalRequestRepresentation {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getHandlerId() {

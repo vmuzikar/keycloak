@@ -24,6 +24,7 @@
                 <constraints nullable="false"/>
             </column>
             <column name="REALM_ID" type="VARCHAR(36)"/>
+            <column name="DESCRIPTION" type="VARCHAR(1024)"/>
             <column name="HANDLER_ID" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>

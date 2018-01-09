@@ -50,7 +50,7 @@ public class BPMSListener implements ApprovalListener {
         args.put("keycloakRootUrl", session.getContext().getAuthServerUrl());
         args.put("realm", request.getRealm().getId());
         args.put("approvalId", request.getId());
-        args.put("description", "Approval Request ID: " + request.getId()); // TODO description
+        args.put("description", request.getDescription());
 
         Long ret = processServicesClient.startProcess("org.keycloak.quickstart:bpm:1.0", "bpm-quickstart.HandleApprovalRequest", args);
         log.info(ret);

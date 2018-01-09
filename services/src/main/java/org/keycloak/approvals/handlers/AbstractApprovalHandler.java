@@ -46,14 +46,22 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
     }
 
     protected ApprovalRequestRepresentation contextToRepresentation(ApprovalContext context) {
+        return contextToRepresentation(context, null);
+    }
+
+    protected ApprovalRequestRepresentation contextToRepresentation(ApprovalContext context, String description) {
         ApprovalRequestRepresentation rep = new ApprovalRequestRepresentation();
 
+        rep.setDescription(description);
         rep.setHandlerId(context.getHandlerId());
         rep.setActionId(context.getAction().toString().toLowerCase());
 
         rep.setAttributes(new HashMap<>());
         try {
             rep.getAttributes().put(ApprovalContext.REPRESENTATION_ATTR, JsonSerialization.writeValueAsString(context.getRepresentation()));
+            if (description == null) {
+                rep.setDescription(JsonSerialization.writeValueAsPrettyString(context.getRepresentation()));
+            }
         }
         catch (IOException e) {
             throw new RuntimeException(e);

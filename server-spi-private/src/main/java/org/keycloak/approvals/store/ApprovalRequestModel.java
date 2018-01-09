@@ -29,6 +29,9 @@ public interface ApprovalRequestModel {
     RealmModel getRealm();
     String getHandlerId();
 
+    String getDescription();
+    void setDescription(String description);
+
     String getActionId();
     void setActionId(String actionId);
 

@@ -55,6 +55,17 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
     }
 
     @Override
+    public String getDescription() {
+        return entity.getDescription();
+    }
+
+    @Override
+    public void setDescription(String description) {
+        entity.setDescription(description);
+        em.flush();
+    }
+
+    @Override
     public String getActionId() {
         return entity.getActionId();
     }

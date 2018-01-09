@@ -119,7 +119,24 @@ public class DeploymentArchiveProcessor implements ApplicationArchiveProcessor {
                     .addClass(org.keycloak.testsuite.arquillian.annotation.AppServerContainer.class)
                     .addClass(org.keycloak.testsuite.arquillian.annotation.UseServletFilter.class);
         }
-        
+
+        if (isWASAppServer(testClass.getJavaClass())) {
+//        {
+            MavenResolverSystem resolver = Maven.resolver();
+            MavenFormatStage dependencies = resolver
+                    .loadPomFromFile("pom.xml")
+                    .importTestDependencies()
+                    .resolve("org.apache.httpcomponents:httpclient")
+                    .withTransitivity();
+
+            ((WebArchive) archive)
+                    .addAsLibraries(dependencies.asFile())
+                    .addClass(org.keycloak.testsuite.arquillian.annotation.AppServerContainer.class)
+                    .addClass(org.keycloak.testsuite.arquillian.annotation.UseServletFilter.class);
+        }
+
+
+
     }
 
     public static boolean isAdapterTest(TestClass testClass) {

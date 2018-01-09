@@ -21,8 +21,8 @@ import org.keycloak.approvals.ApprovalManager;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
-import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
@@ -41,7 +41,7 @@ public class ApprovalsResource {
         this.realm = realm;
     }
 
-    @GET
+    @POST
     @Path("{id}")
     public Response approveRequest(final @PathParam("id") String requestId) {
         ApprovalManager approval = session.getProvider(ApprovalManager.class);

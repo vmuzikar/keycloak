@@ -68,14 +68,18 @@ public class DefaultApprovalManager implements ApprovalManager {
 
         if (evaluator.needsApproval(context)) {
             boolean tx = false;
-            KeycloakTransactionManager tm = session.getTransactionManager();
+            KeycloakTransactionManager tm = session.getTransactionManager(); // TODO Is that necessary?
             if (!tm.isActive()) {
                 tx = true;
                 tm.begin();
             }
 
-            ApprovalRequestRepresentation request = handler.handleRequestCreation(context);
-            createRequest(request, context.getRealm());
+            ApprovalRequestRepresentation requestRep = handler.handleRequestCreation(context);
+            ApprovalRequestModel requestModel = createRequest(requestRep, context.getRealm());
+
+            for (ApprovalListener listener : session.getAllProviders(ApprovalListener.class)) { // TODO Priorities, enabling?
+                listener.afterRequestCreation(requestModel, context);
+            }
 
             if (tx) {
                 tm.commit();
@@ -108,17 +112,35 @@ public class DefaultApprovalManager implements ApprovalManager {
     private boolean processRequest(String requestId, RealmModel realm, boolean approve) {
         ApprovalRequestStore store = getRequestStore();
         ApprovalRequestModel requestModel = store.getRequestById(requestId, realm);
-        ApprovalHandler handler = getHandlerByRequest(requestModel);
         if (requestModel == null) {
             return false;
         }
+        ApprovalHandler handler = getHandlerByRequest(requestModel);
 
-        session.getTransactionManager().begin();
+        boolean tx = false;
+        KeycloakTransactionManager tm = session.getTransactionManager(); // TODO Is that necessary?
+        if (!tm.isActive()) {
+            tx = true;
+            tm.begin();
+        }
+
         boolean res = approve ? handler.handleRequestApproval(requestModel) : handler.handleRequestRejection(requestModel);
         if (res && !store.removeRequest(requestModel)) {
             throw new IllegalStateException("Approval handler removed the approval request");
         }
-        session.getTransactionManager().commit();
+
+        for (ApprovalListener listener : session.getAllProviders(ApprovalListener.class)) { // TODO Priorities, enabling?
+            if (approve) {
+                listener.afterRequestApproval(requestModel);
+            }
+            else {
+                listener.afterRequestRejection(requestModel);
+            }
+        }
+
+        if (tx) {
+            tm.commit();
+        }
 
         return res;
     }

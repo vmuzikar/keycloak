@@ -1019,7 +1019,8 @@ public class RealmAdminResource {
 
     @Path("approvals")
     public ApprovalsResource approvals() {
-        ApprovalsResource resource = new ApprovalsResource(realm);
+        auth.realm().requireManageApprovals();
+        ApprovalsResource resource = new ApprovalsResource(realm, adminEvent);
         ResteasyProviderFactory.getInstance().injectProperties(resource);
         return resource;
     }

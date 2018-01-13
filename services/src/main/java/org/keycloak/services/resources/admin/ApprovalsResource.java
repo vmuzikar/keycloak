@@ -36,9 +36,11 @@ public class ApprovalsResource {
     protected KeycloakSession session;
 
     private RealmModel realm;
+    private AdminEventBuilder adminEvent;
 
-    public ApprovalsResource(RealmModel realm) {
+    public ApprovalsResource(RealmModel realm, AdminEventBuilder adminEvent) {
         this.realm = realm;
+        this.adminEvent = adminEvent;
     }
 
     @POST

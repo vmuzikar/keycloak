@@ -74,6 +74,9 @@ class RealmPermissions implements RealmPermissionEvaluator {
     public boolean canViewEventsDefault() {
         return root.hasOneAdminRole(AdminRoles.MANAGE_EVENTS, AdminRoles.VIEW_EVENTS);
     }
+    public boolean canManageApprovalsDefault() {
+        return root.hasOneAdminRole(AdminRoles.MANAGE_APPROVALS);
+    }
 
     @Override
     public boolean canListRealms() {
@@ -183,7 +186,15 @@ class RealmPermissions implements RealmPermissionEvaluator {
         }
     }
 
+    @Override
+    public boolean canManageApprovals() {
+        return canManageApprovalsDefault();
+    }
 
-
-
+    @Override
+    public void requireManageApprovals() {
+        if (!canManageApprovals()) {
+            throw new ForbiddenException();
+        }
+    }
 }

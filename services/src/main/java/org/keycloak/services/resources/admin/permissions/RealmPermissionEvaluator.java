@@ -16,8 +16,6 @@
  */
 package org.keycloak.services.resources.admin.permissions;
 
-import org.keycloak.models.RealmModel;
-
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -58,4 +56,8 @@ public interface RealmPermissionEvaluator {
     boolean canViewEvents();
 
     void requireViewEvents();
+
+    boolean canManageApprovals();
+
+    void requireManageApprovals();
 }

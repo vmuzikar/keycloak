@@ -58,9 +58,11 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
 
         rep.setAttributes(new HashMap<>());
         try {
-            rep.getAttributes().put(ApprovalContext.REPRESENTATION_ATTR, JsonSerialization.writeValueAsString(context.getRepresentation()));
-            if (description == null) {
-                rep.setDescription(JsonSerialization.writeValueAsPrettyString(context.getRepresentation()));
+            if (context.getRepresentation() != null) {
+                rep.getAttributes().put(ApprovalContext.REPRESENTATION_ATTR, JsonSerialization.writeValueAsString(context.getRepresentation()));
+                if (description == null) {
+                    rep.setDescription(JsonSerialization.writeValueAsPrettyString(context.getRepresentation()));
+                }
             }
         }
         catch (IOException e) {

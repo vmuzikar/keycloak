@@ -27,6 +27,7 @@ public class ApprovalRequestRepresentation {
     private String description;
     private String handlerId;
     private String actionId;
+    private String actionName;
     private Map<String, String> attributes;
 
     public String getId() {
@@ -59,6 +60,22 @@ public class ApprovalRequestRepresentation {
 
     public void setActionId(String actionId) {
         this.actionId = actionId;
+    }
+
+    /**
+     * actionName should be used only as a read-only value (typically used by ModelToRepresentation)
+     */
+    public String getActionName() {
+        return actionName;
+    }
+
+    /**
+     * actionName should be used only as a read-only value (typically used by ModelToRepresentation)
+     *
+     * @param actionName
+     */
+    public void setActionName(String actionName) {
+        this.actionName = actionName;
     }
 
     public Map<String, String> getAttributes() {

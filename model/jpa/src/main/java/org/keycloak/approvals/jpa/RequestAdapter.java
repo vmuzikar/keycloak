@@ -23,6 +23,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.jpa.JpaModel;
 
 import javax.persistence.EntityManager;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -99,6 +100,11 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
     public void removeAttribute(String name) {
         entity.getAttributes().remove(name);
         em.flush();
+    }
+
+    @Override
+    public Map<String, String> getAttributes() {
+        return new HashMap<>(entity.getAttributes());
     }
 
     @Override

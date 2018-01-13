@@ -17,6 +17,8 @@
 
 package org.keycloak.models.utils;
 
+import org.keycloak.approvals.ApprovalManager;
+import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.Resource;
@@ -854,5 +856,17 @@ public class ModelToRepresentation {
         }
 
         return resource;
+    }
+
+    public static ApprovalRequestRepresentation toRepresentation(ApprovalRequestModel model, ApprovalManager manager) {
+        ApprovalRequestRepresentation rep = new ApprovalRequestRepresentation();
+        rep.setId(model.getId());
+        rep.setDescription(model.getDescription());
+        rep.setHandlerId(model.getHandlerId());
+        rep.setActionId(model.getActionId());
+        rep.setActionName(manager.getHandlerByRequest(model).getActionByName(model.getActionId()).getDescription());
+        rep.setAttributes(model.getAttributes());
+
+        return rep;
     }
 }

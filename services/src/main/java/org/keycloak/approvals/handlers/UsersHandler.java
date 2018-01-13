@@ -133,4 +133,9 @@ public class UsersHandler extends AbstractApprovalHandler {
         UserModel userModel = session.users().getUserById(userRep.getId(), request.getRealm());
         UserResource.updateUserFromRep(userModel, userRep, null, request.getRealm(), session, false);
     }
+
+    @Override
+    public ApprovalContext.Action getActionByName(String name) {
+        return Actions.valueOf(name);
+    }
 }

@@ -29,4 +29,5 @@ public interface ApprovalHandler extends Provider {
     ApprovalRequestRepresentation handleRequestCreation(ApprovalContext context);
     boolean handleRequestApproval(ApprovalRequestModel request);
     boolean handleRequestRejection(ApprovalRequestModel request);
+    ApprovalContext.Action getActionByName(String name);
 }

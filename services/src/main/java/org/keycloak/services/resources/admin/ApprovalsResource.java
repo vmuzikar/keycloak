@@ -17,16 +17,25 @@
 
 package org.keycloak.services.resources.admin;
 
+import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.approvals.ApprovalManager;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.utils.ModelToRepresentation;
+import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -37,18 +46,46 @@ public class ApprovalsResource {
 
     private RealmModel realm;
     private AdminEventBuilder adminEvent;
+    protected ApprovalManager approval;
+
+    protected ApprovalManager getApprovalsManager() {
+        if (approval == null) {
+            approval = session.getProvider(ApprovalManager.class);
+        }
+        return approval;
+    }
 
     public ApprovalsResource(RealmModel realm, AdminEventBuilder adminEvent) {
         this.realm = realm;
         this.adminEvent = adminEvent;
     }
 
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @NoCache
+    public List<ApprovalRequestRepresentation> getApprovals() {
+        return approval
+                .getRequestStore()
+                .getRequestsForRealm(realm)
+                .stream()
+                .map(m -> ModelToRepresentation.toRepresentation(m, approval))
+                .collect(Collectors.toList());
+    }
+
     @POST
     @Path("{id}")
     public Response approveRequest(final @PathParam("id") String requestId) {
-        ApprovalManager approval = session.getProvider(ApprovalManager.class);
+        if (!getApprovalsManager().approveRequest(requestId, realm)) {
+            throw new NotFoundException("Approval request not found");
+        }
 
-        if (!approval.approveRequest(requestId, realm)) {
+        return Response.noContent().build();
+    }
+
+    @DELETE
+    @Path("{id}")
+    public Response rejectRequest(final @PathParam("id") String requestId) {
+        if (!getApprovalsManager().rejectRequest(requestId, realm)) {
             throw new NotFoundException("Approval request not found");
         }
 

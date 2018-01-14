@@ -17,7 +17,6 @@
 
 package org.keycloak.approvals.handlers;
 
-import org.jboss.logging.Logger;
 import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.ApprovalEvaluator;
 import org.keycloak.approvals.ApprovalHandler;
@@ -32,8 +31,6 @@ import java.util.HashMap;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public abstract class AbstractApprovalHandler implements ApprovalHandler {
-    private final Logger log = Logger.getLogger(this.getClass());
-
     protected KeycloakSession session;
 
     public AbstractApprovalHandler(KeycloakSession session) {

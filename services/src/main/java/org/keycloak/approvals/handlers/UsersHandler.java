@@ -77,23 +77,20 @@ public class UsersHandler extends AbstractApprovalHandler {
     }
 
     @Override
-    public boolean handleRequestApproval(ApprovalRequestModel request) {
+    public void handleRequestApproval(ApprovalRequestModel request) {
         Actions action = Actions.valueOf(request.getActionId().toUpperCase());
 
         switch (action) {
             case REGISTER_USER:
                 performUserRegistration(request);
-                return true;
             case CREATE_USER:
-                return false; // TODO
-        }
 
-        return false;
+        }
     }
 
     @Override
-    public boolean handleRequestRejection(ApprovalRequestModel request) {
-        return true;
+    public void handleRequestRejection(ApprovalRequestModel request) {
+
     }
 
     private ApprovalRequestRepresentation prepareUserRegistration(ApprovalContext context) {

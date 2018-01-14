@@ -125,9 +125,11 @@ public class DefaultApprovalManager implements ApprovalManager {
             tm.begin();
         }
 
-        boolean res = approve ? handler.handleRequestApproval(requestModel) : handler.handleRequestRejection(requestModel);
-        if (res && !store.removeRequest(requestModel)) {
-            throw new IllegalStateException("Approval handler removed the approval request");
+        if (approve) {
+            handler.handleRequestApproval(requestModel);
+        }
+        else {
+            handler.handleRequestRejection(requestModel);
         }
 
         for (ApprovalListener listener : session.getAllProviders(ApprovalListener.class)) { // TODO Priorities, enabling?
@@ -139,11 +141,15 @@ public class DefaultApprovalManager implements ApprovalManager {
             }
         }
 
+        if (!store.removeRequest(requestModel)) {
+            throw new IllegalStateException("Approval request is already removed");
+        }
+
         if (tx) {
             tm.commit();
         }
 
-        return res;
+        return true;
     }
 
     @Override

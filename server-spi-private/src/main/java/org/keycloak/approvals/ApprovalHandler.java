@@ -27,7 +27,7 @@ import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 public interface ApprovalHandler extends Provider {
     ApprovalEvaluator getEvaluator(ApprovalContext context);
     ApprovalRequestRepresentation handleRequestCreation(ApprovalContext context);
-    boolean handleRequestApproval(ApprovalRequestModel request);
-    boolean handleRequestRejection(ApprovalRequestModel request);
+    void handleRequestApproval(ApprovalRequestModel request);
+    void handleRequestRejection(ApprovalRequestModel request);
     ApprovalContext.Action getActionByName(String name);
 }

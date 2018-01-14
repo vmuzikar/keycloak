@@ -54,5 +54,39 @@
                                  referencedColumnNames="ID"/>
 
 
+        <createTable tableName="APPROVAL_LISTENER_CONFIGS">
+            <column name="PROVIDER_ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REALM_ID" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ENABLED" type="BOOLEAN" defaultValueBoolean="false"/> <!-- TODO change this to false !!! -->
+        </createTable>
+
+        <addPrimaryKey tableName="APPROVAL_LISTENER_CONFIGS" columnNames="PROVIDER_ID, REALM_ID" constraintName="APPR_LIS_PK"/>
+        <addForeignKeyConstraint baseTableName="APPROVAL_LISTENER_CONFIGS" baseColumnNames="REALM_ID"
+                                 constraintName="APPR_LIS_REALM_FK"
+                                 referencedTableName="REALM"
+                                 referencedColumnNames="ID"/>
+
+        <createTable tableName="APPROVAL_LISTENER_CONFIGS_VALUES">
+            <column name="PROVIDER_ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REALM_ID" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="NAME" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="VALUE" type="VARCHAR(4096)"/>
+        </createTable>
+
+        <addPrimaryKey tableName="APPROVAL_LISTENER_CONFIGS_VALUES" columnNames="PROVIDER_ID, REALM_ID, NAME" constraintName="APPR_LIS_VAL_PK"/>
+        <addForeignKeyConstraint baseTableName="APPROVAL_LISTENER_CONFIGS_VALUES" baseColumnNames="PROVIDER_ID, REALM_ID"
+                                 constraintName="APPR_LIS_VAL_FK"
+                                 referencedTableName="APPROVAL_LISTENER_CONFIGS"
+                                 referencedColumnNames="PROVIDER_ID, REALM_ID"/>
     </changeSet>
 </databaseChangeLog>

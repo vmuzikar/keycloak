@@ -33,6 +33,7 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -113,5 +114,19 @@ public class RequestEntity {
 
     public void setAttributes(Map<String, String> attributes) {
         this.attributes = attributes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RequestEntity that = (RequestEntity) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(id);
     }
 }

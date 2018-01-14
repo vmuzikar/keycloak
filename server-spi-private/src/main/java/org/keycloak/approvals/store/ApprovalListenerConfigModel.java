@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Red Hat, Inc. and/or its affiliates
+ * Copyright 2018 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,18 @@
 
 package org.keycloak.approvals.store;
 
-import org.keycloak.provider.ProviderFactory;
+import org.keycloak.models.RealmModel;
+
+import java.util.Map;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public interface ApprovalRequestStoreFactory extends ProviderFactory<ApprovalRequestStore> {
+public interface ApprovalListenerConfigModel {
+    String getProviderId();
+    boolean isEnabled();
+    void setEnabled(boolean enabled);
+    Map<String, String> getConfigs();
+    void setConfigs(Map<String, String> configs);
+    RealmModel getRealm();
 }

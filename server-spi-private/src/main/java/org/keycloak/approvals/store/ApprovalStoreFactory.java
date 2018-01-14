@@ -17,18 +17,10 @@
 
 package org.keycloak.approvals.store;
 
-import org.keycloak.models.RealmModel;
-import org.keycloak.provider.Provider;
-
-import java.util.List;
+import org.keycloak.provider.ProviderFactory;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public interface ApprovalRequestStore extends Provider {
-    ApprovalRequestModel createRequest(RealmModel realm, String handlerId);
-    boolean removeRequest(String id, RealmModel realm);
-    boolean removeRequest(ApprovalRequestModel requestModel);
-    ApprovalRequestModel getRequestById(String id, RealmModel realm);
-    List<ApprovalRequestModel> getRequestsForRealm(RealmModel realm);
+public interface ApprovalStoreFactory extends ProviderFactory<ApprovalStore> {
 }

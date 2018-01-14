@@ -18,20 +18,23 @@
 package org.keycloak.approvals;
 
 import org.keycloak.approvals.store.ApprovalRequestModel;
-import org.keycloak.approvals.store.ApprovalRequestStore;
+import org.keycloak.approvals.store.ApprovalStore;
 import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
+
+import java.util.List;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalManager extends Provider {
-    ApprovalRequestStore getRequestStore();
+    ApprovalStore getRequestStore();
     ApprovalHandler getHandlerByRequest(String requestId, RealmModel realmModel);
     ApprovalHandler getHandlerByRequest(ApprovalRequestModel requestModel);
     void interceptAction(ApprovalContext context) throws InterceptedException;
     ApprovalRequestModel createRequest(ApprovalRequestRepresentation requestRep, RealmModel realm);
     boolean approveRequest(String requestId, RealmModel realm);
     boolean rejectRequest(String requestId, RealmModel realm);
+    List<ApprovalListener> getEnabledListeners(RealmModel realm);
 }

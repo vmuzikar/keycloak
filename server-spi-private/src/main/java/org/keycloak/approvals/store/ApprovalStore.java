@@ -15,19 +15,23 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals;
+package org.keycloak.approvals.store;
 
-import org.keycloak.approvals.store.ApprovalListenerConfigModel;
-import org.keycloak.approvals.store.ApprovalRequestModel;
+import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
+
+import java.util.List;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public interface ApprovalListener extends Provider {
-    void afterRequestCreation(ApprovalRequestModel request, ApprovalContext context);
-    void afterRequestApproval(ApprovalRequestModel request);
-    void afterRequestRejection(ApprovalRequestModel request);
-    ApprovalListenerConfigModel getConfig();
-    void setConfig(ApprovalListenerConfigModel config);
+public interface ApprovalStore extends Provider {
+    ApprovalRequestModel createRequest(RealmModel realm, String handlerId);
+    boolean removeRequest(String id, RealmModel realm);
+    boolean removeRequest(ApprovalRequestModel requestModel);
+    ApprovalRequestModel getRequestById(String id, RealmModel realm);
+    List<ApprovalRequestModel> getRequestsForRealm(RealmModel realm);
+
+    ApprovalListenerConfigModel createOrGetListenerConfig(String providerId, RealmModel realm);
+    boolean removeListenerConfig(String providerId, RealmModel realm);
 }

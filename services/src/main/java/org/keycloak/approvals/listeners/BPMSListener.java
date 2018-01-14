@@ -20,6 +20,8 @@ package org.keycloak.approvals.listeners;
 import org.jboss.logging.Logger;
 import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.ApprovalListener;
+import org.keycloak.approvals.ApprovalManager;
+import org.keycloak.approvals.store.ApprovalListenerConfigModel;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.KeycloakSession;
 import org.kie.server.api.marshalling.MarshallingFormat;
@@ -35,8 +37,17 @@ import java.util.Map;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class BPMSListener implements ApprovalListener {
+    public static final String PROVIDER_ID = "bpms";
+
+    public static final String CONTAINER_ID = "containerId";
+    public static final String PROCESS_ID = "processId";
+    public static final String SERVER_URL = "serverUrl";
+    public static final String LOGIN = "login";
+    public static final String PASSWORD = "password";
+
     private final Logger log = Logger.getLogger(this.getClass());
     private KeycloakSession session;
+    private ApprovalListenerConfigModel config = null;
 
     public BPMSListener(KeycloakSession session) {
         this.session = session;
@@ -53,7 +64,7 @@ public class BPMSListener implements ApprovalListener {
         args.put("name", context.getAction().getDescription());
         args.put("description", request.getDescription());
 
-        processServicesClient.startProcess("org.keycloak.quickstart:bpm:1.0", "bpm-quickstart.HandleApprovalRequest", args);
+        processServicesClient.startProcess(getConfigValue(CONTAINER_ID), getConfigValue(PROCESS_ID), args);
     }
 
     @Override
@@ -67,7 +78,7 @@ public class BPMSListener implements ApprovalListener {
     }
 
     private ProcessServicesClient getProcessServicesClient() {
-        KieServicesConfiguration conf = KieServicesFactory.newRestConfiguration("http://localhost:8080/kie-server/services/rest/server", "kieuser", "BPMpassword1;");
+        KieServicesConfiguration conf = KieServicesFactory.newRestConfiguration(getConfigValue(SERVER_URL), getConfigValue(LOGIN), getConfigValue(PASSWORD));
 
         conf.setMarshallingFormat(MarshallingFormat.JSON);
         KieServicesClient kieServicesClient = KieServicesFactory.newKieServicesClient(conf);
@@ -75,6 +86,23 @@ public class BPMSListener implements ApprovalListener {
         log.infov("Connection with KIE server established: {0}", kieServicesClient.getServerInfo());
 
         return kieServicesClient.getServicesClient(ProcessServicesClient.class);
+    }
+
+    @Override
+    public ApprovalListenerConfigModel getConfig() {
+        if (config == null) {
+            config = session.getProvider(ApprovalManager.class).getRequestStore().createOrGetListenerConfig(PROVIDER_ID, session.getContext().getRealm());
+        }
+        return config;
+    }
+
+    @Override
+    public void setConfig(ApprovalListenerConfigModel config) {
+        this.config = config;
+    }
+
+    protected String getConfigValue(String key) {
+        return getConfig().getConfigs().get(key);
     }
 
     @Override

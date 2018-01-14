@@ -19,8 +19,12 @@ package org.keycloak.approvals;
 
 import org.keycloak.provider.ProviderFactory;
 
+import java.util.Map;
+
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalListenerFactory extends ProviderFactory<ApprovalListener> {
+    boolean enabledByDefault();
+    Map<String, String> getDefaultConfigs();
 }

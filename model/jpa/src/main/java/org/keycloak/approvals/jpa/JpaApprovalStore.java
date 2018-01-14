@@ -17,10 +17,14 @@
 
 package org.keycloak.approvals.jpa;
 
+import org.keycloak.approvals.ApprovalListener;
+import org.keycloak.approvals.ApprovalListenerFactory;
 import org.keycloak.approvals.ApprovalManager;
+import org.keycloak.approvals.jpa.entities.ListenerConfigEntity;
 import org.keycloak.approvals.jpa.entities.RequestEntity;
+import org.keycloak.approvals.store.ApprovalListenerConfigModel;
 import org.keycloak.approvals.store.ApprovalRequestModel;
-import org.keycloak.approvals.store.ApprovalRequestStore;
+import org.keycloak.approvals.store.ApprovalStore;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.jpa.entities.RealmEntity;
@@ -35,12 +39,12 @@ import java.util.stream.Collectors;
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class JpaRequestStore implements ApprovalRequestStore {
+public class JpaApprovalStore implements ApprovalStore {
     protected KeycloakSession session;
     protected EntityManager em;
     protected ApprovalManager storeProvider;
 
-    public JpaRequestStore(KeycloakSession session, EntityManager em, ApprovalManager storeProvider) {
+    public JpaApprovalStore(KeycloakSession session, EntityManager em, ApprovalManager storeProvider) {
         this.session = session;
         this.em = em;
         this.storeProvider = storeProvider;
@@ -104,6 +108,55 @@ public class JpaRequestStore implements ApprovalRequestStore {
         return ids.stream()
                 .map(id -> storeProvider.getRequestStore().getRequestById(id, realm))
                 .collect(Collectors.toList());
+    }
+
+    private ListenerConfigEntity getListenerConfigEntity(String providerId, RealmModel realm) {
+        TypedQuery<ListenerConfigEntity> query = em.createNamedQuery("getListenerById", ListenerConfigEntity.class);
+        query.setParameter("providerId", providerId);
+        query.setParameter("realmId", realm.getId());
+
+        ListenerConfigEntity entity;
+        try {
+            entity = query.getSingleResult();
+        }
+        catch (NoResultException e) {
+            return null;
+        }
+
+        return entity;
+    }
+
+    @Override
+    public ApprovalListenerConfigModel createOrGetListenerConfig(String providerId, RealmModel realm) {
+        ListenerConfigEntity entity = getListenerConfigEntity(providerId, realm);
+
+        if (entity == null) {
+            ApprovalListenerFactory listenerFactory = (ApprovalListenerFactory) session.getKeycloakSessionFactory().getProviderFactory(ApprovalListener.class, providerId);
+
+            entity = new ListenerConfigEntity();
+            entity.setProviderId(providerId);
+            entity.setRealm(em.getReference(RealmEntity.class, realm.getId()));
+            entity.setEnabled(listenerFactory.enabledByDefault());
+            entity.setConfigs(listenerFactory.getDefaultConfigs());
+            em.persist(entity);
+            em.flush();
+        }
+
+        return new ListenerConfigAdapter(entity, em, realm);
+    }
+
+    @Override
+    public boolean removeListenerConfig(String providerId, RealmModel realm) {
+        ListenerConfigEntity entity = getListenerConfigEntity(providerId, realm);
+
+        if (entity == null) {
+            return false;
+        }
+
+        em.remove(entity);
+        em.flush();
+
+        return true;
     }
 
     @Override

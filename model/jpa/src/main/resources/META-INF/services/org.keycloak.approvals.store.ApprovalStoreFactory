@@ -15,4 +15,4 @@
 # limitations under the License.
 #
 
-org.keycloak.approvals.jpa.JpaRequestStoreFactory
+org.keycloak.approvals.jpa.JpaApprovalStoreFactory

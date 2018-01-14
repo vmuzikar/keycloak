@@ -23,6 +23,9 @@ import org.keycloak.approvals.ApprovalListenerFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
@@ -49,6 +52,23 @@ public class BPMSListenerFactory implements ApprovalListenerFactory {
 
     @Override
     public String getId() {
-        return "bpms";
+        return BPMSListener.PROVIDER_ID;
+    }
+
+    @Override
+    public boolean enabledByDefault() {
+        return true; // TODO change this !!!
+    }
+
+    @Override
+    public Map<String, String> getDefaultConfigs() {
+        // TODO change this !!!
+        Map<String, String> defaults = new HashMap<>();
+        defaults.put(BPMSListener.CONTAINER_ID, "org.keycloak.quickstart:bpm:1.0");
+        defaults.put(BPMSListener.PROCESS_ID, "bpm-quickstart.HandleApprovalRequest");
+        defaults.put(BPMSListener.SERVER_URL, "http://localhost:8080/kie-server/services/rest/server");
+        defaults.put(BPMSListener.LOGIN, "kieuser");
+        defaults.put(BPMSListener.PASSWORD, "BPMpassword1;");
+        return defaults;
     }
 }

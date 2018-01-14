@@ -17,14 +17,18 @@
 
 package org.keycloak.approvals;
 
+import org.keycloak.approvals.store.ApprovalListenerConfigModel;
 import org.keycloak.approvals.store.ApprovalRequestModel;
-import org.keycloak.approvals.store.ApprovalRequestStore;
+import org.keycloak.approvals.store.ApprovalStore;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakTransactionManager;
 import org.keycloak.models.RealmModel;
+import org.keycloak.provider.ProviderFactory;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -37,8 +41,8 @@ public class DefaultApprovalManager implements ApprovalManager {
     }
 
     @Override
-    public ApprovalRequestStore getRequestStore() {
-        return session.getProvider(ApprovalRequestStore.class); // TODO caching layer...
+    public ApprovalStore getRequestStore() {
+        return session.getProvider(ApprovalStore.class); // TODO caching layer...
     }
 
     @Override
@@ -77,7 +81,7 @@ public class DefaultApprovalManager implements ApprovalManager {
             ApprovalRequestRepresentation requestRep = handler.handleRequestCreation(context);
             ApprovalRequestModel requestModel = createRequest(requestRep, context.getRealm());
 
-            for (ApprovalListener listener : session.getAllProviders(ApprovalListener.class)) { // TODO Priorities, enabling?
+            for (ApprovalListener listener : getEnabledListeners(context.getRealm())) {
                 listener.afterRequestCreation(requestModel, context);
             }
 
@@ -111,7 +115,7 @@ public class DefaultApprovalManager implements ApprovalManager {
     }
 
     private boolean processRequest(String requestId, RealmModel realm, boolean approve) {
-        ApprovalRequestStore store = getRequestStore();
+        ApprovalStore store = getRequestStore();
         ApprovalRequestModel requestModel = store.getRequestById(requestId, realm);
         if (requestModel == null) {
             return false;
@@ -132,7 +136,7 @@ public class DefaultApprovalManager implements ApprovalManager {
             handler.handleRequestRejection(requestModel);
         }
 
-        for (ApprovalListener listener : session.getAllProviders(ApprovalListener.class)) { // TODO Priorities, enabling?
+        for (ApprovalListener listener : getEnabledListeners(realm)) {
             if (approve) {
                 listener.afterRequestApproval(requestModel);
             }
@@ -150,6 +154,23 @@ public class DefaultApprovalManager implements ApprovalManager {
         }
 
         return true;
+    }
+
+    @Override
+    public List<ApprovalListener> getEnabledListeners(RealmModel realm) {
+        List<ApprovalListener> listeners = new ArrayList<>();
+
+        for (ProviderFactory providerFactory : session.getKeycloakSessionFactory().getProviderFactories(ApprovalListener.class)) {
+            String providerId = providerFactory.getId();
+            ApprovalListenerConfigModel config = getRequestStore().createOrGetListenerConfig(providerId, realm);
+            if (config.isEnabled()) {
+                ApprovalListener listener = session.getProvider(ApprovalListener.class, providerId);
+                listener.setConfig(config);
+                listeners.add(listener);
+            }
+        }
+
+        return listeners;
     }
 
     @Override

@@ -57,7 +57,7 @@ public class ListenerConfigEntity {
     private RealmEntity realm;
 
     @Column(name = "ENABLED")
-    boolean enabled;
+    private boolean enabled;
 
     @ElementCollection
     @MapKeyColumn(name = "NAME")

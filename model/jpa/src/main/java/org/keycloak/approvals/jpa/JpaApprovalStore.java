@@ -106,7 +106,7 @@ public class JpaApprovalStore implements ApprovalStore {
         List<String> ids = query.getResultList();
 
         return ids.stream()
-                .map(id -> storeProvider.getRequestStore().getRequestById(id, realm))
+                .map(id -> storeProvider.getStore().getRequestById(id, realm))
                 .collect(Collectors.toList());
     }
 

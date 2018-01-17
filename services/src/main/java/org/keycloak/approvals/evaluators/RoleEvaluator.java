@@ -19,12 +19,24 @@ package org.keycloak.approvals.evaluators;
 
 import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.ApprovalEvaluator;
+import org.keycloak.approvals.store.EvaluatorStore;
+import org.keycloak.models.KeycloakSession;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class RoleEvaluator implements ApprovalEvaluator {
     public static final String PROVIDER_ID = "role";
+
+    protected KeycloakSession session;
+
+    public RoleEvaluator(KeycloakSession session) {
+        this.session = session;
+    }
+
+    public EvaluatorStore getEvaluatorStore() {
+        return session.getProvider(EvaluatorStore.class); // TODO caching layer...
+    }
 
     @Override
     public boolean needsApproval(ApprovalContext context) {

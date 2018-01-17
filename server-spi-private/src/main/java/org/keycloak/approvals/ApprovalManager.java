@@ -29,7 +29,7 @@ import java.util.List;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalManager extends Provider {
-    ApprovalStore getRequestStore();
+    ApprovalStore getStore();
     ApprovalHandler getHandlerByRequest(String requestId, RealmModel realmModel);
     ApprovalHandler getHandlerByRequest(ApprovalRequestModel requestModel);
     void interceptAction(ApprovalContext context) throws InterceptedException;

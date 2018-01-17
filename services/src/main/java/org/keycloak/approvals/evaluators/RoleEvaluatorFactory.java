@@ -29,7 +29,7 @@ import org.keycloak.models.KeycloakSessionFactory;
 public class RoleEvaluatorFactory implements ApprovalEvaluatorFactory {
     @Override
     public ApprovalEvaluator create(KeycloakSession session) {
-        return new RoleEvaluator();
+        return new RoleEvaluator(session);
     }
 
     @Override

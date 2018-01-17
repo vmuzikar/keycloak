@@ -25,9 +25,12 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.jpa.JpaModel;
+import org.keycloak.models.jpa.entities.RoleEntity;
 
 import javax.persistence.EntityManager;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -55,32 +58,40 @@ public class RoleEvaluatorMappingAdapter implements RoleEvaluatorMappingModel, J
     }
 
     @Override
-    public boolean getEnabled() {
-        return false;
+    public boolean isEnabled() {
+        return entity.isEnabled();
     }
 
     @Override
     public void setEnabled(boolean enabled) {
-
+        entity.setEnabled(enabled);
+        em.flush();
     }
 
     @Override
     public List<RoleModel> getRoles() {
-        return null;
+        return entity.getRoles().stream().map(r -> realm.getRoleById(r.getId())).collect(Collectors.toList());
     }
 
     @Override
-    public void setRolesByIds(List<String> roles) {
-
+    public void setRolesByIds(Set<String> roles) {
+        entity.setRoles(
+                roles
+                .stream()
+                .map(r -> em.getReference(RoleEntity.class, r))
+                .collect(Collectors.toSet())
+        );
+        em.flush();
     }
 
     @Override
     public void addRole(String roleId) {
-
+        entity.getRoles().add(em.getReference(RoleEntity.class, roleId));
+        em.flush();
     }
 
     @Override
     public EvaluatorActionEntity getEntity() {
-        return null;
+        return entity;
     }
 }

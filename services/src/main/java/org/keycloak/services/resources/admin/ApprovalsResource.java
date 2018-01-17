@@ -65,7 +65,7 @@ public class ApprovalsResource {
     @NoCache
     public List<ApprovalRequestRepresentation> getApprovals() {
         return approval
-                .getRequestStore()
+                .getStore()
                 .getRequestsForRealm(realm)
                 .stream()
                 .map(m -> ModelToRepresentation.toRepresentation(m, approval))

@@ -91,7 +91,7 @@ public class BPMSListener implements ApprovalListener {
     @Override
     public ApprovalListenerConfigModel getConfig() {
         if (config == null) {
-            config = session.getProvider(ApprovalManager.class).getRequestStore().createOrGetListenerConfig(PROVIDER_ID, session.getContext().getRealm());
+            config = session.getProvider(ApprovalManager.class).getStore().createOrGetListenerConfig(PROVIDER_ID, session.getContext().getRealm());
         }
         return config;
     }

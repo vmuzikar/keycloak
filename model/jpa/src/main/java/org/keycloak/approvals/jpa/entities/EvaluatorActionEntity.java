@@ -60,7 +60,7 @@ public class EvaluatorActionEntity {
     private RealmEntity realm;
 
     @Column(name = "ENABLED")
-    boolean enabled;
+    private boolean enabled;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "APPROVAL_EVALUATOR_ACTION_ROLES", joinColumns = {@JoinColumn(name = "HANDLER_ID", referencedColumnName = "HANDLER_ID"), @JoinColumn(name = "ACTION_ID", referencedColumnName = "ACTION_ID"), @JoinColumn(name = "REALM_ID", referencedColumnName = "REALM_ID")}, inverseJoinColumns = @JoinColumn(name = "ROLE_ID"))

@@ -21,6 +21,7 @@ import org.keycloak.approvals.ApprovalAction;
 import org.keycloak.models.RoleModel;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -28,10 +29,10 @@ import java.util.List;
 public interface RoleEvaluatorMappingModel {
     ApprovalAction getAction();
 
-    boolean getEnabled();
+    boolean isEnabled();
     void setEnabled(boolean enabled);
 
     List<RoleModel> getRoles();
-    void setRolesByIds(List<String> roles);
+    void setRolesByIds(Set<String> roles);
     void addRole(String roleId);
 }

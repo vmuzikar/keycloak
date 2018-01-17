@@ -42,13 +42,13 @@ public class DefaultApprovalManager implements ApprovalManager {
     }
 
     @Override
-    public ApprovalStore getRequestStore() {
+    public ApprovalStore getStore() {
         return session.getProvider(ApprovalStore.class); // TODO caching layer...
     }
 
     @Override
     public ApprovalHandler getHandlerByRequest(String requestId, RealmModel realmModel) {
-        ApprovalRequestModel request = getRequestStore().getRequestById(requestId, realmModel);
+        ApprovalRequestModel request = getStore().getRequestById(requestId, realmModel);
 
         if (request == null) {
             return null;
@@ -95,7 +95,7 @@ public class DefaultApprovalManager implements ApprovalManager {
 
     @Override
     public ApprovalRequestModel createRequest(ApprovalRequestRepresentation requestRep, RealmModel realm) {
-        ApprovalRequestModel requestModel = getRequestStore().createRequest(realm, requestRep.getHandlerId());
+        ApprovalRequestModel requestModel = getStore().createRequest(realm, requestRep.getHandlerId());
 
         requestModel.setActionId(requestRep.getActionId());
         requestModel.setDescription(requestRep.getDescription());
@@ -115,7 +115,7 @@ public class DefaultApprovalManager implements ApprovalManager {
     }
 
     private boolean processRequest(String requestId, RealmModel realm, boolean approve) {
-        ApprovalStore store = getRequestStore();
+        ApprovalStore store = getStore();
         ApprovalRequestModel requestModel = store.getRequestById(requestId, realm);
         if (requestModel == null) {
             return false;
@@ -162,7 +162,7 @@ public class DefaultApprovalManager implements ApprovalManager {
 
         for (ProviderFactory providerFactory : session.getKeycloakSessionFactory().getProviderFactories(ApprovalListener.class)) {
             String providerId = providerFactory.getId();
-            ApprovalListenerConfigModel config = getRequestStore().createOrGetListenerConfig(providerId, realm);
+            ApprovalListenerConfigModel config = getStore().createOrGetListenerConfig(providerId, realm);
             if (config.isEnabled()) {
                 ApprovalListener listener = session.getProvider(ApprovalListener.class, providerId);
                 listener.setConfig(config);

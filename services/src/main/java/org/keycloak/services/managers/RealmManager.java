@@ -17,6 +17,10 @@
 package org.keycloak.services.managers;
 
 import org.keycloak.Config;
+import org.keycloak.approvals.ApprovalEvaluator;
+import org.keycloak.approvals.evaluators.RoleEvaluator;
+import org.keycloak.approvals.handlers.UsersHandler;
+import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.migration.MigrationModelManager;
 import org.keycloak.models.AccountRoles;
@@ -27,7 +31,6 @@ import org.keycloak.models.Constants;
 import org.keycloak.models.ImpersonationConstants;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.OTPPolicy;
-import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.ProtocolMapperModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RealmProvider;
@@ -48,9 +51,9 @@ import org.keycloak.representations.idm.OAuthClientRepresentation;
 import org.keycloak.representations.idm.RealmEventsConfigRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.services.clientregistration.policy.DefaultClientRegistrationPolicies;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.storage.UserStorageProviderModel;
-import org.keycloak.services.clientregistration.policy.DefaultClientRegistrationPolicies;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -124,6 +127,13 @@ public class RealmManager {
         setupClientRegistrations(realm);
 
         fireRealmPostCreate(realm);
+
+        // TODO remove testing data!!!!!!!
+        RoleModel role = realm.addRole("approvals-role");
+        RoleEvaluator roleEvaluator = (RoleEvaluator) session.getProvider(ApprovalEvaluator.class);
+        RoleEvaluatorConfigModel config = roleEvaluator.getEvaluatorStore().createOrGetRoleEvaluatorConfig(UsersHandler.Actions.CREATE_USER, realm);
+        config.addRole(role.getId());
+        config.setEnabled(true);
 
         return realm;
     }

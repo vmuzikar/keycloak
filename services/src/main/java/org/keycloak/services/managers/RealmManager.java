@@ -17,10 +17,6 @@
 package org.keycloak.services.managers;
 
 import org.keycloak.Config;
-import org.keycloak.approvals.ApprovalEvaluator;
-import org.keycloak.approvals.evaluators.RoleEvaluator;
-import org.keycloak.approvals.handlers.UsersHandler;
-import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.migration.MigrationModelManager;
 import org.keycloak.models.AccountRoles;
@@ -127,13 +123,6 @@ public class RealmManager {
         setupClientRegistrations(realm);
 
         fireRealmPostCreate(realm);
-
-        // TODO remove testing data!!!!!!!
-        RoleModel role = realm.addRole("approvals-role");
-        RoleEvaluator roleEvaluator = (RoleEvaluator) session.getProvider(ApprovalEvaluator.class);
-        RoleEvaluatorConfigModel config = roleEvaluator.getEvaluatorStore().createOrGetRoleEvaluatorConfig(UsersHandler.Actions.CREATE_USER, realm);
-        config.addRole(role.getId());
-        config.setEnabled(true);
 
         return realm;
     }

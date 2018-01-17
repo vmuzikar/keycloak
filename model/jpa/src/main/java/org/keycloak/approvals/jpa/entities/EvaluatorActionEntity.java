@@ -18,38 +18,41 @@
 package org.keycloak.approvals.jpa.entities;
 
 import org.keycloak.models.jpa.entities.RealmEntity;
+import org.keycloak.models.jpa.entities.RoleEntity;
 
-import javax.persistence.CollectionTable;
 import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.MapKeyColumn;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 @Entity
-@IdClass(ListenerConfigEntity.Key.class)
-@Table(name = "APPROVAL_LISTENER_CONFIGS")
+@IdClass(EvaluatorActionEntity.Key.class)
+@Table(name = "APPROVAL_EVALUATOR_ACTION")
 @NamedQueries({
-        @NamedQuery(name = "getListenerById", query = "select l from ListenerConfigEntity l where l.providerId = :providerId and l.realm.id = :realmId")
+        @NamedQuery(name = "getEvaluatorActionById", query = "select e from EvaluatorActionEntity e where e.handlerId = :handlerId and e.actionId = :actionId and e.realm.id = :realmId")
 })
-public class ListenerConfigEntity {
+public class EvaluatorActionEntity {
     @Id
-    @Column(name = "PROVIDER_ID", length = 255)
-    private String providerId;
+    @Column(name = "HANDLER_ID", length = 255)
+    private String handlerId;
+
+    @Id
+    @Column(name = "ACTION_ID", length = 255)
+    private String actionId;
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
@@ -59,18 +62,24 @@ public class ListenerConfigEntity {
     @Column(name = "ENABLED")
     boolean enabled;
 
-    @ElementCollection
-    @MapKeyColumn(name = "NAME")
-    @Column(name = "VALUE", length = 4096)
-    @CollectionTable(name = "APPROVAL_LISTENER_CONFIGS_VALUES", joinColumns = {@JoinColumn(name = "PROVIDER_ID", referencedColumnName = "PROVIDER_ID"), @JoinColumn(name = "REALM_ID", referencedColumnName = "REALM_ID")})
-    private Map<String, String> configs = new HashMap<>();
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "APPROVAL_EVALUATOR_ACTION_ROLES", joinColumns = {@JoinColumn(name = "HANDLER_ID", referencedColumnName = "HANDLER_ID"), @JoinColumn(name = "ACTION_ID", referencedColumnName = "ACTION_ID"), @JoinColumn(name = "REALM_ID", referencedColumnName = "REALM_ID")}, inverseJoinColumns = @JoinColumn(name = "ROLE_ID"))
+    private Set<RoleEntity> roles = new HashSet<>();
 
-    public String getProviderId() {
-        return providerId;
+    public String getHandlerId() {
+        return handlerId;
     }
 
-    public void setProviderId(String providerId) {
-        this.providerId = providerId;
+    public void setHandlerId(String handlerId) {
+        this.handlerId = handlerId;
+    }
+
+    public String getActionId() {
+        return actionId;
+    }
+
+    public void setActionId(String actionId) {
+        this.actionId = actionId;
     }
 
     public RealmEntity getRealm() {
@@ -89,47 +98,38 @@ public class ListenerConfigEntity {
         this.enabled = enabled;
     }
 
-    public Map<String, String> getConfigs() {
-        return configs;
+    public Set<RoleEntity> getRoles() {
+        return roles;
     }
 
-    public void setConfigs(Map<String, String> configs) {
-        this.configs = configs;
+    public void setRoles(Set<RoleEntity> roles) {
+        this.roles = roles;
     }
 
     public static class Key implements Serializable {
-        private String providerId;
+        private String handlerId;
+        private String actionId;
         private RealmEntity realm;
 
         public Key() {
         }
 
-        public Key(String providerId, RealmEntity realm) {
-            this.providerId = providerId;
+        public Key(String handlerId, String actionId, RealmEntity realm) {
+            this.handlerId = handlerId;
+            this.actionId = actionId;
             this.realm = realm;
         }
 
-        public String getProviderId() {
-            return providerId;
+        public String getHandlerId() {
+            return handlerId;
+        }
+
+        public String getActionId() {
+            return actionId;
         }
 
         public RealmEntity getRealm() {
             return realm;
         }
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ListenerConfigEntity entity = (ListenerConfigEntity) o;
-        return Objects.equals(providerId, entity.providerId) &&
-                Objects.equals(realm, entity.realm);
-    }
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(providerId, realm);
     }
 }

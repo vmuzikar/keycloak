@@ -17,6 +17,7 @@
 
 package org.keycloak.approvals;
 
+import org.keycloak.approvals.evaluators.RoleEvaluator;
 import org.keycloak.approvals.store.ApprovalListenerConfigModel;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.approvals.store.ApprovalStore;
@@ -61,16 +62,15 @@ public class DefaultApprovalManager implements ApprovalManager {
         return session.getProvider(ApprovalHandler.class, requestModel.getHandlerId());
     }
 
+    protected ApprovalEvaluator getEvaluator(ApprovalContext context) {
+        return session.getProvider(ApprovalEvaluator.class, RoleEvaluator.PROVIDER_ID);
+    }
+
     @Override
     public void interceptAction(ApprovalContext context) throws InterceptedException {
-        ApprovalHandler handler = session.getProvider(ApprovalHandler.class, context.getHandlerId());
+        ApprovalHandler handler = session.getProvider(ApprovalHandler.class, context.getAction().getHandlerId());
 
-        ApprovalEvaluator evaluator = handler.getEvaluator(context);
-        if (evaluator == null) {
-            evaluator = session.getProvider(ApprovalEvaluator.class, DefaultApprovalEvaluator.PROVIDER_ID);
-        }
-
-        if (evaluator.needsApproval(context)) {
+        if (getEvaluator(context).needsApproval(context)) {
             boolean tx = false;
             KeycloakTransactionManager tm = session.getTransactionManager(); // TODO Is that necessary?
             if (!tm.isActive()) {

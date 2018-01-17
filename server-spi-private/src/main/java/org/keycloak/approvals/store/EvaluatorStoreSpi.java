@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Red Hat, Inc. and/or its affiliates
+ * Copyright 2018 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,21 +15,33 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals;
+package org.keycloak.approvals.store;
+
+import org.keycloak.provider.Provider;
+import org.keycloak.provider.ProviderFactory;
+import org.keycloak.provider.Spi;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class DefaultApprovalEvaluator implements ApprovalEvaluator {
-    public static final String PROVIDER_ID = "default";
-
+public class EvaluatorStoreSpi implements Spi {
     @Override
-    public boolean needsApproval(ApprovalContext context) {
-        return true; // TODO make it dynamic!!!
+    public boolean isInternal() {
+        return true;
     }
 
     @Override
-    public void close() {
+    public String getName() {
+        return "approvalEvaluatorStore";
+    }
 
+    @Override
+    public Class<? extends Provider> getProviderClass() {
+        return EvaluatorStore.class;
+    }
+
+    @Override
+    public Class<? extends ProviderFactory> getProviderFactoryClass() {
+        return EvaluatorStoreFactory.class;
     }
 }

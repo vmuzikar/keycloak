@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Red Hat, Inc. and/or its affiliates
+ * Copyright 2018 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,27 +15,22 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals.handlers;
+package org.keycloak.approvals.jpa;
 
 import org.keycloak.Config;
-import org.keycloak.approvals.ApprovalAction;
-import org.keycloak.approvals.ApprovalHandler;
-import org.keycloak.approvals.ApprovalHandlerFactory;
+import org.keycloak.approvals.store.EvaluatorStore;
+import org.keycloak.approvals.store.EvaluatorStoreFactory;
+import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class UsersHandlerFactory implements ApprovalHandlerFactory {
+public class JpaEvaluatorStoreFactory implements EvaluatorStoreFactory {
     @Override
-    public ApprovalAction[] getActions() {
-        return UsersHandler.Actions.values();
-    }
-
-    @Override
-    public ApprovalHandler create(KeycloakSession session) {
-        return new UsersHandler(session);
+    public EvaluatorStore create(KeycloakSession session) {
+        return new JpaEvaluatorStore(session, session.getProvider(JpaConnectionProvider.class).getEntityManager());
     }
 
     @Override
@@ -55,6 +50,6 @@ public class UsersHandlerFactory implements ApprovalHandlerFactory {
 
     @Override
     public String getId() {
-        return UsersHandler.HANDLER_ID;
+        return "jpa";
     }
 }

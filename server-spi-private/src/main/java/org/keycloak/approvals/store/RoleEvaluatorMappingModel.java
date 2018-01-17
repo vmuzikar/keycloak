@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Red Hat, Inc. and/or its affiliates
+ * Copyright 2018 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,31 +17,21 @@
 
 package org.keycloak.approvals.store;
 
-import org.keycloak.provider.Provider;
-import org.keycloak.provider.ProviderFactory;
-import org.keycloak.provider.Spi;
+import org.keycloak.approvals.ApprovalAction;
+import org.keycloak.models.RoleModel;
+
+import java.util.List;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class ApprovalRequestStoreSpi implements Spi {
-    @Override
-    public boolean isInternal() {
-        return true;
-    }
+public interface RoleEvaluatorMappingModel {
+    ApprovalAction getAction();
 
-    @Override
-    public String getName() {
-        return "approvalRequestStore";
-    }
+    boolean getEnabled();
+    void setEnabled(boolean enabled);
 
-    @Override
-    public Class<? extends Provider> getProviderClass() {
-        return ApprovalStore.class;
-    }
-
-    @Override
-    public Class<? extends ProviderFactory> getProviderFactoryClass() {
-        return ApprovalStoreFactory.class;
-    }
+    List<RoleModel> getRoles();
+    void setRolesByIds(List<String> roles);
+    void addRole(String roleId);
 }

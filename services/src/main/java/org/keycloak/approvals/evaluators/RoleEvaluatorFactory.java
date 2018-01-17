@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Red Hat, Inc. and/or its affiliates
+ * Copyright 2018 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals;
+package org.keycloak.approvals.evaluators;
 
 import org.keycloak.Config;
+import org.keycloak.approvals.ApprovalEvaluator;
+import org.keycloak.approvals.ApprovalEvaluatorFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class DefaultApprovalEvaluatorFactory implements ApprovalEvaluatorFactory {
+public class RoleEvaluatorFactory implements ApprovalEvaluatorFactory {
     @Override
     public ApprovalEvaluator create(KeycloakSession session) {
-        return new DefaultApprovalEvaluator();
+        return new RoleEvaluator();
     }
 
     @Override
@@ -47,6 +49,6 @@ public class DefaultApprovalEvaluatorFactory implements ApprovalEvaluatorFactory
 
     @Override
     public String getId() {
-        return DefaultApprovalEvaluator.PROVIDER_ID;
+        return RoleEvaluator.PROVIDER_ID;
     }
 }

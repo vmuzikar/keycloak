@@ -864,7 +864,7 @@ public class ModelToRepresentation {
         rep.setDescription(model.getDescription());
         rep.setHandlerId(model.getHandlerId());
         rep.setActionId(model.getActionId());
-        rep.setActionName(manager.getHandlerByRequest(model).getActionByName(model.getActionId()).getDescription());
+        rep.setActionName(manager.getHandlerByRequest(model).getActionById(model.getActionId()).getDescription());
         rep.setAttributes(model.getAttributes());
 
         return rep;

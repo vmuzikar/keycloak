@@ -15,4 +15,4 @@
 # limitations under the License.
 #
 
-org.keycloak.approvals.DefaultApprovalEvaluatorFactory
+org.keycloak.approvals.evaluators.RoleEvaluatorFactory

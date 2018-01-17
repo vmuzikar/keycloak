@@ -41,7 +41,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "APPROVAL_REQUESTS")
 @NamedQueries({
-        @NamedQuery(name = "getRequestById", query = "select r from RequestEntity r where r.id = :id and realm.id = :realmId"),
+        @NamedQuery(name = "getRequestById", query = "select r from RequestEntity r where r.id = :id and r.realm.id = :realmId"),
         @NamedQuery(name = "getAllRequestsForRealm", query = "select r.id from RequestEntity r where r.realm.id = :realmId")
 })
 public class RequestEntity {

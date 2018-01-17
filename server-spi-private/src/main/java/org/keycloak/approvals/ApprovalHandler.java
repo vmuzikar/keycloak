@@ -25,9 +25,9 @@ import org.keycloak.representations.idm.ApprovalRequestRepresentation;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalHandler extends Provider {
-    ApprovalEvaluator getEvaluator(ApprovalContext context);
     ApprovalRequestRepresentation handleRequestCreation(ApprovalContext context);
     void handleRequestApproval(ApprovalRequestModel request);
     void handleRequestRejection(ApprovalRequestModel request);
-    ApprovalContext.Action getActionByName(String name);
+    ApprovalAction[] getSupportedActions();
+    ApprovalAction getActionById(String id);
 }

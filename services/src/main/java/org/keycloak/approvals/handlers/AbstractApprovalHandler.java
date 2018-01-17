@@ -18,7 +18,6 @@
 package org.keycloak.approvals.handlers;
 
 import org.keycloak.approvals.ApprovalContext;
-import org.keycloak.approvals.ApprovalEvaluator;
 import org.keycloak.approvals.ApprovalHandler;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
@@ -37,11 +36,6 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
         this.session = session;
     }
 
-    @Override
-    public ApprovalEvaluator getEvaluator(ApprovalContext context) {
-        return null;
-    }
-
     protected ApprovalRequestRepresentation contextToRepresentation(ApprovalContext context) {
         return contextToRepresentation(context, null);
     }
@@ -50,8 +44,8 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
         ApprovalRequestRepresentation rep = new ApprovalRequestRepresentation();
 
         rep.setDescription(description);
-        rep.setHandlerId(context.getHandlerId());
-        rep.setActionId(context.getAction().toString().toLowerCase());
+        rep.setHandlerId(context.getAction().getHandlerId());
+        rep.setActionId(context.getAction().getActionId());
 
         rep.setAttributes(new HashMap<>());
         try {

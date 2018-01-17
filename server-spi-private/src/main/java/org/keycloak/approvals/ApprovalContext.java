@@ -26,31 +26,24 @@ import java.util.Map;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class ApprovalContext {
-
-    public interface Action {
-        String getDescription();
-    }
-
     public static final String REPRESENTATION_ATTR = "representation";
     public static final String MODEL_ATTR = "model";
 
     private RealmModel realm;
-    private String handlerId;
-    private Action action;
+    private ApprovalAction action;
     private Map<String, Object> attributes = new HashMap<>();
 
-    public ApprovalContext(RealmModel realm, String handlerId, Action action) {
+    public ApprovalContext(RealmModel realm, ApprovalAction action) {
         setRealm(realm);
-        setHandlerId(handlerId);
         setAction(action);
     }
 
-    public static ApprovalContext withRepresentation(RealmModel realm, String handlerId, Action action, Object representation) {
-        return (new ApprovalContext(realm, handlerId, action)).setRepresentation(representation);
+    public static ApprovalContext withRepresentation(RealmModel realm, ApprovalAction action, Object representation) {
+        return (new ApprovalContext(realm, action)).setRepresentation(representation);
     }
 
-    public static ApprovalContext withModel(RealmModel realm, String handlerId, Action action, Object model) {
-        return (new ApprovalContext(realm, handlerId, action)).setModel(model);
+    public static ApprovalContext withModel(RealmModel realm, ApprovalAction action, Object model) {
+        return (new ApprovalContext(realm, action)).setModel(model);
     }
 
     public ApprovalContext setAttribute(String name, Object value) {
@@ -72,20 +65,11 @@ public class ApprovalContext {
         return this;
     }
 
-    public String getHandlerId() {
-        return handlerId;
-    }
-
-    public ApprovalContext setHandlerId(String handlerId) {
-        this.handlerId = handlerId;
-        return this;
-    }
-
-    public Action getAction() {
+    public ApprovalAction getAction() {
         return action;
     }
 
-    public ApprovalContext setAction(Action action) {
+    public ApprovalContext setAction(ApprovalAction action) {
         this.action = action;
         return this;
     }

@@ -61,7 +61,7 @@
             <column name="REALM_ID" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
-            <column name="ENABLED" type="BOOLEAN" defaultValueBoolean="false"/> <!-- TODO change this to false !!! -->
+            <column name="ENABLED" type="BOOLEAN" defaultValueBoolean="false"/>
         </createTable>
 
         <addPrimaryKey tableName="APPROVAL_LISTENER_CONFIGS" columnNames="PROVIDER_ID, REALM_ID" constraintName="APPR_LIS_PK"/>
@@ -88,5 +88,51 @@
                                  constraintName="APPR_LIS_VAL_FK"
                                  referencedTableName="APPROVAL_LISTENER_CONFIGS"
                                  referencedColumnNames="PROVIDER_ID, REALM_ID"/>
+
+
+        <createTable tableName="APPROVAL_EVALUATOR_ACTION">
+            <column name="HANDLER_ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ACTION_ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REALM_ID" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ENABLED" type="BOOLEAN" defaultValueBoolean="false"/>
+        </createTable>
+
+        <addPrimaryKey tableName="APPROVAL_EVALUATOR_ACTION" columnNames="HANDLER_ID, ACTION_ID, REALM_ID" constraintName="APPR_EVAL_ACT_PK"/>
+        <addForeignKeyConstraint baseTableName="APPROVAL_EVALUATOR_ACTION" baseColumnNames="REALM_ID"
+                                 constraintName="APPR_EVAL_ACT_REALM_FK"
+                                 referencedTableName="REALM"
+                                 referencedColumnNames="ID"/>
+
+
+        <createTable tableName="APPROVAL_EVALUATOR_ACTION_ROLES">
+            <column name="HANDLER_ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ACTION_ID" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REALM_ID" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ROLE_ID" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="APPROVAL_EVALUATOR_ACTION_ROLES" columnNames="HANDLER_ID, ACTION_ID, REALM_ID, ROLE_ID" constraintName="APPR_EVAL_ACT_ROLES_PK"/>
+        <addForeignKeyConstraint baseTableName="APPROVAL_EVALUATOR_ACTION_ROLES" baseColumnNames="HANDLER_ID, ACTION_ID, REALM_ID"
+                                 constraintName="APPR_EVAL_ACT_ROLES_FK1"
+                                 referencedTableName="APPROVAL_EVALUATOR_ACTION"
+                                 referencedColumnNames="HANDLER_ID, ACTION_ID, REALM_ID"/>
+        <addForeignKeyConstraint baseTableName="APPROVAL_EVALUATOR_ACTION_ROLES" baseColumnNames="ROLE_ID"
+                                 constraintName="APPR_EVAL_ACT_ROLES_FK2"
+                                 referencedTableName="KEYCLOAK_ROLE"
+                                 referencedColumnNames="ID"/>
     </changeSet>
 </databaseChangeLog>

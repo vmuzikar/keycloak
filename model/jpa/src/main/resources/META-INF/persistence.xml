@@ -59,6 +59,7 @@
         <class>org.keycloak.models.jpa.entities.ClientInitialAccessEntity</class>
         <class>org.keycloak.approvals.jpa.entities.RequestEntity</class>
         <class>org.keycloak.approvals.jpa.entities.ListenerConfigEntity</class>
+        <class>org.keycloak.approvals.jpa.entities.EvaluatorActionEntity</class>
 
         <!-- JpaAuditProviders -->
         <class>org.keycloak.events.jpa.EventEntity</class>

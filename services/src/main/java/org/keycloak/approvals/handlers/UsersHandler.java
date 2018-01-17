@@ -17,6 +17,7 @@
 
 package org.keycloak.approvals.handlers;
 
+import org.keycloak.approvals.ApprovalAction;
 import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.KeycloakSession;
@@ -34,7 +35,7 @@ import java.io.IOException;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class UsersHandler extends AbstractApprovalHandler {
-    public enum Actions implements ApprovalContext.Action {
+    public enum Actions implements ApprovalAction {
         REGISTER_USER("User self-registers using login page"),
         CREATE_USER("User is created using Admin Console");
 
@@ -42,6 +43,16 @@ public class UsersHandler extends AbstractApprovalHandler {
 
         Actions(String description) {
             this.description = description;
+        }
+
+        @Override
+        public String getHandlerId() {
+            return HANDLER_ID;
+        }
+
+        @Override
+        public String getActionId() {
+            return name();
         }
 
         @Override
@@ -53,11 +64,11 @@ public class UsersHandler extends AbstractApprovalHandler {
     public static final String HANDLER_ID = "users";
 
     public static ApprovalContext createUserCtx(UserRepresentation rep, RealmModel realm) {
-        return ApprovalContext.withRepresentation(realm, HANDLER_ID, Actions.CREATE_USER, rep);
+        return ApprovalContext.withRepresentation(realm, Actions.CREATE_USER, rep);
     }
 
     public static ApprovalContext registerUserCtx(UserModel user, RealmModel realm) {
-        return ApprovalContext.withModel(realm, HANDLER_ID, Actions.REGISTER_USER, user);
+        return ApprovalContext.withModel(realm, Actions.REGISTER_USER, user);
     }
 
     public UsersHandler(KeycloakSession session) {
@@ -132,7 +143,12 @@ public class UsersHandler extends AbstractApprovalHandler {
     }
 
     @Override
-    public ApprovalContext.Action getActionByName(String name) {
-        return Actions.valueOf(name);
+    public ApprovalAction[] getSupportedActions() {
+        return Actions.values();
+    }
+
+    @Override
+    public ApprovalAction getActionById(String id) {
+        return Actions.valueOf(id);
     }
 }

@@ -26,7 +26,7 @@ import java.util.Set;
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public interface RoleEvaluatorMappingModel {
+public interface RoleEvaluatorConfigModel {
     ApprovalAction getAction();
 
     boolean isEnabled();

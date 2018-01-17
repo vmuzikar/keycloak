@@ -20,7 +20,7 @@ package org.keycloak.approvals.jpa;
 import org.keycloak.approvals.ApprovalAction;
 import org.keycloak.approvals.jpa.entities.EvaluatorActionEntity;
 import org.keycloak.approvals.store.EvaluatorStore;
-import org.keycloak.approvals.store.RoleEvaluatorMappingModel;
+import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.jpa.entities.RealmEntity;
@@ -59,7 +59,7 @@ public class JpaEvaluatorStore implements EvaluatorStore {
     }
 
     @Override
-    public RoleEvaluatorMappingModel createOrGetActionConfig(ApprovalAction action, RealmModel realm) {
+    public RoleEvaluatorConfigModel createOrGetRoleEvaluatorConfig(ApprovalAction action, RealmModel realm) {
         EvaluatorActionEntity entity = getEvaluatorActionEntity(action, realm);
 
         if (entity == null) {
@@ -72,11 +72,11 @@ public class JpaEvaluatorStore implements EvaluatorStore {
             em.flush();
         }
 
-        return new RoleEvaluatorMappingAdapter(entity, em, realm, session);
+        return new RoleEvaluatorConfigAdapter(entity, em, realm, session);
     }
 
     @Override
-    public boolean removeActionConfig(ApprovalAction action, RealmModel realm) {
+    public boolean removeRoleEvaluatorConfig(ApprovalAction action, RealmModel realm) {
         EvaluatorActionEntity entity = getEvaluatorActionEntity(action, realm);
 
         if (entity == null) {

@@ -25,6 +25,6 @@ import org.keycloak.provider.Provider;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface EvaluatorStore extends Provider {
-    RoleEvaluatorMappingModel createOrGetActionConfig(ApprovalAction action, RealmModel realm);
-    boolean removeActionConfig(ApprovalAction action, RealmModel realm);
+    RoleEvaluatorConfigModel createOrGetRoleEvaluatorConfig(ApprovalAction action, RealmModel realm);
+    boolean removeRoleEvaluatorConfig(ApprovalAction action, RealmModel realm);
 }

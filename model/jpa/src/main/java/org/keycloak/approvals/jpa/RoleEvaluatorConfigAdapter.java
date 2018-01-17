@@ -20,7 +20,7 @@ package org.keycloak.approvals.jpa;
 import org.keycloak.approvals.ApprovalAction;
 import org.keycloak.approvals.ApprovalHandler;
 import org.keycloak.approvals.jpa.entities.EvaluatorActionEntity;
-import org.keycloak.approvals.store.RoleEvaluatorMappingModel;
+import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
@@ -35,14 +35,14 @@ import java.util.stream.Collectors;
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class RoleEvaluatorMappingAdapter implements RoleEvaluatorMappingModel, JpaModel<EvaluatorActionEntity> {
+public class RoleEvaluatorConfigAdapter implements RoleEvaluatorConfigModel, JpaModel<EvaluatorActionEntity> {
     private EvaluatorActionEntity entity;
     private EntityManager em;
     private RealmModel realm;
     private ApprovalAction action = null;
     private KeycloakSession session;
 
-    public RoleEvaluatorMappingAdapter(EvaluatorActionEntity entity, EntityManager em, RealmModel realm, KeycloakSession session) {
+    public RoleEvaluatorConfigAdapter(EvaluatorActionEntity entity, EntityManager em, RealmModel realm, KeycloakSession session) {
         this.entity = entity;
         this.em = em;
         this.realm = realm;

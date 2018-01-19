@@ -102,6 +102,10 @@ module.service('Dialog', function($modal) {
         openDialog(title, message, btns, '/templates/kc-modal-message.html').then(success, cancel);
     }
 
+    dialog.approvalRequired = function (actionDesc, success) {
+        dialog.message("Approval required!", actionDesc + " but approval from administrator is required before changes are taken in effect.", success, success);
+    }
+
     dialog.open = function(title, message, btns, success, cancel) {
         openDialog(title, message, btns, '/templates/kc-modal.html').then(success, cancel);
     }

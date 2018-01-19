@@ -444,8 +444,9 @@ module.controller('UserDetailCtrl', function($scope, realm, user, BruteForceUser
                 convertAttributeValuesToString($scope.user);
                 user = angular.copy($scope.user);
                 if (status === 202) {
-                    $location.url("/realms/" + realm.realm + "/users");
-                    Notifications.success("The user has been created but approval from administrator is required.");
+                    Dialog.approvalRequired("The user has been created", function () {
+                        $location.url("/realms/" + realm.realm + "/users");
+                    });
                 } else {
                     var l = headers().location;
 

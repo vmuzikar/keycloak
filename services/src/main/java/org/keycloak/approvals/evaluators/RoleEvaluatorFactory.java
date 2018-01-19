@@ -20,8 +20,12 @@ package org.keycloak.approvals.evaluators;
 import org.keycloak.Config;
 import org.keycloak.approvals.ApprovalEvaluator;
 import org.keycloak.approvals.ApprovalEvaluatorFactory;
+import org.keycloak.approvals.handlers.UsersHandler;
+import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -39,7 +43,18 @@ public class RoleEvaluatorFactory implements ApprovalEvaluatorFactory {
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-
+        // TODO remove testing data!!!!!!!
+        factory.register(event -> {
+            if (event instanceof RealmModel.RealmPostCreateEvent) {
+                RealmModel.RealmPostCreateEvent realmEvent = (RealmModel.RealmPostCreateEvent) event;
+                RealmModel realm = realmEvent.getCreatedRealm();
+                RoleModel role = realm.addRole("approvals-role");
+                RoleEvaluator roleEvaluator = (RoleEvaluator) realmEvent.getKeycloakSession().getProvider(ApprovalEvaluator.class);
+                RoleEvaluatorConfigModel config = roleEvaluator.getEvaluatorStore().createOrGetRoleEvaluatorConfig(UsersHandler.Actions.CREATE_USER, realm);
+                config.addRole(role.getId());
+                config.setEnabled(true);
+            }
+        });
     }
 
     @Override

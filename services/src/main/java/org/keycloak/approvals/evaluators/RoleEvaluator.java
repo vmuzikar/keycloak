@@ -20,7 +20,14 @@ package org.keycloak.approvals.evaluators;
 import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.ApprovalEvaluator;
 import org.keycloak.approvals.store.EvaluatorStore;
+import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
+import org.keycloak.authorization.common.UserModelIdentity;
+import org.keycloak.authorization.identity.Identity;
+import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RoleModel;
+import org.keycloak.services.managers.AppAuthManager;
+import org.keycloak.services.managers.AuthenticationManager;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -40,7 +47,34 @@ public class RoleEvaluator implements ApprovalEvaluator {
 
     @Override
     public boolean needsApproval(ApprovalContext context) {
-        return true; // TODO make it dynamic!!!
+        RoleEvaluatorConfigModel config = getEvaluatorStore().createOrGetRoleEvaluatorConfig(context.getAction(), context.getRealm());
+
+        if (!config.isEnabled()) {
+            return false;
+        }
+
+        Identity identity = getIdentity(context);
+        if (identity == null) {
+            return true;
+        }
+
+        for (RoleModel role : config.getRoles()) {
+            if (identity.hasRealmRole(role.getName())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected Identity getIdentity(ApprovalContext context) {
+        AppAuthManager authManager = new AppAuthManager();
+        KeycloakContext kcContext = session.getContext();
+        AuthenticationManager.AuthResult authResult = authManager.authenticateBearerToken(session, context.getRealm(), kcContext.getUri(), kcContext.getConnection(), kcContext.getRequestHeaders());
+        if (authResult == null) {
+            return null;
+        }
+        return new UserModelIdentity(kcContext.getRealm(), authResult.getUser());
     }
 
     @Override

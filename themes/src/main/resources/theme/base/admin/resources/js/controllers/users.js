@@ -439,19 +439,24 @@ module.controller('UserDetailCtrl', function($scope, realm, user, BruteForceUser
         if ($scope.create) {
             User.save({
                 realm: realm.realm
-            }, $scope.user, function (data, headers) {
+            }, $scope.user, function (data, headers, status) {
                 $scope.changed = false;
                 convertAttributeValuesToString($scope.user);
                 user = angular.copy($scope.user);
-                var l = headers().location;
+                if (status === 202) {
+                    $location.url("/realms/" + realm.realm + "/users");
+                    Notifications.success("The user has been created but approval from administrator is required.");
+                } else {
+                    var l = headers().location;
 
-                console.debug("Location == " + l);
+                    console.debug("Location == " + l);
 
-                var id = l.substring(l.lastIndexOf("/") + 1);
+                    var id = l.substring(l.lastIndexOf("/") + 1);
 
 
-                $location.url("/realms/" + realm.realm + "/users/" + id);
-                Notifications.success("The user has been created.");
+                    $location.url("/realms/" + realm.realm + "/users/" + id);
+                    Notifications.success("The user has been created.");
+                }
             });
         } else {
             User.update({

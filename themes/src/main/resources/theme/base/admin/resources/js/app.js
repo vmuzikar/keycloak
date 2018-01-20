@@ -737,6 +737,16 @@ module.config([ '$routeProvider', function($routeProvider) {
             controller : 'UserListCtrl'
         })
 
+        .when('/realms/:realm/approvals', {
+            templateUrl : resourceUrl + '/partials/approvals-list.html',
+            resolve : {
+                realm : function(RealmLoader) {
+                    return RealmLoader();
+                }
+            },
+            controller : 'ApprovalsListCtrl'
+        })
+
         .when('/create/role/:realm', {
             templateUrl : resourceUrl + '/partials/role-detail.html',
             resolve : {
@@ -2478,6 +2488,15 @@ module.directive('kcTabsLdap', function () {
         restrict: 'E',
         replace: true,
         templateUrl: resourceUrl + '/templates/kc-tabs-ldap.html'
+    }
+});
+
+module.directive('kcTabsApprovals', function () {
+    return {
+        scope: true,
+        restrict: 'E',
+        replace: true,
+        templateUrl: resourceUrl + '/templates/kc-tabs-approvals.html'
     }
 });
 

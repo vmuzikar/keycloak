@@ -1758,6 +1758,21 @@ module.factory('DefaultGroups', function($resource) {
     });
 });
 
+module.factory('Approvals', function($resource) {
+    return $resource(authUrl + '/admin/realms/:realm/approvals/:approvalId', {
+        realm : '@realm',
+        approvalId : '@approvalId'
+    }, {
+        approve : {
+            method : 'POST',
+            hasBody : false
+        },
+        reject : {
+            method : 'DELETE'
+        }
+    })
+});
+
 module.factory('SubComponentTypes', function($resource) {
     return $resource(authUrl + '/admin/realms/:realm/components/:componentId/sub-component-types', {
         realm: '@realm',

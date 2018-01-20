@@ -64,7 +64,7 @@ public class ApprovalsResource {
     @Produces(MediaType.APPLICATION_JSON)
     @NoCache
     public List<ApprovalRequestRepresentation> getApprovals() {
-        return approval
+        return getApprovalsManager()
                 .getStore()
                 .getRequestsForRealm(realm)
                 .stream()

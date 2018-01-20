@@ -76,6 +76,10 @@ function getAccessObject(Auth, Current) {
             return getAccess(Auth, Current, 'manage-authorization');
         },
 
+        get manageApprovals() {
+            return getAccess(Auth, Current, 'manage-approvals');
+        },
+
         get impersonation() {
             return getAccess(Auth, Current, 'impersonation');
         }

@@ -100,7 +100,7 @@ public class JpaApprovalStore implements ApprovalStore {
 
     @Override
     public List<ApprovalRequestModel> getRequestsForRealm(RealmModel realm) {
-        TypedQuery<String> query = em.createNamedQuery("getRequestById", String.class);
+        TypedQuery<String> query = em.createNamedQuery("getAllRequestsForRealm", String.class);
         query.setParameter("realmId", realm.getId());
 
         List<String> ids = query.getResultList();

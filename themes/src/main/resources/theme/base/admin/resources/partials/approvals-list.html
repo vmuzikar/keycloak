@@ -1,0 +1,27 @@
+<div class="col-sm-9 col-md-10 col-sm-push-3 col-md-push-2" ng-init="init()">
+
+    <kc-tabs-approvals></kc-tabs-approvals>
+
+    <table class="datatable table table-striped table-bordered dataTable no-footer">
+        <thead>
+        <tr data-ng-show="approvals && approvals.length > 0">
+            <th>{{:: 'requested-action' | translate}}</th>
+            <th colspan="3">{{:: 'actions' | translate}}</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="approval in approvals">
+            <td>{{approval.actionName}}</td>
+            <td class="kc-action-cell" data-ng-click="details(approval)">{{:: 'detailed-description' | translate}}</td>
+            <td class="kc-action-cell" data-ng-click="approve(approval)">{{:: 'approve' | translate}}</td>
+            <td class="kc-action-cell" data-ng-click="reject(approval)">{{:: 'reject' | translate}}</td>
+        </tr>
+        <tr data-ng-show="approvals.length == 0">
+            <td class="text-muted" colspan="4">{{:: 'no-pending-approvals' | translate}}</td>
+        </tr>
+        </tbody>
+    </table>
+
+</div>
+
+<kc-menu></kc-menu>

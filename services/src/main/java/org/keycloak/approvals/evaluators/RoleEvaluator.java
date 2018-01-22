@@ -19,7 +19,7 @@ package org.keycloak.approvals.evaluators;
 
 import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.ApprovalEvaluator;
-import org.keycloak.approvals.store.EvaluatorStore;
+import org.keycloak.approvals.store.ApprovalStore;
 import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
 import org.keycloak.authorization.common.UserModelIdentity;
 import org.keycloak.authorization.identity.Identity;
@@ -36,18 +36,16 @@ public class RoleEvaluator implements ApprovalEvaluator {
     public static final String PROVIDER_ID = "role";
 
     protected KeycloakSession session;
+    protected ApprovalStore store;
 
-    public RoleEvaluator(KeycloakSession session) {
+    public RoleEvaluator(KeycloakSession session, ApprovalStore store) {
         this.session = session;
-    }
-
-    public EvaluatorStore getEvaluatorStore() {
-        return session.getProvider(EvaluatorStore.class); // TODO caching layer...
+        this.store = store;
     }
 
     @Override
     public boolean needsApproval(ApprovalContext context) {
-        RoleEvaluatorConfigModel config = getEvaluatorStore().createOrGetRoleEvaluatorConfig(context.getAction(), context.getRealm());
+        RoleEvaluatorConfigModel config = store.createOrGetRoleEvaluatorConfig(context.getAction(), context.getRealm());
 
         if (!config.isEnabled()) {
             return false;

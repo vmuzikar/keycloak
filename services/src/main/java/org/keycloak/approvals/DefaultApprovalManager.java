@@ -106,21 +106,29 @@ public class DefaultApprovalManager implements ApprovalManager {
 
     @Override
     public boolean approveRequest(String requestId, RealmModel realm) {
-        return processRequest(requestId, realm, true);
+        return approveRequest(getStore().getRequestById(requestId, realm));
+    }
+
+    @Override
+    public boolean approveRequest(ApprovalRequestModel request) {
+        return processRequest(request, true);
     }
 
     @Override
     public boolean rejectRequest(String requestId, RealmModel realm) {
-        return processRequest(requestId, realm, false);
+        return rejectRequest(getStore().getRequestById(requestId, realm));
     }
 
-    private boolean processRequest(String requestId, RealmModel realm, boolean approve) {
-        ApprovalStore store = getStore();
-        ApprovalRequestModel requestModel = store.getRequestById(requestId, realm);
-        if (requestModel == null) {
+    @Override
+    public boolean rejectRequest(ApprovalRequestModel request) {
+        return processRequest(request, false);
+    }
+
+    private boolean processRequest(ApprovalRequestModel request, boolean approve) {
+        if (request == null) {
             return false;
         }
-        ApprovalHandler handler = getHandlerByRequest(requestModel);
+        ApprovalHandler handler = getHandlerByRequest(request);
 
         boolean tx = false;
         KeycloakTransactionManager tm = session.getTransactionManager(); // TODO Is that necessary?
@@ -130,22 +138,22 @@ public class DefaultApprovalManager implements ApprovalManager {
         }
 
         if (approve) {
-            handler.handleRequestApproval(requestModel);
+            handler.handleRequestApproval(request);
         }
         else {
-            handler.handleRequestRejection(requestModel);
+            handler.handleRequestRejection(request);
         }
 
-        for (ApprovalListener listener : getEnabledListeners(realm)) {
+        for (ApprovalListener listener : getEnabledListeners(request.getRealm())) {
             if (approve) {
-                listener.afterRequestApproval(requestModel);
+                listener.afterRequestApproval(request);
             }
             else {
-                listener.afterRequestRejection(requestModel);
+                listener.afterRequestRejection(request);
             }
         }
 
-        if (!store.removeRequest(requestModel)) {
+        if (!getStore().removeRequest(request)) {
             throw new IllegalStateException("Approval request is already removed");
         }
 

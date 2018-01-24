@@ -30,7 +30,9 @@ import org.keycloak.approvals.store.ApprovalStore;
 import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
 import org.keycloak.models.jpa.entities.RealmEntity;
+import org.keycloak.models.jpa.entities.RoleEntity;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import javax.persistence.EntityManager;
@@ -149,17 +151,15 @@ public class JpaApprovalStore implements ApprovalStore {
     }
 
     @Override
-    public boolean removeListenerConfig(String providerId, RealmModel realm) {
-        ListenerConfigEntity entity = getListenerConfigEntity(providerId, realm);
-
-        if (entity == null) {
-            return false;
-        }
-
-        em.remove(entity);
+    public boolean removeListenerConfigsForRealm(RealmModel realm) {
+        // Need to do it one-by-one due to CollectionTable
+        TypedQuery<ListenerConfigEntity> query = em.createNamedQuery("getListenersByRealm", ListenerConfigEntity.class);
+        query.setParameter("realmId", realm.getId());
+        List<ListenerConfigEntity> entities = query.getResultList();
+        entities.forEach(e -> em.remove(e));
         em.flush();
 
-        return true;
+        return entities.size() > 0;
     }
 
     private EvaluatorActionEntity getEvaluatorActionEntity(ApprovalAction action, RealmModel realm) {
@@ -197,17 +197,36 @@ public class JpaApprovalStore implements ApprovalStore {
     }
 
     @Override
-    public boolean removeRoleEvaluatorConfig(ApprovalAction action, RealmModel realm) {
-        EvaluatorActionEntity entity = getEvaluatorActionEntity(action, realm);
-
-        if (entity == null) {
-            return false;
-        }
-
-        em.remove(entity);
+    public boolean removeRoleEvaluatorConfigsForRealm(RealmModel realm) {
+        // Need to do it one-by-one due to CollectionTable
+        TypedQuery<EvaluatorActionEntity> query = em.createNamedQuery("getEvaluatorActionsByRealm", EvaluatorActionEntity.class);
+        query.setParameter("realmId", realm.getId());
+        List<EvaluatorActionEntity> entities = query.getResultList();
+        entities.forEach(e -> em.remove(e));
         em.flush();
 
-        return true;
+        return entities.size() > 0;
+    }
+
+    @Override
+    public boolean removeRoleFromRoleEvaluatorConfigs(RoleModel role) {
+        RoleEntity roleEntity = em.getReference(RoleEntity.class, role.getId());
+        TypedQuery<EvaluatorActionEntity> query = em.createNamedQuery("getEvaluatorActionsWithRoles", EvaluatorActionEntity.class);
+        query.setParameter("role", roleEntity);
+        List<EvaluatorActionEntity> actionEntities = query.getResultList();
+
+        boolean ret = false;
+        for (EvaluatorActionEntity actionEntity : actionEntities) {
+            for (RoleEntity roleFound : actionEntity.getRoles()) {
+                if (roleFound.equals(roleEntity)) {
+                    ret = true;
+                    actionEntity.getRoles().remove(roleFound);
+                }
+            }
+        }
+
+        em.flush();
+        return ret;
     }
 
     @Override

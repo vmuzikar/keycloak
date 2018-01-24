@@ -126,6 +126,19 @@ public class JpaRealmProvider implements RealmProvider {
         }
         em.refresh(realm);
         final RealmAdapter adapter = new RealmAdapter(session, em, realm);
+
+        session.getKeycloakSessionFactory().publish(new RealmModel.RealmPreRemoveEvent() {
+            @Override
+            public RealmModel getRealm() {
+                return adapter;
+            }
+
+            @Override
+            public KeycloakSession getKeycloakSession() {
+                return session;
+            }
+        });
+
         session.users().preRemove(adapter);
 
         realm.getDefaultGroups().clear();
@@ -276,6 +289,18 @@ public class JpaRealmProvider implements RealmProvider {
 
     @Override
     public boolean removeRole(RealmModel realm, RoleModel role) {
+        session.getKeycloakSessionFactory().publish(new RoleContainerModel.RolePreRemoveEvent() {
+            @Override
+            public RoleModel getRole() {
+                return role;
+            }
+
+            @Override
+            public KeycloakSession getKeycloakSession() {
+                return session;
+            }
+        });
+
         session.users().preRemove(realm, role);
         RoleContainerModel container = role.getContainer();
         if (container.getDefaultRoles().contains(role.getName())) {

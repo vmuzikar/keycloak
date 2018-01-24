@@ -28,6 +28,11 @@ import java.util.Set;
  */
 public interface RoleContainerModel {
 
+    interface RolePreRemoveEvent extends ProviderEvent {
+        RoleModel getRole();
+        KeycloakSession getKeycloakSession();
+    }
+
     interface RoleRemovedEvent extends ProviderEvent {
         RoleModel getRole();
         KeycloakSession getKeycloakSession();

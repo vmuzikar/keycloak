@@ -43,7 +43,9 @@ import java.util.Set;
 @IdClass(EvaluatorActionEntity.Key.class)
 @Table(name = "APPROVAL_EVALUATOR_ACTION")
 @NamedQueries({
-        @NamedQuery(name = "getEvaluatorActionById", query = "select e from EvaluatorActionEntity e where e.handlerId = :handlerId and e.actionId = :actionId and e.realm.id = :realmId")
+        @NamedQuery(name = "getEvaluatorActionById", query = "select e from EvaluatorActionEntity e where e.handlerId = :handlerId and e.actionId = :actionId and e.realm.id = :realmId"),
+        @NamedQuery(name = "getEvaluatorActionsByRealm", query = "select e from EvaluatorActionEntity e where e.realm.id = :realmId"),
+        @NamedQuery(name = "getEvaluatorActionsWithRoles", query = "select e from EvaluatorActionEntity e where :role member of e.roles")
 })
 public class EvaluatorActionEntity {
     @Id

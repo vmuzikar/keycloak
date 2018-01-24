@@ -19,6 +19,7 @@ package org.keycloak.approvals.store;
 
 import org.keycloak.approvals.ApprovalAction;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
 import org.keycloak.provider.Provider;
 
 import java.util.List;
@@ -34,8 +35,9 @@ public interface ApprovalStore extends Provider {
     List<ApprovalRequestModel> getRequestsForRealm(RealmModel realm);
 
     ApprovalListenerConfigModel createOrGetListenerConfig(String providerId, RealmModel realm);
-    boolean removeListenerConfig(String providerId, RealmModel realm);
+    boolean removeListenerConfigsForRealm(RealmModel realm);
 
     RoleEvaluatorConfigModel createOrGetRoleEvaluatorConfig(ApprovalAction action, RealmModel realm);
-    boolean removeRoleEvaluatorConfig(ApprovalAction action, RealmModel realm);
+    boolean removeRoleEvaluatorConfigsForRealm(RealmModel realm);
+    boolean removeRoleFromRoleEvaluatorConfigs(RoleModel role);
 }

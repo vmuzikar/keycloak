@@ -44,7 +44,8 @@ import java.util.Objects;
 @IdClass(ListenerConfigEntity.Key.class)
 @Table(name = "APPROVAL_LISTENER_CONFIGS")
 @NamedQueries({
-        @NamedQuery(name = "getListenerById", query = "select l from ListenerConfigEntity l where l.providerId = :providerId and l.realm.id = :realmId")
+        @NamedQuery(name = "getListenerById", query = "select l from ListenerConfigEntity l where l.providerId = :providerId and l.realm.id = :realmId"),
+        @NamedQuery(name = "getListenersByRealm", query = "select l from ListenerConfigEntity l where l.realm.id = :realmId")
 })
 public class ListenerConfigEntity {
     @Id

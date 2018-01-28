@@ -31,13 +31,16 @@ import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
+import org.keycloak.models.UserModel;
 import org.keycloak.models.jpa.entities.RealmEntity;
 import org.keycloak.models.jpa.entities.RoleEntity;
+import org.keycloak.models.jpa.entities.UserEntity;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,15 +60,25 @@ public class JpaApprovalStore implements ApprovalStore {
 
     @Override
     public ApprovalRequestModel createRequest(RealmModel realm, String handlerId) {
+        return createRequest(realm, handlerId, null, null);
+    }
+
+    @Override
+    public ApprovalRequestModel createRequest(RealmModel realm, String handlerId, UserModel user, RealmModel userRealm) {
         RequestEntity entity = new RequestEntity();
         entity.setId(KeycloakModelUtils.generateId());
         entity.setHandlerId(handlerId);
         entity.setRealm(em.getReference(RealmEntity.class, realm.getId()));
+        entity.setTime(new Date());
+        if (user != null && userRealm != null) {
+            entity.setUser(em.getReference(UserEntity.class, user.getId()));
+            entity.setUserRealm(em.getReference(RealmEntity.class, userRealm.getId()));
+        }
 
         em.persist(entity);
         em.flush();
 
-        return new RequestAdapter(entity, em, realm);
+        return new RequestAdapter(entity, em, realm, user, userRealm);
     }
 
     @Override
@@ -100,13 +113,32 @@ public class JpaApprovalStore implements ApprovalStore {
             return null;
         }
 
-        return new RequestAdapter(entity, em, realm);
+        UserModel user = null;
+        RealmModel userRealm = null;
+        if (entity.getUser() != null && entity.getUserRealm() != null) {
+            userRealm = session.realms().getRealm(entity.getUserRealm().getId());
+            user = session.users().getUserById(entity.getUser().getId(), userRealm);
+        }
+
+        return new RequestAdapter(entity, em, realm, user, userRealm);
     }
 
     @Override
     public List<ApprovalRequestModel> getRequestsForRealm(RealmModel realm) {
         TypedQuery<String> query = em.createNamedQuery("getAllRequestsForRealm", String.class);
         query.setParameter("realmId", realm.getId());
+
+        List<String> ids = query.getResultList();
+
+        return ids.stream()
+                .map(id -> storeProvider.getStore().getRequestById(id, realm))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ApprovalRequestModel> getRequestsByUser(UserModel user, RealmModel realm) {
+        TypedQuery<String> query = em.createNamedQuery("getAllRequestsByUser", String.class);
+        query.setParameter("userId", user.getId());
 
         List<String> ids = query.getResultList();
 

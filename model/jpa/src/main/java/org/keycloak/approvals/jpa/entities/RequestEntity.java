@@ -18,6 +18,7 @@
 package org.keycloak.approvals.jpa.entities;
 
 import org.keycloak.models.jpa.entities.RealmEntity;
+import org.keycloak.models.jpa.entities.UserEntity;
 
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -31,6 +32,9 @@ import javax.persistence.MapKeyColumn;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +46,8 @@ import java.util.Objects;
 @Table(name = "APPROVAL_REQUESTS")
 @NamedQueries({
         @NamedQuery(name = "getRequestById", query = "select r from RequestEntity r where r.id = :id and r.realm.id = :realmId"),
-        @NamedQuery(name = "getAllRequestsForRealm", query = "select r.id from RequestEntity r where r.realm.id = :realmId")
+        @NamedQuery(name = "getAllRequestsForRealm", query = "select r.id from RequestEntity r where r.realm.id = :realmId"),
+        @NamedQuery(name = "getAllRequestsByUser", query = "select r.id from RequestEntity r where r.user.id = :userId")
 })
 public class RequestEntity {
     @Id
@@ -61,6 +66,18 @@ public class RequestEntity {
 
     @Column(name = "ACTION_ID")
     private String actionId;
+
+    @Column(name = "TIME")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date time;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "USER_ID")
+    private UserEntity user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "USER_REALM_ID")
+    private RealmEntity userRealm;
 
     @ElementCollection
     @MapKeyColumn(name = "NAME")
@@ -106,6 +123,30 @@ public class RequestEntity {
 
     public void setActionId(String actionId) {
         this.actionId = actionId;
+    }
+
+    public Date getTime() {
+        return time;
+    }
+
+    public void setTime(Date time) {
+        this.time = time;
+    }
+
+    public UserEntity getUser() {
+        return user;
+    }
+
+    public void setUser(UserEntity user) {
+        this.user = user;
+    }
+
+    public RealmEntity getUserRealm() {
+        return userRealm;
+    }
+
+    public void setUserRealm(RealmEntity userRealm) {
+        this.userRealm = userRealm;
     }
 
     public Map<String, String> getAttributes() {

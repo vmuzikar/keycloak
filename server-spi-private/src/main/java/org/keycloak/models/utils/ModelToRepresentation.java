@@ -858,7 +858,7 @@ public class ModelToRepresentation {
         return resource;
     }
 
-    public static ApprovalRequestRepresentation toRepresentation(ApprovalRequestModel model, ApprovalManager manager) {
+    public static ApprovalRequestRepresentation toRepresentation(KeycloakSession session, ApprovalRequestModel model, ApprovalManager manager) {
         ApprovalRequestRepresentation rep = new ApprovalRequestRepresentation();
         rep.setId(model.getId());
         rep.setDescription(model.getDescription());
@@ -866,6 +866,12 @@ public class ModelToRepresentation {
         rep.setActionId(model.getActionId());
         rep.setActionName(manager.getHandlerByRequest(model).getActionById(model.getActionId()).getDescription());
         rep.setAttributes(model.getAttributes());
+        rep.setTime(model.getTime().getTime());
+
+        if (model.getUser() != null && model.getUserRealm() != null) {
+            rep.setUser(toRepresentation(session, model.getUserRealm(), model.getUser()));
+            rep.setUserRealm(toRepresentation(model.getUserRealm(), false));
+        }
 
         return rep;
     }

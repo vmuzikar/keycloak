@@ -47,6 +47,14 @@ public interface KeycloakContext {
 
     void setClient(ClientModel client);
 
+    RealmModel getAuthRealm();
+
+    void setAuthRealm(RealmModel realm);
+
+    UserModel getAuthUser();
+
+    void setAuthUser(UserModel user);
+
     ClientConnection getConnection();
 
     void setConnection(ClientConnection connection);

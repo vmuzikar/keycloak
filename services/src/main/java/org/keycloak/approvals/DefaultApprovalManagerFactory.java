@@ -23,6 +23,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleContainerModel;
+import org.keycloak.models.UserModel;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -42,18 +43,25 @@ public class DefaultApprovalManagerFactory implements ApprovalManagerFactory {
     public void postInit(KeycloakSessionFactory factory) {
         factory.register(event -> {
             if (event instanceof RealmModel.RealmPreRemoveEvent) {
-                RealmModel.RealmPreRemoveEvent realmRemovedEvent = (RealmModel.RealmPreRemoveEvent) event;
-                ApprovalManager approvalManager = realmRemovedEvent.getKeycloakSession().getProvider(ApprovalManager.class);
-                for (ApprovalRequestModel request : approvalManager.getStore().getRequestsForRealm(realmRemovedEvent.getRealm())) {
+                RealmModel.RealmPreRemoveEvent realmPreRemoveEvent = (RealmModel.RealmPreRemoveEvent) event;
+                ApprovalManager approvalManager = realmPreRemoveEvent.getKeycloakSession().getProvider(ApprovalManager.class);
+                for (ApprovalRequestModel request : approvalManager.getStore().getRequestsForRealm(realmPreRemoveEvent.getRealm())) {
                     approvalManager.rejectRequest(request);
                 }
-                approvalManager.getStore().removeListenerConfigsForRealm(realmRemovedEvent.getRealm());
-                approvalManager.getStore().removeRoleEvaluatorConfigsForRealm(realmRemovedEvent.getRealm());
+                approvalManager.getStore().removeListenerConfigsForRealm(realmPreRemoveEvent.getRealm());
+                approvalManager.getStore().removeRoleEvaluatorConfigsForRealm(realmPreRemoveEvent.getRealm());
             }
             if (event instanceof RoleContainerModel.RolePreRemoveEvent) {
-                RoleContainerModel.RolePreRemoveEvent roleRemovedEvent = (RoleContainerModel.RolePreRemoveEvent) event;
-                ApprovalManager approvalManager = roleRemovedEvent.getKeycloakSession().getProvider(ApprovalManager.class);
-                approvalManager.getStore().removeRoleFromRoleEvaluatorConfigs(roleRemovedEvent.getRole());
+                RoleContainerModel.RolePreRemoveEvent rolePreRemoveEvent = (RoleContainerModel.RolePreRemoveEvent) event;
+                ApprovalManager approvalManager = rolePreRemoveEvent.getKeycloakSession().getProvider(ApprovalManager.class);
+                approvalManager.getStore().removeRoleFromRoleEvaluatorConfigs(rolePreRemoveEvent.getRole());
+            }
+            if (event instanceof UserModel.UserPreRemoveEvent) {
+                UserModel.UserPreRemoveEvent userPreRemoveEvent = (UserModel.UserPreRemoveEvent) event;
+                ApprovalManager approvalManager = userPreRemoveEvent.getKeycloakSession().getProvider(ApprovalManager.class);
+                for (ApprovalRequestModel request : approvalManager.getStore().getRequestsByUser(userPreRemoveEvent.getUser(), userPreRemoveEvent.getRealm())) {
+                    approvalManager.rejectRequest(request);
+                }
             }
         });
     }

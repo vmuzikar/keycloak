@@ -34,6 +34,12 @@ public interface UserModel extends RoleMapperModel {
     String EMAIL = "email";
     String LOCALE = "locale";
 
+    interface UserPreRemoveEvent extends ProviderEvent {
+        RealmModel getRealm();
+        UserModel getUser();
+        KeycloakSession getKeycloakSession();
+    }
+
     interface UserRemovedEvent extends ProviderEvent {
         RealmModel getRealm();
         UserModel getUser();

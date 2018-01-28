@@ -29,11 +29,24 @@
                 <constraints nullable="false"/>
             </column>
             <column name="ACTION_ID" type="VARCHAR(255)"/>
+            <column name="TIME" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="USER_ID" type="VARCHAR(36)"/>
+            <column name="USER_REALM_ID" type="VARCHAR(36)"/>
         </createTable>
 
         <addPrimaryKey tableName="APPROVAL_REQUESTS" columnNames="ID" constraintName="APPR_REQ_PK"/>
         <addForeignKeyConstraint baseTableName="APPROVAL_REQUESTS" baseColumnNames="REALM_ID"
                                  constraintName="APPR_REQ_REALM_FK"
+                                 referencedTableName="REALM"
+                                 referencedColumnNames="ID"/>
+        <addForeignKeyConstraint baseTableName="APPROVAL_REQUESTS" baseColumnNames="USER_ID"
+                                 constraintName="APPR_REQ_USER_FK"
+                                 referencedTableName="USER_ENTITY"
+                                 referencedColumnNames="ID"/>
+        <addForeignKeyConstraint baseTableName="APPROVAL_REQUESTS" baseColumnNames="USER_REALM_ID"
+                                 constraintName="APPR_REQ_USER_REALM_FK"
                                  referencedTableName="REALM"
                                  referencedColumnNames="ID"/>
 

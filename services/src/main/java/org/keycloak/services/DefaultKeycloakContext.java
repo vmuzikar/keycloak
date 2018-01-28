@@ -41,6 +41,10 @@ public class DefaultKeycloakContext implements KeycloakContext {
 
     private ClientModel client;
 
+    private RealmModel authRealm;
+
+    private UserModel authUser;
+
     private ClientConnection connection;
 
     private KeycloakSession session;
@@ -96,6 +100,26 @@ public class DefaultKeycloakContext implements KeycloakContext {
     @Override
     public void setClient(ClientModel client) {
         this.client = client;
+    }
+
+    @Override
+    public RealmModel getAuthRealm() {
+        return authRealm;
+    }
+
+    @Override
+    public void setAuthRealm(RealmModel authRealm) {
+        this.authRealm = authRealm;
+    }
+
+    @Override
+    public UserModel getAuthUser() {
+        return authUser;
+    }
+
+    @Override
+    public void setAuthUser(UserModel user) {
+        this.authUser = user;
     }
 
     @Override

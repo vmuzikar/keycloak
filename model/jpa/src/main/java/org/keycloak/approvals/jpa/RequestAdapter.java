@@ -20,9 +20,11 @@ package org.keycloak.approvals.jpa;
 import org.keycloak.approvals.jpa.entities.RequestEntity;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
 import org.keycloak.models.jpa.JpaModel;
 
 import javax.persistence.EntityManager;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,12 +34,17 @@ import java.util.Map;
 public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEntity> {
     private RequestEntity entity;
     private EntityManager em;
-    private RealmModel realm;
 
-    public RequestAdapter(RequestEntity entity, EntityManager em, RealmModel realm) {
+    private RealmModel realm;
+    private UserModel user;
+    private RealmModel userRealm;
+
+    public RequestAdapter(RequestEntity entity, EntityManager em, RealmModel realm, UserModel user, RealmModel userRealm) {
         this.entity = entity;
         this.em = em;
         this.realm = realm;
+        this.user = user;
+        this.userRealm = userRealm;
     }
 
     @Override
@@ -75,6 +82,21 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
     public void setActionId(String actionId) {
         entity.setActionId(actionId);
         em.flush();
+    }
+
+    @Override
+    public Date getTime() {
+        return new Date(entity.getTime().getTime());
+    }
+
+    @Override
+    public UserModel getUser() {
+        return user;
+    }
+
+    @Override
+    public RealmModel getUserRealm() {
+        return userRealm;
     }
 
     @Override

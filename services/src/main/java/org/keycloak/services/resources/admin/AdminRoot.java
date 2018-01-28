@@ -184,6 +184,9 @@ public class AdminRoot {
 
         }
 
+        session.getContext().setAuthRealm(realm);
+        session.getContext().setAuthUser(authResult.getUser());
+
         return new AdminAuth(realm, authResult.getToken(), authResult.getUser(), client);
     }
 

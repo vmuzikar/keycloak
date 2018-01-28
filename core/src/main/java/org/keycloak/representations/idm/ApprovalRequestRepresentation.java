@@ -28,6 +28,9 @@ public class ApprovalRequestRepresentation {
     private String handlerId;
     private String actionId;
     private String actionName;
+    private long time;
+    private UserRepresentation user;
+    private RealmRepresentation userRealm;
     private Map<String, String> attributes;
 
     public String getId() {
@@ -76,6 +79,30 @@ public class ApprovalRequestRepresentation {
      */
     public void setActionName(String actionName) {
         this.actionName = actionName;
+    }
+
+    public long getTime() {
+        return time;
+    }
+
+    public void setTime(long time) {
+        this.time = time;
+    }
+
+    public UserRepresentation getUser() {
+        return user;
+    }
+
+    public void setUser(UserRepresentation user) {
+        this.user = user;
+    }
+
+    public RealmRepresentation getUserRealm() {
+        return userRealm;
+    }
+
+    public void setUserRealm(RealmRepresentation userRealm) {
+        this.userRealm = userRealm;
     }
 
     public Map<String, String> getAttributes() {

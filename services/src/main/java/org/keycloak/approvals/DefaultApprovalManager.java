@@ -26,6 +26,7 @@ import org.keycloak.models.KeycloakTransactionManager;
 import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
+import org.keycloak.services.managers.AppAuthManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,9 +37,11 @@ import java.util.List;
  */
 public class DefaultApprovalManager implements ApprovalManager {
     protected KeycloakSession session;
+    protected AppAuthManager authManager;
 
     public DefaultApprovalManager(KeycloakSession session) {
         this.session = session;
+        this.authManager = new AppAuthManager();
     }
 
     @Override
@@ -95,7 +98,13 @@ public class DefaultApprovalManager implements ApprovalManager {
 
     @Override
     public ApprovalRequestModel createRequest(ApprovalRequestRepresentation requestRep, RealmModel realm) {
-        ApprovalRequestModel requestModel = getStore().createRequest(realm, requestRep.getHandlerId());
+        ApprovalRequestModel requestModel;
+        if (session.getContext().getRealm() != null && session.getContext().getAuthUser() != null) {
+            requestModel = getStore().createRequest(realm, requestRep.getHandlerId(), session.getContext().getAuthUser(), session.getContext().getAuthRealm());
+        }
+        else {
+            requestModel = getStore().createRequest(realm, requestRep.getHandlerId());
+        }
 
         requestModel.setActionId(requestRep.getActionId());
         requestModel.setDescription(requestRep.getDescription());

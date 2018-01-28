@@ -18,7 +18,9 @@
 package org.keycloak.approvals.store;
 
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
 
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -34,6 +36,11 @@ public interface ApprovalRequestModel {
 
     String getActionId();
     void setActionId(String actionId);
+
+    Date getTime();
+
+    UserModel getUser();
+    RealmModel getUserRealm();
 
     String getAttribute(String name);
     void setAttribute(String name, String value);

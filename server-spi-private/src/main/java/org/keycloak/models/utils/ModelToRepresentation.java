@@ -17,7 +17,6 @@
 
 package org.keycloak.models.utils;
 
-import org.keycloak.approvals.ApprovalManager;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.Policy;
@@ -33,13 +32,71 @@ import org.keycloak.credential.CredentialModel;
 import org.keycloak.events.Event;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.events.admin.AuthDetails;
-import org.keycloak.models.*;
+import org.keycloak.models.AuthenticatedClientSessionModel;
+import org.keycloak.models.AuthenticationExecutionModel;
+import org.keycloak.models.AuthenticationFlowModel;
+import org.keycloak.models.AuthenticatorConfigModel;
+import org.keycloak.models.ClientModel;
+import org.keycloak.models.ClientTemplateModel;
+import org.keycloak.models.FederatedIdentityModel;
+import org.keycloak.models.GroupModel;
+import org.keycloak.models.IdentityProviderMapperModel;
+import org.keycloak.models.IdentityProviderModel;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.ModelException;
+import org.keycloak.models.OTPPolicy;
+import org.keycloak.models.ProtocolMapperModel;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.RequiredActionProviderModel;
+import org.keycloak.models.RequiredCredentialModel;
+import org.keycloak.models.RoleModel;
+import org.keycloak.models.UserConsentModel;
+import org.keycloak.models.UserCredentialModel;
+import org.keycloak.models.UserModel;
+import org.keycloak.models.UserSessionModel;
 import org.keycloak.provider.ProviderConfigProperty;
-import org.keycloak.representations.idm.*;
-import org.keycloak.representations.idm.authorization.*;
+import org.keycloak.representations.idm.AdminEventRepresentation;
+import org.keycloak.representations.idm.ApprovalRequestRepresentation;
+import org.keycloak.representations.idm.AuthDetailsRepresentation;
+import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
+import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
+import org.keycloak.representations.idm.AuthenticatorConfigRepresentation;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.ClientTemplateRepresentation;
+import org.keycloak.representations.idm.ComponentRepresentation;
+import org.keycloak.representations.idm.ConfigPropertyRepresentation;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.EventRepresentation;
+import org.keycloak.representations.idm.FederatedIdentityRepresentation;
+import org.keycloak.representations.idm.GroupRepresentation;
+import org.keycloak.representations.idm.IdentityProviderMapperRepresentation;
+import org.keycloak.representations.idm.IdentityProviderRepresentation;
+import org.keycloak.representations.idm.ProtocolMapperRepresentation;
+import org.keycloak.representations.idm.RealmEventsConfigRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserConsentRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.UserSessionRepresentation;
+import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentation;
+import org.keycloak.representations.idm.authorization.PolicyRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceOwnerRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
+import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.keycloak.storage.StorageId;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -858,13 +915,11 @@ public class ModelToRepresentation {
         return resource;
     }
 
-    public static ApprovalRequestRepresentation toRepresentation(KeycloakSession session, ApprovalRequestModel model, ApprovalManager manager) {
+    public static ApprovalRequestRepresentation toRepresentation(KeycloakSession session, ApprovalRequestModel model) {
         ApprovalRequestRepresentation rep = new ApprovalRequestRepresentation();
         rep.setId(model.getId());
         rep.setDescription(model.getDescription());
-        rep.setHandlerId(model.getHandlerId());
-        rep.setActionId(model.getActionId());
-        rep.setActionName(manager.getHandlerByRequest(model).getActionById(model.getActionId()).getDescription());
+        rep.setAction(model.getAction());
         rep.setAttributes(model.getAttributes());
         rep.setTime(model.getTime().getTime());
 

@@ -17,6 +17,7 @@
 
 package org.keycloak.approvals.store;
 
+import org.keycloak.representations.idm.ApprovalAction;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
@@ -29,13 +30,12 @@ import java.util.Map;
 public interface ApprovalRequestModel {
     String getId();
     RealmModel getRealm();
-    String getHandlerId();
+
+    ApprovalAction getAction();
 
     String getDescription();
     void setDescription(String description);
 
-    String getActionId();
-    void setActionId(String actionId);
 
     Date getTime();
 

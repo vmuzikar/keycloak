@@ -17,7 +17,7 @@
 
 package org.keycloak.approvals.handlers;
 
-import org.keycloak.approvals.ApprovalAction;
+import org.keycloak.representations.idm.ApprovalAction;
 import org.keycloak.approvals.ApprovalContext;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.KeycloakSession;
@@ -35,13 +35,13 @@ import java.io.IOException;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class UsersHandler extends AbstractApprovalHandler {
-    public enum Actions implements ApprovalAction {
+    public enum UserActions implements ApprovalAction {
         REGISTER_USER("User self-registers using login page"),
         CREATE_USER("User is created using Admin Console");
 
         private String description;
 
-        Actions(String description) {
+        UserActions(String description) {
             this.description = description;
         }
 
@@ -64,11 +64,11 @@ public class UsersHandler extends AbstractApprovalHandler {
     public static final String HANDLER_ID = "users";
 
     public static ApprovalContext createUserCtx(UserRepresentation rep, RealmModel realm) {
-        return ApprovalContext.withRepresentation(realm, Actions.CREATE_USER, rep);
+        return ApprovalContext.withRepresentation(realm, UserActions.CREATE_USER, rep);
     }
 
     public static ApprovalContext registerUserCtx(UserModel user, RealmModel realm) {
-        return ApprovalContext.withModel(realm, Actions.REGISTER_USER, user);
+        return ApprovalContext.withModel(realm, UserActions.REGISTER_USER, user);
     }
 
     public UsersHandler(KeycloakSession session) {
@@ -77,7 +77,7 @@ public class UsersHandler extends AbstractApprovalHandler {
 
     @Override
     public ApprovalRequestRepresentation handleRequestCreation(ApprovalContext context) {
-        switch ((Actions)context.getAction()) {
+        switch ((UserActions)context.getAction()) {
             case REGISTER_USER:
                 return prepareUserRegistration(context);
             case CREATE_USER:
@@ -89,9 +89,7 @@ public class UsersHandler extends AbstractApprovalHandler {
 
     @Override
     public void handleRequestApproval(ApprovalRequestModel request) {
-        Actions action = Actions.valueOf(request.getActionId().toUpperCase());
-
-        switch (action) {
+        switch ((UserActions)request.getAction()) {
             case REGISTER_USER:
                 performUserRegistration(request);
             case CREATE_USER:
@@ -144,11 +142,11 @@ public class UsersHandler extends AbstractApprovalHandler {
 
     @Override
     public ApprovalAction[] getSupportedActions() {
-        return Actions.values();
+        return UserActions.values();
     }
 
     @Override
     public ApprovalAction getActionById(String id) {
-        return Actions.valueOf(id);
+        return UserActions.valueOf(id);
     }
 }

@@ -19,6 +19,7 @@ package org.keycloak.approvals;
 
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.provider.Provider;
+import org.keycloak.representations.idm.ApprovalAction;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 
 /**

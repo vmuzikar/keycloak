@@ -17,6 +17,7 @@
 
 package org.keycloak.approvals.jpa;
 
+import org.keycloak.representations.idm.ApprovalAction;
 import org.keycloak.approvals.jpa.entities.RequestEntity;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.RealmModel;
@@ -36,13 +37,15 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
     private EntityManager em;
 
     private RealmModel realm;
+    private ApprovalAction action;
     private UserModel user;
     private RealmModel userRealm;
 
-    public RequestAdapter(RequestEntity entity, EntityManager em, RealmModel realm, UserModel user, RealmModel userRealm) {
+    public RequestAdapter(RequestEntity entity, EntityManager em, RealmModel realm, ApprovalAction action, UserModel user, RealmModel userRealm) {
         this.entity = entity;
         this.em = em;
         this.realm = realm;
+        this.action = action;
         this.user = user;
         this.userRealm = userRealm;
     }
@@ -58,8 +61,8 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
     }
 
     @Override
-    public String getHandlerId() {
-        return entity.getHandlerId();
+    public ApprovalAction getAction() {
+        return action;
     }
 
     @Override
@@ -70,17 +73,6 @@ public class RequestAdapter implements ApprovalRequestModel, JpaModel<RequestEnt
     @Override
     public void setDescription(String description) {
         entity.setDescription(description);
-        em.flush();
-    }
-
-    @Override
-    public String getActionId() {
-        return entity.getActionId();
-    }
-
-    @Override
-    public void setActionId(String actionId) {
-        entity.setActionId(actionId);
         em.flush();
     }
 

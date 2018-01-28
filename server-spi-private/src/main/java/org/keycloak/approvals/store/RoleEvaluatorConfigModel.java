@@ -17,7 +17,7 @@
 
 package org.keycloak.approvals.store;
 
-import org.keycloak.approvals.ApprovalAction;
+import org.keycloak.representations.idm.ApprovalAction;
 import org.keycloak.models.RoleModel;
 
 import java.util.List;

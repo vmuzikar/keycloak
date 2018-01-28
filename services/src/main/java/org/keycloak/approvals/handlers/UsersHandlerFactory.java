@@ -18,7 +18,7 @@
 package org.keycloak.approvals.handlers;
 
 import org.keycloak.Config;
-import org.keycloak.approvals.ApprovalAction;
+import org.keycloak.representations.idm.ApprovalAction;
 import org.keycloak.approvals.ApprovalHandler;
 import org.keycloak.approvals.ApprovalHandlerFactory;
 import org.keycloak.models.KeycloakSession;
@@ -30,7 +30,7 @@ import org.keycloak.models.KeycloakSessionFactory;
 public class UsersHandlerFactory implements ApprovalHandlerFactory {
     @Override
     public ApprovalAction[] getActions() {
-        return UsersHandler.Actions.values();
+        return UsersHandler.UserActions.values();
     }
 
     @Override

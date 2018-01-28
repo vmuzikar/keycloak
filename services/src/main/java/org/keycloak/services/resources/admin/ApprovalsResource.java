@@ -68,7 +68,7 @@ public class ApprovalsResource {
                 .getStore()
                 .getRequestsForRealm(realm)
                 .stream()
-                .map(m -> ModelToRepresentation.toRepresentation(session, m, approval))
+                .map(m -> ModelToRepresentation.toRepresentation(session, m))
                 .collect(Collectors.toList());
     }
 

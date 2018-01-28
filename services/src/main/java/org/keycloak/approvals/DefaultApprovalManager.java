@@ -62,7 +62,7 @@ public class DefaultApprovalManager implements ApprovalManager {
 
     @Override
     public ApprovalHandler getHandlerByRequest(ApprovalRequestModel requestModel) {
-        return session.getProvider(ApprovalHandler.class, requestModel.getHandlerId());
+        return session.getProvider(ApprovalHandler.class, requestModel.getAction().getHandlerId());
     }
 
     protected ApprovalEvaluator getEvaluator(ApprovalContext context) {
@@ -100,13 +100,12 @@ public class DefaultApprovalManager implements ApprovalManager {
     public ApprovalRequestModel createRequest(ApprovalRequestRepresentation requestRep, RealmModel realm) {
         ApprovalRequestModel requestModel;
         if (session.getContext().getRealm() != null && session.getContext().getAuthUser() != null) {
-            requestModel = getStore().createRequest(realm, requestRep.getHandlerId(), session.getContext().getAuthUser(), session.getContext().getAuthRealm());
+            requestModel = getStore().createRequest(realm, requestRep.getAction(), session.getContext().getAuthUser(), session.getContext().getAuthRealm());
         }
         else {
-            requestModel = getStore().createRequest(realm, requestRep.getHandlerId());
+            requestModel = getStore().createRequest(realm, requestRep.getAction());
         }
 
-        requestModel.setActionId(requestRep.getActionId());
         requestModel.setDescription(requestRep.getDescription());
         requestModel.setAttributes(new HashMap<>(requestRep.getAttributes()));
 

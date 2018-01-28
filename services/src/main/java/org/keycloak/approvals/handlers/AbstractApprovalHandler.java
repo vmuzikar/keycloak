@@ -44,8 +44,7 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
         ApprovalRequestRepresentation rep = new ApprovalRequestRepresentation();
 
         rep.setDescription(description);
-        rep.setHandlerId(context.getAction().getHandlerId());
-        rep.setActionId(context.getAction().getActionId());
+        rep.setAction(context.getAction());
 
         rep.setAttributes(new HashMap<>());
         try {

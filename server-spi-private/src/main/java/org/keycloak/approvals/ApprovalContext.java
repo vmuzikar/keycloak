@@ -18,6 +18,7 @@
 package org.keycloak.approvals;
 
 import org.keycloak.models.RealmModel;
+import org.keycloak.representations.idm.ApprovalAction;
 
 import java.util.HashMap;
 import java.util.Map;

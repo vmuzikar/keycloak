@@ -24,10 +24,8 @@ import java.util.Map;
  */
 public class ApprovalRequestRepresentation {
     private String id;
+    private ApprovalAction action;
     private String description;
-    private String handlerId;
-    private String actionId;
-    private String actionName;
     private long time;
     private UserRepresentation user;
     private RealmRepresentation userRealm;
@@ -41,44 +39,20 @@ public class ApprovalRequestRepresentation {
         this.id = id;
     }
 
+    public ApprovalAction getAction() {
+        return action;
+    }
+
+    public void setAction(ApprovalAction action) {
+        this.action = action;
+    }
+
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getHandlerId() {
-        return handlerId;
-    }
-
-    public void setHandlerId(String handlerId) {
-        this.handlerId = handlerId;
-    }
-
-    public String getActionId() {
-        return actionId;
-    }
-
-    public void setActionId(String actionId) {
-        this.actionId = actionId;
-    }
-
-    /**
-     * actionName should be used only as a read-only value (typically used by ModelToRepresentation)
-     */
-    public String getActionName() {
-        return actionName;
-    }
-
-    /**
-     * actionName should be used only as a read-only value (typically used by ModelToRepresentation)
-     *
-     * @param actionName
-     */
-    public void setActionName(String actionName) {
-        this.actionName = actionName;
     }
 
     public long getTime() {

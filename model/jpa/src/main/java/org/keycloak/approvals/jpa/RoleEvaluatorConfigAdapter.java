@@ -17,7 +17,7 @@
 
 package org.keycloak.approvals.jpa;
 
-import org.keycloak.approvals.ApprovalAction;
+import org.keycloak.representations.idm.ApprovalAction;
 import org.keycloak.approvals.ApprovalHandler;
 import org.keycloak.approvals.jpa.entities.EvaluatorActionEntity;
 import org.keycloak.approvals.store.RoleEvaluatorConfigModel;

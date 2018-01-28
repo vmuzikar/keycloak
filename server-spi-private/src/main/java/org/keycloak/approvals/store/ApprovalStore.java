@@ -17,7 +17,7 @@
 
 package org.keycloak.approvals.store;
 
-import org.keycloak.approvals.ApprovalAction;
+import org.keycloak.representations.idm.ApprovalAction;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
@@ -29,8 +29,8 @@ import java.util.List;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalStore extends Provider {
-    ApprovalRequestModel createRequest(RealmModel realm, String handlerId);
-    ApprovalRequestModel createRequest(RealmModel realm, String handlerId, UserModel user, RealmModel userRealm);
+    ApprovalRequestModel createRequest(RealmModel realm, ApprovalAction action);
+    ApprovalRequestModel createRequest(RealmModel realm, ApprovalAction action, UserModel user, RealmModel userRealm);
     boolean removeRequest(String id, RealmModel realm);
     boolean removeRequest(ApprovalRequestModel requestModel);
     ApprovalRequestModel getRequestById(String id, RealmModel realm);

@@ -18,6 +18,7 @@
 package org.keycloak.approvals;
 
 import org.keycloak.provider.ProviderFactory;
+import org.keycloak.representations.idm.ApprovalAction;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>

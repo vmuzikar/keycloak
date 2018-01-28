@@ -17,7 +17,8 @@
 
 package org.keycloak.approvals.jpa;
 
-import org.keycloak.approvals.ApprovalAction;
+import org.keycloak.approvals.ApprovalHandler;
+import org.keycloak.representations.idm.ApprovalAction;
 import org.keycloak.approvals.ApprovalListener;
 import org.keycloak.approvals.ApprovalListenerFactory;
 import org.keycloak.approvals.ApprovalManager;
@@ -50,24 +51,25 @@ import java.util.stream.Collectors;
 public class JpaApprovalStore implements ApprovalStore {
     protected KeycloakSession session;
     protected EntityManager em;
-    protected ApprovalManager storeProvider;
+    protected ApprovalManager approvalManager;
 
-    public JpaApprovalStore(KeycloakSession session, EntityManager em, ApprovalManager storeProvider) {
+    public JpaApprovalStore(KeycloakSession session, EntityManager em, ApprovalManager approvalManager) {
         this.session = session;
         this.em = em;
-        this.storeProvider = storeProvider;
+        this.approvalManager = approvalManager;
     }
 
     @Override
-    public ApprovalRequestModel createRequest(RealmModel realm, String handlerId) {
-        return createRequest(realm, handlerId, null, null);
+    public ApprovalRequestModel createRequest(RealmModel realm, ApprovalAction action) {
+        return createRequest(realm, action, null, null);
     }
 
     @Override
-    public ApprovalRequestModel createRequest(RealmModel realm, String handlerId, UserModel user, RealmModel userRealm) {
+    public ApprovalRequestModel createRequest(RealmModel realm, ApprovalAction action, UserModel user, RealmModel userRealm) {
         RequestEntity entity = new RequestEntity();
         entity.setId(KeycloakModelUtils.generateId());
-        entity.setHandlerId(handlerId);
+        entity.setHandlerId(action.getHandlerId());
+        entity.setActionId(action.getActionId());
         entity.setRealm(em.getReference(RealmEntity.class, realm.getId()));
         entity.setTime(new Date());
         if (user != null && userRealm != null) {
@@ -78,7 +80,7 @@ public class JpaApprovalStore implements ApprovalStore {
         em.persist(entity);
         em.flush();
 
-        return new RequestAdapter(entity, em, realm, user, userRealm);
+        return new RequestAdapter(entity, em, realm, action, user, userRealm);
     }
 
     @Override
@@ -120,7 +122,9 @@ public class JpaApprovalStore implements ApprovalStore {
             user = session.users().getUserById(entity.getUser().getId(), userRealm);
         }
 
-        return new RequestAdapter(entity, em, realm, user, userRealm);
+        ApprovalAction action = session.getProvider(ApprovalHandler.class, entity.getHandlerId()).getActionById(entity.getActionId());
+
+        return new RequestAdapter(entity, em, realm, action, user, userRealm);
     }
 
     @Override
@@ -131,7 +135,7 @@ public class JpaApprovalStore implements ApprovalStore {
         List<String> ids = query.getResultList();
 
         return ids.stream()
-                .map(id -> storeProvider.getStore().getRequestById(id, realm))
+                .map(id -> approvalManager.getStore().getRequestById(id, realm))
                 .collect(Collectors.toList());
     }
 
@@ -143,7 +147,7 @@ public class JpaApprovalStore implements ApprovalStore {
         List<String> ids = query.getResultList();
 
         return ids.stream()
-                .map(id -> storeProvider.getStore().getRequestById(id, realm))
+                .map(id -> approvalManager.getStore().getRequestById(id, realm))
                 .collect(Collectors.toList());
     }
 

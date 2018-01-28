@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals;
+package org.keycloak.representations.idm;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface ApprovalAction {
     String getHandlerId();
     String getActionId();

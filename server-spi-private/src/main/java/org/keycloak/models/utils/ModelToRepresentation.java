@@ -938,11 +938,14 @@ public class ModelToRepresentation {
         rep.setRealm(model.getRealm().getName());
         rep.setAuthServerUrl(session.getContext().getAuthServerUrl().toString());
         rep.setTime(model.getTime());
-        rep.setUserId(model.getUser().getId());
-        rep.setUsername(model.getUser().getUsername());
-        rep.setUserRealm(model.getUserRealm().getName());
         rep.setActionName(model.getAction().getDescription());
         rep.setDescription(model.getDescription());
+
+        if (model.getUser() != null && model.getUserRealm() != null) {
+            rep.setUserId(model.getUser().getId());
+            rep.setUsername(model.getUser().getUsername());
+            rep.setUserRealm(model.getUserRealm().getId());
+        }
 
         return rep;
     }

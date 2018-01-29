@@ -14,7 +14,12 @@
         <tbody>
         <tr ng-repeat="approval in approvals">
             <td>{{approval.time|date:'medium'}}</td>
-            <td><a href="#/realms/{{approval.userRealm.realm}}/users/{{approval.user.id}}">{{approval.userRealm.realm + '/' + approval.user.username}}</a></td>
+            <td ng-if="approval.user != null">
+                <a href="#/realms/{{approval.userRealm.realm}}/users/{{approval.user.id}}">{{approval.userRealm.realm + '/' + approval.user.username}}</a>
+            </td>
+            <td ng-if="approval.user == null">
+                N/A
+            </td>
             <td>{{approval.action.description}}</td>
             <td class="kc-action-cell" data-ng-click="details(approval)">{{:: 'detailed-description' | translate}}</td>
             <td class="kc-action-cell" data-ng-click="approve(approval)">{{:: 'approve' | translate}}</td>

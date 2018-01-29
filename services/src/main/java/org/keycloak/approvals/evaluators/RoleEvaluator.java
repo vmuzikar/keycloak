@@ -48,10 +48,12 @@ public class RoleEvaluator implements ApprovalEvaluator {
             return false;
         }
 
-        Identity identity = getIdentity();
-        if (identity == null) {
+        // User is not logged in, we can't check roles
+        if (session.getContext().getAuthRealm() == null || session.getContext().getAuthUser() == null) {
             return true;
         }
+
+        Identity identity = new UserModelIdentity(session.getContext().getAuthRealm(), session.getContext().getAuthUser());
 
         for (RoleModel role : config.getRoles()) {
             if (identity.hasRealmRole(role.getName())) {
@@ -60,10 +62,6 @@ public class RoleEvaluator implements ApprovalEvaluator {
         }
 
         return false;
-    }
-
-    protected Identity getIdentity() {
-        return new UserModelIdentity(session.getContext().getAuthRealm(), session.getContext().getAuthUser());
     }
 
     @Override

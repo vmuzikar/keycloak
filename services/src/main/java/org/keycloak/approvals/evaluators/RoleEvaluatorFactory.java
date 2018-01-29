@@ -22,6 +22,7 @@ import org.keycloak.approvals.ApprovalEvaluator;
 import org.keycloak.approvals.ApprovalEvaluatorFactory;
 import org.keycloak.approvals.ApprovalManager;
 import org.keycloak.approvals.handlers.UsersHandler;
+import org.keycloak.approvals.store.ApprovalStore;
 import org.keycloak.approvals.store.RoleEvaluatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
@@ -50,8 +51,14 @@ public class RoleEvaluatorFactory implements ApprovalEvaluatorFactory {
                 RealmModel.RealmPostCreateEvent realmEvent = (RealmModel.RealmPostCreateEvent) event;
                 RealmModel realm = realmEvent.getCreatedRealm();
                 RoleModel role = realm.addRole("approvals-role");
-                RoleEvaluatorConfigModel config = realmEvent.getKeycloakSession().getProvider(ApprovalManager.class).getStore().createOrGetRoleEvaluatorConfig(UsersHandler.UserActions.CREATE_USER, realm);
+
+                ApprovalStore store = realmEvent.getKeycloakSession().getProvider(ApprovalManager.class).getStore();
+
+                RoleEvaluatorConfigModel config = store.createOrGetRoleEvaluatorConfig(UsersHandler.UserActions.CREATE_USER, realm);
                 config.addRole(role.getId());
+                config.setEnabled(true);
+
+                config = store.createOrGetRoleEvaluatorConfig(UsersHandler.UserActions.REGISTER_USER, realm);
                 config.setEnabled(true);
             }
         });

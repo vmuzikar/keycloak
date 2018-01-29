@@ -40,7 +40,9 @@ public class RegistrationApproval implements Authenticator {
         }
         catch (InterceptedException e) {
             context.challenge(context.form().createRegisterApprovalNeededPage());
+            return;
         }
+        context.success();
     }
 
     @Override

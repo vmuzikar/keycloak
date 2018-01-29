@@ -24,12 +24,15 @@ import org.keycloak.approvals.ApprovalManager;
 import org.keycloak.approvals.store.ApprovalListenerConfigModel;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.utils.ModelToRepresentation;
+import org.keycloak.representations.idm.ApprovalRequestBPMSRepresentation;
 import org.kie.server.api.marshalling.MarshallingFormat;
 import org.kie.server.client.KieServicesClient;
 import org.kie.server.client.KieServicesConfiguration;
 import org.kie.server.client.KieServicesFactory;
 import org.kie.server.client.ProcessServicesClient;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,6 +47,7 @@ public class BPMSListener implements ApprovalListener {
     public static final String SERVER_URL = "serverUrl";
     public static final String LOGIN = "login";
     public static final String PASSWORD = "password";
+    public static final String BPMS_PROCESS_INSTANCE_ID = "bpmsProcessId";
 
     private final Logger log = Logger.getLogger(this.getClass());
     private KeycloakSession session;
@@ -55,16 +59,23 @@ public class BPMSListener implements ApprovalListener {
 
     @Override
     public void afterRequestCreation(ApprovalRequestModel request, ApprovalContext context) {
-        ProcessServicesClient processServicesClient = getProcessServicesClient();
+        KieServicesConfiguration conf = KieServicesFactory.newRestConfiguration(getConfigValue(SERVER_URL), getConfigValue(LOGIN), getConfigValue(PASSWORD));
+
+        conf.addExtraClasses(Collections.singleton(ApprovalRequestBPMSRepresentation.class));
+        conf.setMarshallingFormat(MarshallingFormat.JSON);
+        KieServicesClient kieClient = KieServicesFactory.newKieServicesClient(conf);
+
+        log.infov("Connection with KIE server established: {0}", kieClient.getServerInfo());
+
+        ProcessServicesClient processServicesClient = kieClient.getServicesClient(ProcessServicesClient.class);
 
         Map<String, Object> args = new HashMap<>();
-        args.put("keycloakRootUrl", session.getContext().getAuthServerUrl());
-        args.put("realm", request.getRealm().getId());
-        args.put("approvalId", request.getId());
-        args.put("name", context.getAction().getDescription());
-        args.put("description", request.getDescription());
+        args.put("approvalRequestRep", ModelToRepresentation.toBPMSRepresentation(session, request));
 
-        processServicesClient.startProcess(getConfigValue(CONTAINER_ID), getConfigValue(PROCESS_ID), args);
+        String containerId = getConfigValue(CONTAINER_ID);
+        String processId = getConfigValue(PROCESS_ID);
+        long id = processServicesClient.startProcess(containerId, processId, args);
+        log.infov("Process started; contained id: {0}; process id: {1}; instance id: {2}", containerId, processId, id);
     }
 
     @Override
@@ -75,17 +86,6 @@ public class BPMSListener implements ApprovalListener {
     @Override
     public void afterRequestRejection(ApprovalRequestModel request) {
 
-    }
-
-    private ProcessServicesClient getProcessServicesClient() {
-        KieServicesConfiguration conf = KieServicesFactory.newRestConfiguration(getConfigValue(SERVER_URL), getConfigValue(LOGIN), getConfigValue(PASSWORD));
-
-        conf.setMarshallingFormat(MarshallingFormat.JSON);
-        KieServicesClient kieServicesClient = KieServicesFactory.newKieServicesClient(conf);
-
-        log.infov("Connection with KIE server established: {0}", kieServicesClient.getServerInfo());
-
-        return kieServicesClient.getServicesClient(ProcessServicesClient.class);
     }
 
     @Override

@@ -56,6 +56,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.idm.AdminEventRepresentation;
+import org.keycloak.representations.idm.ApprovalRequestBPMSRepresentation;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 import org.keycloak.representations.idm.AuthDetailsRepresentation;
 import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
@@ -927,6 +928,21 @@ public class ModelToRepresentation {
             rep.setUser(toRepresentation(session, model.getUserRealm(), model.getUser()));
             rep.setUserRealm(toRepresentation(model.getUserRealm(), false));
         }
+
+        return rep;
+    }
+
+    public static ApprovalRequestBPMSRepresentation toBPMSRepresentation(KeycloakSession session, ApprovalRequestModel model) {
+        ApprovalRequestBPMSRepresentation rep = new ApprovalRequestBPMSRepresentation();
+        rep.setId(model.getId());
+        rep.setRealm(model.getRealm().getName());
+        rep.setAuthServerUrl(session.getContext().getAuthServerUrl().toString());
+        rep.setTime(model.getTime());
+        rep.setUserId(model.getUser().getId());
+        rep.setUsername(model.getUser().getUsername());
+        rep.setUserRealm(model.getUserRealm().getName());
+        rep.setActionName(model.getAction().getDescription());
+        rep.setDescription(model.getDescription());
 
         return rep;
     }

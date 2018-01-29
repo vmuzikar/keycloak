@@ -27,6 +27,7 @@ import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.resources.admin.UserResource;
+import org.keycloak.services.resources.admin.UsersResource;
 import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;
@@ -93,7 +94,7 @@ public class UsersHandler extends AbstractApprovalHandler {
             case REGISTER_USER:
                 performUserRegistration(request);
             case CREATE_USER:
-
+                performUserCreation(request);
         }
     }
 
@@ -125,19 +126,26 @@ public class UsersHandler extends AbstractApprovalHandler {
     }
 
     private void performUserRegistration(ApprovalRequestModel request) {
-        UserRepresentation userRep;
+        UserRepresentation userRep = getUserRep(request);
 
+        UserModel userModel = session.users().getUserById(userRep.getId(), request.getRealm());
+        UserResource.updateUserFromRep(userModel, userRep, null, request.getRealm(), session, false);
+    }
+
+    private void performUserCreation(ApprovalRequestModel request) {
+        UserRepresentation userRep = getUserRep(request);
+        UsersResource.persistUser(session, request.getRealm(), userRep);
+    }
+
+    private UserRepresentation getUserRep(ApprovalRequestModel request) {
         try {
-            userRep = JsonSerialization.readValue(
+            return JsonSerialization.readValue(
                     request.getAttribute(ApprovalContext.REPRESENTATION_ATTR),
                     UserRepresentation.class);
         }
         catch (IOException e) {
             throw new RuntimeException();
         }
-
-        UserModel userModel = session.users().getUserById(userRep.getId(), request.getRealm());
-        UserResource.updateUserFromRep(userModel, userRep, null, request.getRealm(), session, false);
     }
 
     @Override

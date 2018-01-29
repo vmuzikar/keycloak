@@ -19,6 +19,9 @@ package org.keycloak.services.resources.admin;
 
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.approvals.ApprovalManager;
+import org.keycloak.approvals.store.ApprovalRequestModel;
+import org.keycloak.events.admin.OperationType;
+import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.utils.ModelToRepresentation;
@@ -34,6 +37,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,7 +61,7 @@ public class ApprovalsResource {
 
     public ApprovalsResource(RealmModel realm, AdminEventBuilder adminEvent) {
         this.realm = realm;
-        this.adminEvent = adminEvent;
+        this.adminEvent = adminEvent.resource(ResourceType.APPROVALS);
     }
 
     @GET
@@ -74,21 +78,27 @@ public class ApprovalsResource {
 
     @POST
     @Path("{id}")
-    public Response approveRequest(final @PathParam("id") String requestId) {
-        if (!getApprovalsManager().approveRequest(requestId, realm)) {
+    public Response approveRequest(final @Context UriInfo uriInfo, final @PathParam("id") String requestId) {
+        ApprovalRequestModel requestModel = getApprovalsManager().approveRequest(requestId, realm);
+        if (requestModel == null) {
             throw new NotFoundException("Approval request not found");
         }
 
+        ApprovalRequestRepresentation requestRep = ModelToRepresentation.toRepresentation(session, requestModel);
+        adminEvent.operation(OperationType.APPROVED).resourcePath(uriInfo).representation(requestRep).success();
         return Response.noContent().build();
     }
 
     @DELETE
     @Path("{id}")
-    public Response rejectRequest(final @PathParam("id") String requestId) {
-        if (!getApprovalsManager().rejectRequest(requestId, realm)) {
+    public Response rejectRequest(final @Context UriInfo uriInfo, final @PathParam("id") String requestId) {
+        ApprovalRequestModel requestModel = getApprovalsManager().rejectRequest(requestId, realm);
+        if (requestModel == null) {
             throw new NotFoundException("Approval request not found");
         }
 
+        ApprovalRequestRepresentation requestRep = ModelToRepresentation.toRepresentation(session, requestModel);
+        adminEvent.operation(OperationType.REJECTED).resourcePath(uriInfo).representation(requestRep).success();
         return Response.noContent().build();
     }
 }

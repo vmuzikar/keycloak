@@ -126,11 +126,7 @@ public class UsersResource {
         try {
             getApprovalsManager().interceptAction(UsersHandler.createUserCtx(rep, realm));
 
-            UserModel user = session.users().addUser(realm, rep.getUsername());
-            Set<String> emptySet = Collections.emptySet();
-
-            UserResource.updateUserFromRep(user, rep, emptySet, realm, session, false);
-            RepresentationToModel.createCredentials(rep, session, realm, user, true);
+            UserModel user = persistUser(session, realm, rep);
             adminEvent.operation(OperationType.CREATE).resourcePath(uriInfo, user.getId()).representation(rep).success();
 
             if (session.getTransactionManager().isActive()) {
@@ -139,6 +135,7 @@ public class UsersResource {
 
             return Response.created(uriInfo.getAbsolutePathBuilder().path(user.getId()).build()).build();
         } catch (InterceptedException e) {
+            adminEvent.operation(OperationType.CREATE_APPROVAL_REQUIRED).resourcePath(uriInfo).representation(rep).success();
             return Response.accepted().build();
         } catch (ModelDuplicateException e) {
             if (session.getTransactionManager().isActive()) {
@@ -153,6 +150,17 @@ public class UsersResource {
             return ErrorResponse.exists("Could not create user");
         }
     }
+
+    public static UserModel persistUser(KeycloakSession session, RealmModel realm, UserRepresentation rep) {
+        UserModel user = session.users().addUser(realm, rep.getUsername());
+        Set<String> emptySet = Collections.emptySet();
+
+        UserResource.updateUserFromRep(user, rep, emptySet, realm, session, false);
+        RepresentationToModel.createCredentials(rep, session, realm, user, true);
+
+        return user;
+    }
+
     /**
      * Get representation of the user
      *

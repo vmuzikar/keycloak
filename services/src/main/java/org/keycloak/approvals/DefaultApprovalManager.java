@@ -113,8 +113,14 @@ public class DefaultApprovalManager implements ApprovalManager {
     }
 
     @Override
-    public boolean approveRequest(String requestId, RealmModel realm) {
-        return approveRequest(getStore().getRequestById(requestId, realm));
+    public ApprovalRequestModel approveRequest(String requestId, RealmModel realm) {
+        ApprovalRequestModel model = getStore().getRequestById(requestId, realm);
+        if (approveRequest(model)) {
+            return model;
+        }
+        else {
+            return null;
+        }
     }
 
     @Override
@@ -123,8 +129,14 @@ public class DefaultApprovalManager implements ApprovalManager {
     }
 
     @Override
-    public boolean rejectRequest(String requestId, RealmModel realm) {
-        return rejectRequest(getStore().getRequestById(requestId, realm));
+    public ApprovalRequestModel rejectRequest(String requestId, RealmModel realm) {
+        ApprovalRequestModel model = getStore().getRequestById(requestId, realm);
+        if (rejectRequest(model)) {
+            return model;
+        }
+        else {
+            return null;
+        }
     }
 
     @Override

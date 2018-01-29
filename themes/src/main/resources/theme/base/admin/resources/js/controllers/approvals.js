@@ -15,7 +15,7 @@ module.controller('ApprovalsListCtrl', function ($scope, realm, Approvals, Notif
     $scope.approve = function (approval) {
         Dialog.confirm(
             $translate.instant("approve"),
-            $translate.instant("approve-confirm") + "<br/>" + "<i>" + approval.actionName + "</i><pre>" + approval.description + "</pre>",
+            $translate.instant("approve-confirm") + "<br/>" + "<i>" + approval.action.description + "</i><pre>" + approval.description + "</pre>",
             function(){
                 Approvals.approve({realm: realm.realm, approvalId: approval.id}, function () {
                     $scope.reload();
@@ -28,7 +28,7 @@ module.controller('ApprovalsListCtrl', function ($scope, realm, Approvals, Notif
     $scope.reject = function (approval) {
         Dialog.confirm(
             $translate.instant("reject"),
-            $translate.instant("reject-confirm") + "<br/>" + "<i>" + approval.actionName + "</i><pre>" + approval.description + "</pre>",
+            $translate.instant("reject-confirm") + "<br/>" + "<i>" + approval.action.description + "</i><pre>" + approval.description + "</pre>",
             function(){
                 Approvals.reject({realm: realm.realm, approvalId: approval.id}, function () {
                     $scope.reload();

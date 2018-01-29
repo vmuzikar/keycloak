@@ -23,8 +23,14 @@ package org.keycloak.events.admin;
 public enum OperationType {
 
     CREATE,
+    CREATE_APPROVAL_REQUIRED,
     UPDATE,
+    UPDATE_APPROVAL_REQUIRED,
     DELETE,
-    ACTION;
+    DELETE_APPROVAL_REQUIRED,
+    ACTION,
+    ACTION_APPROVAL_REQUIRED,
+    APPROVED,
+    REJECTED;
 
 }

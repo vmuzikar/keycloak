@@ -545,6 +545,8 @@ public class ModelToRepresentation {
     public static ClientRepresentation toRepresentation(ClientModel clientModel) {
         ClientRepresentation rep = new ClientRepresentation();
         rep.setId(clientModel.getId());
+        String providerId = StorageId.resolveProviderId(clientModel);
+        rep.setOrigin(providerId);
         rep.setClientId(clientModel.getClientId());
         rep.setName(clientModel.getName());
         rep.setDescription(clientModel.getDescription());
@@ -554,6 +556,7 @@ public class ModelToRepresentation {
         rep.setFrontchannelLogout(clientModel.isFrontchannelLogout());
         rep.setProtocol(clientModel.getProtocol());
         rep.setAttributes(clientModel.getAttributes());
+        rep.setAuthenticationFlowBindingOverrides(clientModel.getAuthenticationFlowBindingOverrides());
         rep.setFullScopeAllowed(clientModel.isFullScopeAllowed());
         rep.setBearerOnly(clientModel.isBearerOnly());
         rep.setConsentRequired(clientModel.isConsentRequired());

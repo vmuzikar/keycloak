@@ -19,7 +19,6 @@ package org.keycloak.services.resources.admin;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
-import org.jboss.resteasy.spi.NoLogWebApplicationException;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.UnauthorizedException;
@@ -42,6 +41,7 @@ import org.keycloak.theme.Theme;
 import org.keycloak.theme.ThemeProvider;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
@@ -198,7 +198,6 @@ public class AdminRoot {
         return adminBaseUrl(base).path(AdminRoot.class, "getRealmsAdmin");
     }
 
-
     /**
      * Base Path to realm admin REST interface
      *
@@ -206,8 +205,10 @@ public class AdminRoot {
      * @return
      */
     @Path("realms")
-    public RealmsAdminResource getRealmsAdmin(@Context final HttpHeaders headers) {
-        handlePreflightRequest();
+    public Object getRealmsAdmin(@Context final HttpHeaders headers) {
+        if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
+            return new AdminCorsPreflightService(request);
+        }
 
         AdminAuth auth = authenticateRealmAdminRequest(headers);
         if (auth != null) {
@@ -228,8 +229,10 @@ public class AdminRoot {
      * @return
      */
     @Path("serverinfo")
-    public ServerInfoAdminResource getServerInfo(@Context final HttpHeaders headers) {
-        handlePreflightRequest();
+    public Object getServerInfo(@Context final HttpHeaders headers) {
+        if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
+            return new AdminCorsPreflightService(request);
+        }
 
         AdminAuth auth = authenticateRealmAdminRequest(headers);
         if (!AdminPermissions.realms(session, auth).isAdmin()) {
@@ -247,17 +250,8 @@ public class AdminRoot {
         return adminResource;
     }
 
-    protected void handlePreflightRequest() {
-        if (request.getHttpMethod().equalsIgnoreCase("OPTIONS")) {
-            logger.debug("Cors admin pre-flight");
-            Response response = Cors.add(request, Response.ok()).preflight().allowedMethods("GET", "PUT", "POST", "DELETE").auth().build();
-            throw new NoLogWebApplicationException(response);
-        }
-    }
-
     public static Theme getTheme(KeycloakSession session, RealmModel realm) throws IOException {
-        ThemeProvider themeProvider = session.getProvider(ThemeProvider.class, "extending");
-        return themeProvider.getTheme(realm.getAdminTheme(), Theme.Type.ADMIN);
+        return session.theme().getTheme(Theme.Type.ADMIN);
     }
 
     public static Properties getMessages(KeycloakSession session, RealmModel realm, String lang) {

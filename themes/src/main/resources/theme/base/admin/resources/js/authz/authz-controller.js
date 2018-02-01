@@ -980,13 +980,13 @@ module.controller('ResourceServerPolicyResourceDetailCtrl', function($scope, $ro
                 for (i = 0; i < policies.length; i++) {
                     policies[i].text = policies[i].name;
                     $scope.selectedPolicies.push(policies[i]);
-                    var copy = angular.copy($scope.selectedPolicies);
-                    $scope.$watch('selectedPolicies', function() {
-                        if (!angular.equals($scope.selectedPolicies, copy)) {
-                            $scope.changed = true;
-                        }
-                    }, true);
                 }
+                var copy = angular.copy($scope.selectedPolicies);
+                $scope.$watch('selectedPolicies', function() {
+                    if (!angular.equals($scope.selectedPolicies, copy)) {
+                        $scope.changed = true;
+                    }
+                }, true);
             });
         },
 
@@ -1309,8 +1309,10 @@ module.controller('ResourceServerPolicyScopeDetailCtrl', function($scope, $route
 
             var policies = [];
 
-            for (i = 0; i < $scope.selectedPolicies.length; i++) {
-                policies.push($scope.selectedPolicies[i].id);
+            if ($scope.selectedPolicies) {
+                for (i = 0; i < $scope.selectedPolicies.length; i++) {
+                    policies.push($scope.selectedPolicies[i].id);
+                }
             }
 
             $scope.policy.policies = policies;
@@ -1355,8 +1357,10 @@ module.controller('ResourceServerPolicyScopeDetailCtrl', function($scope, $route
 
             var policies = [];
 
-            for (i = 0; i < $scope.selectedPolicies.length; i++) {
-                policies.push($scope.selectedPolicies[i].id);
+            if ($scope.selectedPolicies) {
+                for (i = 0; i < $scope.selectedPolicies.length; i++) {
+                    policies.push($scope.selectedPolicies[i].id);
+                }
             }
 
             $scope.policy.policies = policies;
@@ -2286,6 +2290,7 @@ module.service("PolicyController", function($http, $route, $location, ResourceSe
                     var policy = angular.copy(data);
 
                     $scope.changed = $scope.historyBackOnSaveOrCancel || PolicyController.isBackNewAssociatedPolicy();
+                    $scope.policy = angular.copy(policy);
 
                     if (PolicyController.isBackNewAssociatedPolicy()) {
                         if (delegate.onRestoreState) {
@@ -2295,8 +2300,6 @@ module.service("PolicyController", function($http, $route, $location, ResourceSe
                     } else if (delegate.onInitUpdate) {
                         delegate.onInitUpdate(policy);
                     }
-
-                    $scope.policy = angular.copy(policy);
 
                     $scope.$watch('policy', function() {
                         if (!angular.equals($scope.policy, policy)) {

@@ -56,6 +56,7 @@ public class ClientRepresentation {
     protected Boolean frontchannelLogout;
     protected String protocol;
     protected Map<String, String> attributes;
+    protected Map<String, String> authenticationFlowBindingOverrides;
     protected Boolean fullScopeAllowed;
     protected Integer nodeReRegistrationTimeout;
     protected Map<String, Integer> registeredNodes;
@@ -66,6 +67,7 @@ public class ClientRepresentation {
     private Boolean useTemplateMappers;
     private ResourceServerRepresentation authorizationSettings;
     private Map<String, Boolean> access;
+    protected String origin;
 
 
     public String getId() {
@@ -296,6 +298,14 @@ public class ClientRepresentation {
         this.attributes = attributes;
     }
 
+    public Map<String, String> getAuthenticationFlowBindingOverrides() {
+        return authenticationFlowBindingOverrides;
+    }
+
+    public void setAuthenticationFlowBindingOverrides(Map<String, String> authenticationFlowBindingOverrides) {
+        this.authenticationFlowBindingOverrides = authenticationFlowBindingOverrides;
+    }
+
     public Integer getNodeReRegistrationTimeout() {
         return nodeReRegistrationTimeout;
     }
@@ -375,4 +385,19 @@ public class ClientRepresentation {
     public void setAccess(Map<String, Boolean> access) {
         this.access = access;
     }
+
+
+    /**
+     * Returns id of ClientStorageProvider that loaded this user
+     *
+     * @return NULL if user stored locally
+     */
+    public String getOrigin() {
+        return origin;
+    }
+
+    public void setOrigin(String origin) {
+        this.origin = origin;
+    }
+
 }

@@ -33,13 +33,16 @@
     </description>
     <groupId>org.keycloak</groupId>
     <artifactId>keycloak-parent</artifactId>
-    <version>3.4.2.Final-SNAPSHOT</version>
+    <version>4.0.0.CR1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
         <product.rhsso.version>7.2.0.GA</product.rhsso.version>
 
         <product.build-time>${timestamp}</product.build-time>
+
+        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.source>1.7</maven.compiler.source>
 
         <wildfly.version>11.0.0.Final</wildfly.version>
         <wildfly.build-tools.version>1.2.2.Final</wildfly.build-tools.version>

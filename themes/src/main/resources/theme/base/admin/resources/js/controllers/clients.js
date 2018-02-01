@@ -56,6 +56,9 @@ module.controller('ClientCredentialsCtrl', function($scope, $location, realm, cl
             case 'client-jwt':
                 $scope.clientAuthenticatorConfigPartial = 'client-credentials-jwt.html';
                 break;
+            case 'client-secret-jwt':
+                $scope.clientAuthenticatorConfigPartial = 'client-credentials-secret-jwt.html';
+                break;
             default:
                 $scope.currentAuthenticatorConfigProperties = clientConfigProperties[val];
                 $scope.clientAuthenticatorConfigPartial = 'client-credentials-generic.html';
@@ -761,6 +764,15 @@ module.controller('ClientListCtrl', function($scope, realm, Client, serverInfo, 
         });
     };
 
+    $scope.searchClient = function() {
+        console.log('searchQuery!!! ' + $scope.search.clientId);
+        Client.query({realm: realm.realm, viewableOnly: true, clientId: $scope.search.clientId}).$promise.then(function(clients) {
+            $scope.numberOfPages = Math.ceil(clients.length/$scope.pageSize);
+            $scope.clients = clients;
+        });
+
+    };
+
     $scope.exportClient = function(client) {
         var clientCopy = angular.copy(client);
         delete clientCopy.id;
@@ -816,7 +828,7 @@ module.controller('ClientInstallationCtrl', function($scope, realm, client, serv
     }
 });
 
-module.controller('ClientDetailCtrl', function($scope, realm, client, templates, $route, serverInfo, Client, ClientDescriptionConverter, $location, $modal, Dialog, Notifications) {
+module.controller('ClientDetailCtrl', function($scope, realm, client, templates, $route, serverInfo, Client, ClientDescriptionConverter, Components, ClientStorageOperations, $location, $modal, Dialog, Notifications) {
 
 
 
@@ -885,6 +897,25 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, templates,
     $scope.disableAuthorizationTab = !client.authorizationServicesEnabled;
     $scope.disableServiceAccountRolesTab = !client.serviceAccountsEnabled;
     $scope.disableCredentialsTab = client.publicClient;
+
+    if(client.origin) {
+        if ($scope.access.viewRealm) {
+            Components.get({realm: realm.realm, componentId: client.origin}, function (link) {
+                $scope.originName = link.name;
+                //$scope.originLink = "#/realms/" + realm.realm + "/user-storage/providers/" + link.providerId + "/" + link.id;
+            })
+        }
+        else {
+            // KEYCLOAK-4328
+            ClientStorageOperations.simpleName.get({realm: realm.realm, componentId: client.origin}, function (link) {
+                $scope.originName = link.name;
+                //$scope.originLink = $location.absUrl();
+            })
+        }
+    } else {
+        console.log("origin is null");
+    }
+
 
     function updateProperties() {
         if (!$scope.client.attributes) {
@@ -1002,7 +1033,15 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, templates,
         $scope.userInfoSignedResponseAlg = attrVal1==null ? 'unsigned' : attrVal1;
 
         var attrVal2 = $scope.client.attributes['request.object.signature.alg'];
-         $scope.requestObjectSignatureAlg = attrVal2==null ? 'any' : attrVal2;
+        $scope.requestObjectSignatureAlg = attrVal2==null ? 'any' : attrVal2;
+
+        if ($scope.client.attributes["exclude.session.state.from.auth.response"]) {
+            if ($scope.client.attributes["exclude.session.state.from.auth.response"] == "true") {
+                $scope.excludeSessionStateFromAuthResponse = true;
+            } else {
+                $scope.excludeSessionStateFromAuthResponse = false;
+            }
+        }
     }
 
     if (!$scope.create) {
@@ -1222,6 +1261,13 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, templates,
             $scope.clientEdit.attributes["saml.force.post.binding"] = "true";
         } else {
             $scope.clientEdit.attributes["saml.force.post.binding"] = "false";
+
+        }
+
+        if ($scope.excludeSessionStateFromAuthResponse == true) {
+            $scope.clientEdit.attributes["exclude.session.state.from.auth.response"] = "true";
+        } else {
+            $scope.clientEdit.attributes["exclude.session.state.from.auth.response"] = "false";
 
         }
 

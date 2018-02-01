@@ -32,6 +32,7 @@ import org.keycloak.models.jpa.entities.RoleEntity;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import javax.persistence.EntityManager;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -208,7 +209,7 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
 
     @Override
     public boolean validateSecret(String secret) {
-        return secret.equals(entity.getSecret());
+        return MessageDigest.isEqual(secret.getBytes(), entity.getSecret().getBytes());
     }
 
     @Override
@@ -267,6 +268,29 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
     public void setProtocol(String protocol) {
         entity.setProtocol(protocol);
 
+    }
+
+    @Override
+    public void setAuthenticationFlowBindingOverride(String name, String value) {
+        entity.getAuthFlowBindings().put(name, value);
+
+    }
+
+    @Override
+    public void removeAuthenticationFlowBindingOverride(String name) {
+        entity.getAuthFlowBindings().remove(name);
+    }
+
+    @Override
+    public String getAuthenticationFlowBindingOverride(String name) {
+        return entity.getAuthFlowBindings().get(name);
+    }
+
+    @Override
+    public Map<String, String> getAuthenticationFlowBindingOverrides() {
+        Map<String, String> copy = new HashMap<>();
+        copy.putAll(entity.getAuthFlowBindings());
+        return copy;
     }
 
     @Override

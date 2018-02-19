@@ -50,7 +50,7 @@ public class RoleEvaluatorFactory implements ApprovalEvaluatorFactory {
             if (event instanceof RealmModel.RealmPostCreateEvent) {
                 RealmModel.RealmPostCreateEvent realmEvent = (RealmModel.RealmPostCreateEvent) event;
                 RealmModel realm = realmEvent.getCreatedRealm();
-                RoleModel role = realm.addRole("approvals-role");
+                RoleModel role = realm.addRole("approve-create-user");
 
                 ApprovalStore store = realmEvent.getKeycloakSession().getProvider(ApprovalManager.class).getStore();
 

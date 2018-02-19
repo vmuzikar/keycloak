@@ -224,6 +224,12 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
                     } else {
                         return true;
                     }
+                } else if (role.getName().equals(AdminRoles.MANAGE_APPROVALS)) {
+                    if (!root.realm().canManageApprovals()) {
+                        return adminConflictMessage(role);
+                    } else {
+                        return true;
+                    }
                 } else if (role.getName().equals(ImpersonationConstants.IMPERSONATION_ROLE)) {
                     if (!root.users().canImpersonate()) {
                         return adminConflictMessage(role);

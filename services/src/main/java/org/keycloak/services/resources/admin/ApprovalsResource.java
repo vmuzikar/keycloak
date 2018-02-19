@@ -19,7 +19,6 @@ package org.keycloak.services.resources.admin;
 
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.approvals.ApprovalManager;
-import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.KeycloakSession;
@@ -79,12 +78,11 @@ public class ApprovalsResource {
     @POST
     @Path("{id}")
     public Response approveRequest(final @Context UriInfo uriInfo, final @PathParam("id") String requestId) {
-        ApprovalRequestModel requestModel = getApprovalsManager().approveRequest(requestId, realm);
-        if (requestModel == null) {
+        ApprovalRequestRepresentation requestRep = getApprovalsManager().approveRequest(requestId, realm);
+        if (requestRep == null) {
             throw new NotFoundException("Approval request not found");
         }
 
-        ApprovalRequestRepresentation requestRep = ModelToRepresentation.toRepresentation(session, requestModel);
         adminEvent.operation(OperationType.APPROVED).resourcePath(uriInfo).representation(requestRep).success();
         return Response.noContent().build();
     }
@@ -92,12 +90,11 @@ public class ApprovalsResource {
     @DELETE
     @Path("{id}")
     public Response rejectRequest(final @Context UriInfo uriInfo, final @PathParam("id") String requestId) {
-        ApprovalRequestModel requestModel = getApprovalsManager().rejectRequest(requestId, realm);
-        if (requestModel == null) {
+        ApprovalRequestRepresentation requestRep = getApprovalsManager().rejectRequest(requestId, realm);
+        if (requestRep == null) {
             throw new NotFoundException("Approval request not found");
         }
 
-        ApprovalRequestRepresentation requestRep = ModelToRepresentation.toRepresentation(session, requestModel);
         adminEvent.operation(OperationType.REJECTED).resourcePath(uriInfo).representation(requestRep).success();
         return Response.noContent().build();
     }

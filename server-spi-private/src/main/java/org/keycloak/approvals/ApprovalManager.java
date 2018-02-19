@@ -34,9 +34,9 @@ public interface ApprovalManager extends Provider {
     ApprovalHandler getHandlerByRequest(ApprovalRequestModel requestModel);
     void interceptAction(ApprovalContext context) throws InterceptedException;
     ApprovalRequestModel createRequest(ApprovalRequestRepresentation requestRep, RealmModel realm);
-    ApprovalRequestModel approveRequest(String requestId, RealmModel realm);
+    ApprovalRequestRepresentation approveRequest(String requestId, RealmModel realm);
     boolean approveRequest(ApprovalRequestModel request);
-    ApprovalRequestModel rejectRequest(String requestId, RealmModel realm);
+    ApprovalRequestRepresentation rejectRequest(String requestId, RealmModel realm);
     boolean rejectRequest(ApprovalRequestModel request);
     List<ApprovalListener> getEnabledListeners(RealmModel realm);
 }

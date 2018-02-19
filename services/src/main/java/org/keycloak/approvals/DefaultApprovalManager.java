@@ -24,6 +24,7 @@ import org.keycloak.approvals.store.ApprovalStore;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakTransactionManager;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 import org.keycloak.services.managers.AppAuthManager;
@@ -113,10 +114,11 @@ public class DefaultApprovalManager implements ApprovalManager {
     }
 
     @Override
-    public ApprovalRequestModel approveRequest(String requestId, RealmModel realm) {
+    public ApprovalRequestRepresentation approveRequest(String requestId, RealmModel realm) {
         ApprovalRequestModel model = getStore().getRequestById(requestId, realm);
+        ApprovalRequestRepresentation rep = ModelToRepresentation.toRepresentation(session, model);
         if (approveRequest(model)) {
-            return model;
+            return rep;
         }
         else {
             return null;
@@ -129,10 +131,11 @@ public class DefaultApprovalManager implements ApprovalManager {
     }
 
     @Override
-    public ApprovalRequestModel rejectRequest(String requestId, RealmModel realm) {
+    public ApprovalRequestRepresentation rejectRequest(String requestId, RealmModel realm) {
         ApprovalRequestModel model = getStore().getRequestById(requestId, realm);
+        ApprovalRequestRepresentation rep = ModelToRepresentation.toRepresentation(session, model);
         if (rejectRequest(model)) {
-            return model;
+            return rep;
         }
         else {
             return null;

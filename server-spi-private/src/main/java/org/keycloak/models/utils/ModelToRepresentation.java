@@ -928,8 +928,22 @@ public class ModelToRepresentation {
         rep.setTime(model.getTime().getTime());
 
         if (model.getUser() != null && model.getUserRealm() != null) {
-            rep.setUser(toRepresentation(session, model.getUserRealm(), model.getUser()));
-            rep.setUserRealm(toRepresentation(model.getUserRealm(), false));
+            // Include only minimal amount of details in the nested representations
+            UserRepresentation userRep = new UserRepresentation();
+            userRep.setId(model.getUser().getId());
+            userRep.setUsername(model.getUser().getUsername());
+            userRep.setLastName(model.getUser().getLastName());
+            userRep.setFirstName(model.getUser().getFirstName());
+            userRep.setEmail(model.getUser().getEmail());
+            userRep.setEnabled(model.getUser().isEnabled());
+            rep.setUser(userRep);
+            
+            RealmRepresentation userRealmRep = new RealmRepresentation();
+            userRealmRep.setId(model.getUserRealm().getId());
+            userRealmRep.setRealm(model.getUserRealm().getName());
+            userRealmRep.setDisplayName(model.getUserRealm().getDisplayName());
+            userRealmRep.setDisplayNameHtml(model.getUserRealm().getDisplayNameHtml());
+            rep.setUserRealm(userRealmRep);
         }
 
         return rep;

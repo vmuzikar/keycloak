@@ -17,6 +17,7 @@
 
 package org.keycloak.models.utils;
 
+import org.keycloak.approvals.store.ApprovalListenerConfigModel;
 import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.Policy;
@@ -56,6 +57,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.idm.AdminEventRepresentation;
+import org.keycloak.representations.idm.ApprovalListenerConfigRepresentation;
 import org.keycloak.representations.idm.ApprovalRequestBPMSRepresentation;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 import org.keycloak.representations.idm.AuthDetailsRepresentation;
@@ -964,6 +966,17 @@ public class ModelToRepresentation {
             rep.setUserRealm(model.getUserRealm().getId());
         }
 
+        return rep;
+    }
+
+    public static ApprovalListenerConfigRepresentation toRepresentation(ApprovalListenerConfigModel model, boolean internal) {
+        ApprovalListenerConfigRepresentation rep = new ApprovalListenerConfigRepresentation();
+        rep.setProviderId(model.getProviderId());
+        rep.setEnabled(model.isEnabled());
+        rep.setConfigs(model.getConfigs());
+        if (!internal && rep.getConfigs().get("password") != null) {
+            rep.getConfigs().remove("password");
+        }
         return rep;
     }
 }

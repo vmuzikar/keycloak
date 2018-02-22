@@ -15,21 +15,39 @@
  * limitations under the License.
  */
 
-package org.keycloak.approvals.store;
-
-import org.keycloak.models.RealmModel;
+package org.keycloak.representations.idm;
 
 import java.util.Map;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public interface ApprovalListenerConfigModel {
-    String getProviderId();
-    boolean isEnabled();
-    void setEnabled(boolean enabled);
-    Map<String, String> getConfigs();
-    void setConfigs(Map<String, String> configs);
-    void mergeConfigs(Map<String, String> configs);
-    RealmModel getRealm();
+public class ApprovalListenerConfigRepresentation {
+    private String providerId;
+    private boolean enabled;
+    private Map<String, String> configs;
+
+    public String getProviderId() {
+        return providerId;
+    }
+
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public Map<String, String> getConfigs() {
+        return configs;
+    }
+
+    public void setConfigs(Map<String, String> configs) {
+        this.configs = configs;
+    }
 }

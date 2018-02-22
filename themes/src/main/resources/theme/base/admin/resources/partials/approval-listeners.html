@@ -1,0 +1,56 @@
+<div class="col-sm-9 col-md-10 col-sm-push-3 col-md-push-2" ng-init="init()">
+
+    <kc-tabs-approvals></kc-tabs-approvals>
+
+    <form class="form-horizontal" name="bpmsForm">
+        <fieldset class="border-top">
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="bpmsEnabled">{{:: 'BPMS Listener Enabled' | translate}}</label>
+                <div class="col-md-6">
+                    <input ng-model="bpms.enabled" name="bpmsEnabled" id="bpmsEnabled" onoffswitch on-text="{{:: 'onText' | translate}}" off-text="{{:: 'offText' | translate}}"/>
+                </div>
+            </div>
+
+            <div class="form-group" data-ng-show="bpms.enabled">
+                <label class="col-md-2 control-label" for="containerId"><span class="required">*</span> Container ID</label>
+                <div class="col-md-6">
+                    <input class="form-control" type="text" id="containerId" name="containerId" data-ng-model="bpms.configs.containerId" required>
+                </div>
+            </div>
+            <div class="form-group" data-ng-show="bpms.enabled">
+                <label class="col-md-2 control-label" for="processId"><span class="required">*</span> Process ID</label>
+                <div class="col-md-6">
+                    <input class="form-control" type="text" id="processId" name="processId" data-ng-model="bpms.configs.processId" required>
+                </div>
+            </div>
+            <div class="form-group" data-ng-show="bpms.enabled">
+                <label class="col-md-2 control-label" for="serverUrl"><span class="required">*</span> Server URL</label>
+                <div class="col-md-6">
+                    <input class="form-control" type="text" id="serverUrl" name="serverUrl" data-ng-model="bpms.configs.serverUrl" required>
+                </div>
+            </div>
+            <div class="form-group" data-ng-show="bpms.enabled">
+                <label class="col-md-2 control-label" for="login"><span class="required">*</span> Username</label>
+                <div class="col-md-6">
+                    <input class="form-control" type="text" id="login" name="login" data-ng-model="bpms.configs.login" required>
+                </div>
+            </div>
+            <div class="form-group" data-ng-show="bpms.enabled">
+                <label class="col-md-2 control-label" for="password"><span class="required">*</span> Password</label>
+                <div class="col-md-6">
+                    <input class="form-control" type="password" id="password" name="password" data-ng-model="bpms.configs.password" required>
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="form-group">
+            <div class="col-md-10 col-md-offset-2">
+                <button kc-save data-ng-disabled="!changed">{{:: 'save' | translate}}</button>
+                <button kc-reset data-ng-disabled="!changed">{{:: 'cancel' | translate}}</button>
+            </div>
+        </div>
+    </form>
+
+</div>
+
+<kc-menu></kc-menu>

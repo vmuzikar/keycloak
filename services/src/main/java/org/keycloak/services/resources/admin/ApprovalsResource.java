@@ -19,13 +19,17 @@ package org.keycloak.services.resources.admin;
 
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.approvals.ApprovalManager;
+import org.keycloak.approvals.store.ApprovalListenerConfigModel;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.utils.ModelToRepresentation;
+import org.keycloak.models.utils.RepresentationToModel;
+import org.keycloak.representations.idm.ApprovalListenerConfigRepresentation;
 import org.keycloak.representations.idm.ApprovalRequestRepresentation;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -96,6 +100,36 @@ public class ApprovalsResource {
         }
 
         adminEvent.operation(OperationType.REJECTED).resourcePath(uriInfo).representation(requestRep).success();
+        return Response.noContent().build();
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @NoCache
+    @Path("listeners/{id}")
+    public ApprovalListenerConfigRepresentation getListenerConfig(final @PathParam("id") String providerId) {
+        ApprovalListenerConfigModel configModel = getApprovalsManager().getStore().createOrGetListenerConfig(providerId, realm);
+        if (configModel == null) {
+            throw new NotFoundException("Approval listener not found");
+        }
+
+        return ModelToRepresentation.toRepresentation(configModel, false);
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path("listeners/{id}")
+    public Response updateListenerConfig(final @Context UriInfo uriInfo,
+                                         final @PathParam("id") String providerId,
+                                         final ApprovalListenerConfigRepresentation configRep) {
+        ApprovalListenerConfigModel configModel = getApprovalsManager().getStore().createOrGetListenerConfig(providerId, realm);
+        if (configModel == null) {
+            throw new NotFoundException("Approval listener not found");
+        }
+
+        RepresentationToModel.updateApprovalListenerConfig(configModel, configRep);
+
+        adminEvent.operation(OperationType.UPDATE).resourcePath(uriInfo).representation(configRep).success();
         return Response.noContent().build();
     }
 }

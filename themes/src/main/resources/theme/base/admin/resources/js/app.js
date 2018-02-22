@@ -747,6 +747,16 @@ module.config([ '$routeProvider', function($routeProvider) {
             controller : 'ApprovalsListCtrl'
         })
 
+        .when('/realms/:realm/approvals/listeners', {
+            templateUrl : resourceUrl + '/partials/approval-listeners.html',
+            resolve : {
+                realm : function(RealmLoader) {
+                    return RealmLoader();
+                }
+            },
+            controller : 'ApprovalListenersCtrl'
+        })
+
         .when('/create/role/:realm', {
             templateUrl : resourceUrl + '/partials/role-detail.html',
             resolve : {

@@ -68,6 +68,12 @@ public class ListenerConfigAdapter implements ApprovalListenerConfigModel, JpaMo
     }
 
     @Override
+    public void mergeConfigs(Map<String, String> configs) {
+        entity.getConfigs().putAll(configs);
+        em.flush();
+    }
+
+    @Override
     public RealmModel getRealm() {
         return realm;
     }

@@ -1770,7 +1770,14 @@ module.factory('Approvals', function($resource) {
         reject : {
             method : 'DELETE'
         }
-    })
+    });
+});
+
+module.factory('ApprovalListeners', function($resource) {
+    return $resource(authUrl + '/admin/realms/:realm/approvals/listeners/:listenerId', {
+        realm : '@realm',
+        listenerId : '@listenerId'
+    });
 });
 
 module.factory('SubComponentTypes', function($resource) {

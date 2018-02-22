@@ -17,20 +17,8 @@
 
 package org.keycloak.models.utils;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import org.jboss.logging.Logger;
+import org.keycloak.approvals.store.ApprovalListenerConfigModel;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.AuthorizationProviderFactory;
 import org.keycloak.authorization.model.Policy;
@@ -81,6 +69,7 @@ import org.keycloak.models.UserProvider;
 import org.keycloak.models.credential.PasswordUserCredentialModel;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.idm.ApplicationRepresentation;
+import org.keycloak.representations.idm.ApprovalListenerConfigRepresentation;
 import org.keycloak.representations.idm.AuthenticationExecutionExportRepresentation;
 import org.keycloak.representations.idm.AuthenticationExecutionRepresentation;
 import org.keycloak.representations.idm.AuthenticationFlowRepresentation;
@@ -118,6 +107,19 @@ import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.UserStorageProviderModel;
 import org.keycloak.storage.federated.UserFederatedStorageProvider;
 import org.keycloak.util.JsonSerialization;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class RepresentationToModel {
 
@@ -2470,6 +2472,13 @@ public class RepresentationToModel {
             }
             federatedStorage.grantRole(realm, userRep.getId(), role);
 
+        }
+    }
+
+    public static void updateApprovalListenerConfig(ApprovalListenerConfigModel model, ApprovalListenerConfigRepresentation rep) {
+        model.setEnabled(rep.isEnabled());
+        if (rep.getConfigs() != null) {
+            model.mergeConfigs(rep.getConfigs());
         }
     }
 

@@ -1,3 +1,8 @@
 <div>
     <h1>{{:: 'approvals' | translate}}</h1>
+
+    <ul class="nav nav-tabs">
+        <li ng-class="{active: !path[3]}"><a href="#/realms/{{realm.realm}}/approvals">{{:: 'pending-approvals' | translate}}</a></li>
+        <li ng-class="{active: path[3] == 'listeners'}"><a href="#/realms/{{realm.realm}}/approvals/listeners">{{:: 'listeners' | translate}}</a></li>
+    </ul>
 </div>

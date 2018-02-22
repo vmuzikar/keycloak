@@ -57,7 +57,7 @@ public class BPMSListenerFactory implements ApprovalListenerFactory {
 
     @Override
     public boolean enabledByDefault() {
-        return true; // TODO change this !!!
+        return false;
     }
 
     @Override

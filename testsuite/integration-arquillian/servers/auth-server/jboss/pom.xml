@@ -38,7 +38,7 @@
         <!--server-dist-->
         <auth.server.dist.groupId>org.keycloak</auth.server.dist.groupId>
         <auth.server.dist.artifactId>keycloak-server-dist</auth.server.dist.artifactId>
-        <auth.server.dist.version>${project.version}</auth.server.dist.version>
+        <auth.server.dist.version>3.4.3.Final-redhat-2</auth.server.dist.version>
         <auth.server.dist.unpacked.folder.name>keycloak-${auth.server.dist.version}</auth.server.dist.unpacked.folder.name>
 
         <!--server-overlay-->

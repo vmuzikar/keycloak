@@ -40,12 +40,10 @@ public class DockerClientTest extends AbstractKeycloakTest {
     public static final String DOCKER_USER = "docker-user";
     public static final String DOCKER_USER_PASSWORD = "password";
 
-    public static final String REGISTRY_HOSTNAME = "registry.localdomain";
+    public static final String REGISTRY_HOSTNAME = "localhost";
     public static final Integer REGISTRY_PORT = 5000;
     public static final String MINIMUM_DOCKER_VERSION = "1.8.0";
-    public static final String IMAGE_NAME = "busybox";
 
-    private Network dockerNetwork = null;
     private GenericContainer dockerRegistryContainer = null;
     private GenericContainer dockerClientContainer = null;
 
@@ -94,8 +92,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
     public void beforeAbstractKeycloakTest() throws Exception {
         super.beforeAbstractKeycloakTest();
 
-        dockerNetwork = Network.newNetwork();
-
         final Map<String, String> environment = new HashMap<>();
         environment.put("REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY", "/tmp");
         environment.put("REGISTRY_HTTP_TLS_CERTIFICATE", "/opt/certs/localhost.crt");
@@ -111,15 +107,13 @@ public class DockerClientTest extends AbstractKeycloakTest {
         dockerRegistryContainer = new GenericContainer(dockerioPrefix + "registry:2")
                 .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/certs", "/opt/certs", BindMode.READ_ONLY)
                 .withEnv(environment)
-                .withNetwork(dockerNetwork)
-                .withNetworkAliases(REGISTRY_HOSTNAME)
+                .withNetworkMode("host")
                 .withLogConsumer(new Slf4jLogConsumer(LOGGER))
                 .withPrivilegedMode(true);
         dockerRegistryContainer.start();
 
         dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:dind")
-                .withNetwork(dockerNetwork)
-                .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/daemon.json", "/etc/docker/daemon.json", BindMode.READ_WRITE)
+                .withNetworkMode("host")
                 .withLogConsumer(new Slf4jLogConsumer(LOGGER))
                 .withPrivilegedMode(true);
 
@@ -136,12 +130,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
 
         dockerClientContainer.close();
         dockerRegistryContainer.close();
-        try {
-            dockerNetwork.close();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void validateDockerStarted() {

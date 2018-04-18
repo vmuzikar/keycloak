@@ -7,7 +7,6 @@ import org.keycloak.common.Profile;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.testsuite.AbstractKeycloakTest;
 import org.keycloak.testsuite.ProfileAssume;
-import org.keycloak.testsuite.util.WaitUtils;
 import org.rnorth.ducttape.ratelimits.RateLimiterBuilder;
 import org.rnorth.ducttape.unreliables.Unreliables;
 import org.slf4j.Logger;
@@ -17,7 +16,6 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -111,7 +109,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
         String dockerioPrefix = Boolean.parseBoolean(System.getProperty("docker.io-prefix-explicit")) ? "docker.io/" : "";
 
         dockerRegistryContainer = new GenericContainer(dockerioPrefix + "registry:2")
-                // TODO use SelinuxContext argument. Make selinux enforcing again!
                 .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/certs", "/opt/certs", BindMode.READ_ONLY)
                 .withEnv(environment)
                 .withNetwork(dockerNetwork)
@@ -120,39 +117,13 @@ public class DockerClientTest extends AbstractKeycloakTest {
                 .withPrivilegedMode(true);
         dockerRegistryContainer.start();
 
-        dockerClientContainer = new GenericContainer(
-                new ImageFromDockerfile("testcontainers/keycloak-docker-client", false)
-                        .withDockerfileFromBuilder(dockerfileBuilder -> {
-                            dockerfileBuilder.from("centos/systemd:latest")
-                                    .run("yum", "install", "-y", "docker", "iptables", ";", "yum", "clean", "all")
-                                    .cmd("/usr/sbin/init")
-                                    .volume("/sys/fs/cgroup")
-                                    .build();
-                        })
-        )
+        dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:dind")
                 .withNetwork(dockerNetwork)
-                .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/certs/localhost.crt", "/opt/docker/certs.d/" + REGISTRY_HOSTNAME + "/localhost.crt", BindMode.READ_ONLY)
-                .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/sysconfig_docker", "/etc/sysconfig/docker", BindMode.READ_WRITE)
+                .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/daemon.json", "/etc/docker/daemon.json", BindMode.READ_WRITE)
                 .withLogConsumer(new Slf4jLogConsumer(LOGGER))
                 .withPrivilegedMode(true);
 
         dockerClientContainer.start();
-
-        int i = 0;
-        String stdErr = "";
-        while (i++ < 30) {
-            log.infof("Trying to start docker service; attempt: %d", i);
-            stdErr = dockerClientContainer.execInContainer("systemctl", "start", "docker.service").getStderr();
-            if (stdErr.isEmpty()) {
-                break;
-            }
-            else {
-                log.info("systemctl failed: " + stdErr);
-            }
-            WaitUtils.pause(1000);
-        }
-
-        assumeTrue("Cannot start docker service!", stdErr.isEmpty());
 
         log.info("Waiting for docker service...");
         validateDockerStarted();
@@ -165,13 +136,18 @@ public class DockerClientTest extends AbstractKeycloakTest {
 
         dockerClientContainer.close();
         dockerRegistryContainer.close();
-        dockerNetwork.close();
+        try {
+            dockerNetwork.close();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void validateDockerStarted() {
         final Callable<Boolean> checkStrategy = () -> {
             try {
-                final String commandResult = dockerClientContainer.execInContainer("docker", "ps").getStderr();
+                final String commandResult = dockerClientContainer.execInContainer("docker ps").getStderr();
                 return !commandResult.contains("Cannot connect");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

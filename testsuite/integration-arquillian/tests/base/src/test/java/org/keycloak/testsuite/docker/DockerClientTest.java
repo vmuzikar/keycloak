@@ -7,6 +7,7 @@ import org.keycloak.common.Profile;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.testsuite.AbstractKeycloakTest;
 import org.keycloak.testsuite.ProfileAssume;
+import org.keycloak.testsuite.util.WaitUtils;
 import org.rnorth.ducttape.ratelimits.RateLimiterBuilder;
 import org.rnorth.ducttape.unreliables.Unreliables;
 import org.slf4j.Logger;
@@ -154,6 +155,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
     public void shouldPerformDockerAuthAgainstRegistry() throws Exception {
         log.info("Starting the attempt for login...");
         Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER, "-p", DOCKER_USER_PASSWORD, REGISTRY_HOSTNAME + ":" + REGISTRY_PORT);
+        WaitUtils.pause(30000);
         log.infof("Command executed. Output follows:\nSTDOUT: %s\n---\nSTDERR: %s", dockerLoginResult.getStdout(), dockerLoginResult.getStderr());
         assertThat(dockerLoginResult.getStdout(), containsString("Login Succeeded"));
     }

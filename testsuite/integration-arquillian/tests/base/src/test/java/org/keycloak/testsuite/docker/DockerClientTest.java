@@ -16,14 +16,12 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -154,21 +152,9 @@ public class DockerClientTest extends AbstractKeycloakTest {
 
     @Test
     public void shouldPerformDockerAuthAgainstRegistry() throws Exception {
-        Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER, "-p", DOCKER_USER_PASSWORD, REGISTRY_HOSTNAME + ":" + REGISTRY_PORT);
-        printNonEmpties(dockerLoginResult.getStdout(), dockerLoginResult.getStderr());
+        log.info("Starting the attempt for login...");
+        Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER + "xxx", "-p", DOCKER_USER_PASSWORD, REGISTRY_HOSTNAME + ":" + REGISTRY_PORT);
+        log.infof("Command executed. Output follows:\nSTDOUT: %s\n---\nSTDERR: %s", dockerLoginResult.getStdout(), dockerLoginResult.getStderr());
         assertThat(dockerLoginResult.getStdout(), containsString("Login Succeeded"));
     }
-
-    private static void printNonEmpties(final String... results) {
-        Arrays.stream(results)
-                .forEachOrdered(DockerClientTest::printNonEmpty);
-    }
-
-    private static void printNonEmpty(final String result) {
-        if (nullOrEmpty.negate().test(result)) {
-            LOGGER.info(result);
-        }
-    }
-
-    public static final Predicate<String> nullOrEmpty = string -> string == null || string.isEmpty();
 }

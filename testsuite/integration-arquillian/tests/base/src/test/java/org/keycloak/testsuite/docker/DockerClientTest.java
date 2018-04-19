@@ -154,8 +154,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
     @Test
     public void shouldPerformDockerAuthAgainstRegistry() throws Exception {
         log.info("Starting the attempt for login...");
-        Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER, "-p", DOCKER_USER_PASSWORD, REGISTRY_HOSTNAME + ":" + REGISTRY_PORT);
-        WaitUtils.pause(30000);
+        Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER, "-p", DOCKER_USER_PASSWORD + "xab", REGISTRY_HOSTNAME + ":" + REGISTRY_PORT);
         log.infof("Command executed. Output follows:\nSTDOUT: %s\n---\nSTDERR: %s", dockerLoginResult.getStdout(), dockerLoginResult.getStderr());
         assertThat(dockerLoginResult.getStdout(), containsString("Login Succeeded"));
     }

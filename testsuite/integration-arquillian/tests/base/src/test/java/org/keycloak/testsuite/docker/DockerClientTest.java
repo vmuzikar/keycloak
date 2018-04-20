@@ -105,8 +105,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
 
         final Map<String, String> environment = new HashMap<>();
         environment.put("REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY", "/tmp");
-        environment.put("REGISTRY_HTTP_TLS_CERTIFICATE", "/opt/certs/localhost.crt");
-        environment.put("REGISTRY_HTTP_TLS_KEY", "/opt/certs/localhost.key");
         environment.put("REGISTRY_AUTH_TOKEN_REALM", "http://" + hostIp + ":" + authServerPort + "/auth/realms/" + REALM_ID + "/protocol/docker-v2/auth");
         environment.put("REGISTRY_AUTH_TOKEN_SERVICE", CLIENT_ID);
         environment.put("REGISTRY_AUTH_TOKEN_ISSUER", "http://" + hostIp + ":" + authServerPort + "/auth/realms/" + REALM_ID);
@@ -116,7 +114,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
         String dockerioPrefix = Boolean.parseBoolean(System.getProperty("docker.io-prefix-explicit")) ? "docker.io/" : "";
 
         dockerRegistryContainer = new GenericContainer(dockerioPrefix + "registry:2")
-                .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/certs", "/opt/certs", BindMode.READ_ONLY)
                 .withFileSystemBind(tmpCertFile.getCanonicalPath(), "/opt/kc-certs/" + tmpCertFile.getCanonicalFile().getName(), BindMode.READ_ONLY)
                 .withEnv(environment)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerRegistryContainer")))

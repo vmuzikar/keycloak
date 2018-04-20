@@ -119,8 +119,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
                 .withFileSystemBind(tmpCertFile.getCanonicalPath(), "/opt/kc-certs/" + tmpCertFile.getCanonicalFile().getName(), BindMode.READ_ONLY)
                 .withEnv(environment)
                 .withNetworkMode("host")
-                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerRegistryContainer")))
-                .withPrivilegedMode(true);
+                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerRegistryContainer")));
         dockerRegistryContainer.start();
 
         dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:stable-dind")

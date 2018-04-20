@@ -1,5 +1,6 @@
 package org.keycloak.testsuite.docker;
 
+import com.github.dockerjava.api.model.ContainerNetwork;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -10,12 +11,10 @@ import org.keycloak.testsuite.AbstractKeycloakTest;
 import org.keycloak.testsuite.ProfileAssume;
 import org.rnorth.ducttape.ratelimits.RateLimiterBuilder;
 import org.rnorth.ducttape.unreliables.Unreliables;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import sun.security.provider.X509Factory;
 
@@ -30,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class DockerClientTest extends AbstractKeycloakTest {
@@ -82,8 +82,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
     public void beforeAbstractKeycloakTest() throws Exception {
         super.beforeAbstractKeycloakTest();
 
-        Network network = Network.newNetwork();
-
         // find the realm cert
         String realmCert = null;
         List<KeysMetadataRepresentation.KeyMetadataRepresentation> realmKeys = adminClient.realm(REALM_ID).keys().getKeyMetadata().getKeys();
@@ -121,18 +119,19 @@ public class DockerClientTest extends AbstractKeycloakTest {
                 .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/certs", "/opt/certs", BindMode.READ_ONLY)
                 .withFileSystemBind(tmpCertFile.getCanonicalPath(), "/opt/kc-certs/" + tmpCertFile.getCanonicalFile().getName(), BindMode.READ_ONLY)
                 .withEnv(environment)
-                .withExposedPorts(REGISTRY_PORT)
-                .withNetwork(network)
-                .withNetworkAliases(REGISTRY_HOSTNAME)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerRegistryContainer")))
                 .withPrivilegedMode(true);
         dockerRegistryContainer.start();
 
         dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:stable-dind")
                 .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/daemon.json", "/etc/docker/daemon.json", BindMode.READ_WRITE)
-                .withNetwork(network)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerClientContainer")))
                 .withPrivilegedMode(true);
+
+        final Optional<ContainerNetwork> network = dockerRegistryContainer.getContainerInfo().getNetworkSettings().getNetworks().values().stream().findFirst();
+        assertTrue("Could not find a network adapter whereby the docker client container could connect to host!", network.isPresent());
+        dockerClientContainer.withExtraHost(REGISTRY_HOSTNAME, network.get().getIpAddress());
+
         dockerClientContainer.start();
 
         log.info("Waiting for docker service...");

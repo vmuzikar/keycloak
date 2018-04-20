@@ -32,8 +32,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assume.assumeTrue;
 
 public class DockerClientTest extends AbstractKeycloakTest {
-    public static final Logger LOGGER = LoggerFactory.getLogger(DockerClientTest.class);
-
     public static final String REALM_ID = "docker-test-realm";
     public static final String CLIENT_ID = "docker-test-client";
     public static final String DOCKER_USER = "docker-user";
@@ -56,7 +54,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
         final Optional<DockerVersion> dockerVersion = new DockerHostVersionSupplier().get();
         assumeTrue("Could not determine docker version for host machine.  It either is not present or accessible to the JVM running the test harness.", dockerVersion.isPresent());
         assumeTrue("Docker client on host machine is not a supported version.  Please upgrade and try again.", DockerVersion.COMPARATOR.compare(dockerVersion.get(), DockerVersion.parseVersionString(MINIMUM_DOCKER_VERSION)) >= 0);
-        LOGGER.debug("Discovered valid docker client on host.  version: {}", dockerVersion);
 
         hostIp = System.getProperty("host.ip");
 
@@ -122,13 +119,13 @@ public class DockerClientTest extends AbstractKeycloakTest {
                 .withFileSystemBind(tmpCertFile.getCanonicalPath(), "/opt/kc-certs/" + tmpCertFile.getCanonicalFile().getName(), BindMode.READ_ONLY)
                 .withEnv(environment)
                 .withNetworkMode("host")
-                .withLogConsumer(new Slf4jLogConsumer(LOGGER))
+                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerRegistryContainer")))
                 .withPrivilegedMode(true);
         dockerRegistryContainer.start();
 
-        dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:dind")
+        dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:stable-dind")
                 .withNetworkMode("host")
-                .withLogConsumer(new Slf4jLogConsumer(LOGGER))
+                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerClientContainer")))
                 .withPrivilegedMode(true);
 
         dockerClientContainer.start();

@@ -124,7 +124,8 @@ public class DockerClientTest extends AbstractKeycloakTest {
                 .withExposedPorts(REGISTRY_PORT)
                 .withNetwork(network)
                 .withNetworkAliases(REGISTRY_HOSTNAME)
-                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerRegistryContainer")));
+                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerRegistryContainer")))
+                .withPrivilegedMode(true);
         dockerRegistryContainer.start();
 
         dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:stable-dind")

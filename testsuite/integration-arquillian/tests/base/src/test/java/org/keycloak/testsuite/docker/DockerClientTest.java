@@ -1,6 +1,5 @@
 package org.keycloak.testsuite.docker;
 
-import com.github.dockerjava.api.model.ContainerNetwork;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -25,7 +24,6 @@ import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.keycloak.testsuite.util.WaitUtils.pause;
 
@@ -35,7 +33,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
     public static final String DOCKER_USER = "docker-user";
     public static final String DOCKER_USER_PASSWORD = "password";
 
-    public static final String REGISTRY_HOSTNAME = "registry.localdomain";
+    public static final String REGISTRY_HOSTNAME = "localhost";
     public static final Integer REGISTRY_PORT = 5000;
     public static final String MINIMUM_DOCKER_VERSION = "1.8.0";
 
@@ -114,18 +112,14 @@ public class DockerClientTest extends AbstractKeycloakTest {
                 .withFileSystemBind(tmpCertFile.getCanonicalPath(), "/opt/kc-certs/" + tmpCertFile.getCanonicalFile().getName(), BindMode.READ_ONLY)
                 .withEnv(environment)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerRegistryContainer")))
+                .withNetworkMode("host")
                 .withPrivilegedMode(true);
         dockerRegistryContainer.start();
 
         dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:dind")
-                .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/daemon.json", "/etc/docker/daemon.json", BindMode.READ_WRITE)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerClientContainer")))
+                .withNetworkMode("host")
                 .withPrivilegedMode(true);
-
-        final Optional<ContainerNetwork> network = dockerRegistryContainer.getContainerInfo().getNetworkSettings().getNetworks().values().stream().findFirst();
-        assertTrue("Could not find a network adapter whereby the docker client container could connect to host!", network.isPresent());
-        dockerClientContainer.withExtraHost(REGISTRY_HOSTNAME, network.get().getIpAddress());
-
         dockerClientContainer.start();
 
         validateDockerStarted();

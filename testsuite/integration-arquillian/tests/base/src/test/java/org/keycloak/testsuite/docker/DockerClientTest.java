@@ -139,7 +139,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
         log.info("Waiting for docker service...");
         for (int i = 1; i <= 30; i++) {
             log.info("Attempt #" + i);
-            Container.ExecResult result = dockerClientContainer.execInContainer("docker", "info");
+            Container.ExecResult result = dockerClientContainer.execInContainer("dockerxxx", "info");
             if (result.getStdout().contains("Server Version:")) {
                 log.info("Docker service successfully started");
                 return;

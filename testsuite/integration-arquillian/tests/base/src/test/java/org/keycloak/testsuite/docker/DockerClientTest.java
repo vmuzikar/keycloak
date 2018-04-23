@@ -31,6 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.keycloak.testsuite.util.WaitUtils.pause;
 
 public class DockerClientTest extends AbstractKeycloakTest {
     public static final String REALM_ID = "docker-test-realm";
@@ -170,6 +171,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
         log.info("Starting the attempt for login...");
         Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER, "-p", DOCKER_USER_PASSWORD, REGISTRY_HOSTNAME + ":" + REGISTRY_PORT);
         log.infof("Command executed. Output follows:\nSTDOUT: %s\n---\nSTDERR: %s", dockerLoginResult.getStdout(), dockerLoginResult.getStderr());
+        pause(10000);
         assertThat(dockerLoginResult.getStdout(), containsString("Login Succeeded"));
     }
 }

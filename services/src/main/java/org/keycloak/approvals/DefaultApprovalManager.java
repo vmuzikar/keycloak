@@ -66,8 +66,8 @@ public class DefaultApprovalManager implements ApprovalManager {
         return session.getProvider(ApprovalHandler.class, requestModel.getAction().getHandlerId());
     }
 
-    protected ApprovalEvaluator getEvaluator(ApprovalContext context, ApprovalHandler handler) {
-        String evaluatorId = handler.getEvaluatorId() != null ? handler.getEvaluatorId() : RoleEvaluator.PROVIDER_ID;
+    protected ApprovalEvaluator getEvaluator(ApprovalContext context) {
+        String evaluatorId = context.getAction().getEvaluatorId() != null ? context.getAction().getEvaluatorId() : RoleEvaluator.PROVIDER_ID;
         return session.getProvider(ApprovalEvaluator.class, evaluatorId);
     }
 
@@ -75,7 +75,7 @@ public class DefaultApprovalManager implements ApprovalManager {
     public void interceptAction(ApprovalContext context) throws InterceptedException {
         ApprovalHandler handler = session.getProvider(ApprovalHandler.class, context.getAction().getHandlerId());
 
-        if (getEvaluator(context, handler).needsApproval(context)) {
+        if (getEvaluator(context).needsApproval(context)) {
             boolean tx = false;
             KeycloakTransactionManager tm = session.getTransactionManager(); // TODO Is that necessary?
             if (!tm.isActive()) {

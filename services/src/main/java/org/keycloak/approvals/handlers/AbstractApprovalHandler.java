@@ -63,11 +63,6 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
     }
 
     @Override
-    public String getEvaluatorId() {
-        return null;
-    }
-
-    @Override
     public void close() {
 
     }

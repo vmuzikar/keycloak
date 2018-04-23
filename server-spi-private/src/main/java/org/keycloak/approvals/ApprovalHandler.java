@@ -31,5 +31,4 @@ public interface ApprovalHandler extends Provider {
     void handleRequestRejection(ApprovalRequestModel request);
     ApprovalAction[] getSupportedActions();
     ApprovalAction getActionById(String id);
-    String getEvaluatorId();
 }

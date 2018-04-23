@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface ApprovalAction {
     String getHandlerId();
+    String getEvaluatorId();
     String getActionId();
     String getDescription();
 }

@@ -120,7 +120,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
                 .withPrivilegedMode(true);
         dockerRegistryContainer.start();
 
-        dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:stable-dind")
+        dockerClientContainer = new GenericContainer(dockerioPrefix + "docker:dind")
                 .withClasspathResourceMapping("dockerClientTest/keycloak-docker-compose-yaml/daemon.json", "/etc/docker/daemon.json", BindMode.READ_WRITE)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("dockerClientContainer")))
                 .withPrivilegedMode(true);
@@ -147,7 +147,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
     private void validateDockerStarted() {
         final Callable<Boolean> checkStrategy = () -> {
             try {
-                final String commandResult = dockerClientContainer.execInContainer("docker ps").getStderr();
+                final String commandResult = dockerClientContainer.execInContainer("docker", "ps").getStderr();
                 return !commandResult.contains("Cannot connect");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -168,7 +168,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
     @Test
     public void shouldPerformDockerAuthAgainstRegistry() throws Exception {
         log.info("Starting the attempt for login...");
-        Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER, "-p", DOCKER_USER_PASSWORD, REGISTRY_HOSTNAME + ":" + REGISTRY_PORT, "&& echo \"Waiting...\" && sleep 30");
+        Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER, "-p", DOCKER_USER_PASSWORD, REGISTRY_HOSTNAME + ":" + REGISTRY_PORT);
         log.infof("Command executed. Output follows:\nSTDOUT: %s\n---\nSTDERR: %s", dockerLoginResult.getStdout(), dockerLoginResult.getStderr());
         assertThat(dockerLoginResult.getStdout(), containsString("Login Succeeded"));
     }

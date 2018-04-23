@@ -9,8 +9,6 @@ import org.keycloak.representations.idm.KeysMetadataRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.testsuite.AbstractKeycloakTest;
 import org.keycloak.testsuite.ProfileAssume;
-import org.rnorth.ducttape.ratelimits.RateLimiterBuilder;
-import org.rnorth.ducttape.unreliables.Unreliables;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Container;
@@ -24,8 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -132,9 +128,7 @@ public class DockerClientTest extends AbstractKeycloakTest {
 
         dockerClientContainer.start();
 
-        log.info("Waiting for docker service...");
         validateDockerStarted();
-        log.info("Docker service successfully started");
     }
 
     @Override
@@ -147,26 +141,31 @@ public class DockerClientTest extends AbstractKeycloakTest {
         dockerRegistryContainer.close();
     }
 
-    private void validateDockerStarted() {
-        final Callable<Boolean> checkStrategy = () -> {
-            final String commandResult = dockerClientContainer.execInContainer("docker", "info").getStdout();
-            return commandResult.contains("Server Version: ");
-        };
-
-        Unreliables.retryUntilTrue(60, TimeUnit.SECONDS, () -> RateLimiterBuilder.newBuilder().withRate(1, TimeUnit.SECONDS).withConstantThroughput().build().getWhenReady(() -> {
-            try {
-                return checkStrategy.call();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+    private void validateDockerStarted() throws Exception {
+        log.info("Waiting for docker service...");
+        for (int i = 1; i <= 30; i++) {
+            log.info("Attempt #" + i);
+            Container.ExecResult result = dockerClientContainer.execInContainer("docker", "info");
+            if (result.getStdout().contains("Server Version:")) {
+                log.info("Docker service successfully started");
+                return;
             }
-        }));
+            log.info("Docker service not yet started...");
+            printCommandResult(result);
+            pause(1000);
+        }
+        throw new RuntimeException("Docker service didn't start in time");
     }
 
     @Test
     public void shouldPerformDockerAuthAgainstRegistry() throws Exception {
         log.info("Starting the attempt for login...");
         Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER, "-p", DOCKER_USER_PASSWORD, REGISTRY_HOSTNAME + ":" + REGISTRY_PORT);
-        log.infof("Command executed. Output follows:\nSTDOUT: %s\n---\nSTDERR: %s", dockerLoginResult.getStdout(), dockerLoginResult.getStderr());
+        printCommandResult(dockerLoginResult);
         assertThat(dockerLoginResult.getStdout(), containsString("Login Succeeded"));
+    }
+
+    private void printCommandResult(Container.ExecResult result) {
+        log.infof("Command executed. Output follows:\nSTDOUT: %s\n---\nSTDERR: %s", result.getStdout(), result.getStderr());
     }
 }

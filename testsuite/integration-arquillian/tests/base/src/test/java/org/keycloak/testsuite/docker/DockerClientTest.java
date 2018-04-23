@@ -141,23 +141,19 @@ public class DockerClientTest extends AbstractKeycloakTest {
     public void afterAbstractKeycloakTest() {
         super.afterAbstractKeycloakTest();
 
+        pause(5000); // wait for the container logs
+
         dockerClientContainer.close();
         dockerRegistryContainer.close();
     }
 
     private void validateDockerStarted() {
         final Callable<Boolean> checkStrategy = () -> {
-            try {
-                final String commandResult = dockerClientContainer.execInContainer("docker", "info").getStdout();
-                return commandResult.contains("Server Version: ");
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (Exception e) {
-                return false;
-            }
+            final String commandResult = dockerClientContainer.execInContainer("docker", "info").getStdout();
+            return commandResult.contains("Server Version: ");
         };
 
-        Unreliables.retryUntilTrue(30, TimeUnit.SECONDS, () -> RateLimiterBuilder.newBuilder().withRate(1, TimeUnit.SECONDS).withConstantThroughput().build().getWhenReady(() -> {
+        Unreliables.retryUntilTrue(60, TimeUnit.SECONDS, () -> RateLimiterBuilder.newBuilder().withRate(1, TimeUnit.SECONDS).withConstantThroughput().build().getWhenReady(() -> {
             try {
                 return checkStrategy.call();
             } catch (Exception e) {
@@ -171,7 +167,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
         log.info("Starting the attempt for login...");
         Container.ExecResult dockerLoginResult = dockerClientContainer.execInContainer("docker", "login", "-u", DOCKER_USER, "-p", DOCKER_USER_PASSWORD, REGISTRY_HOSTNAME + ":" + REGISTRY_PORT);
         log.infof("Command executed. Output follows:\nSTDOUT: %s\n---\nSTDERR: %s", dockerLoginResult.getStdout(), dockerLoginResult.getStderr());
-        pause(10000);
         assertThat(dockerLoginResult.getStdout(), containsString("Login Succeeded"));
     }
 }

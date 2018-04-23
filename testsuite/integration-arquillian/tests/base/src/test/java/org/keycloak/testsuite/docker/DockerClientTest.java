@@ -148,8 +148,8 @@ public class DockerClientTest extends AbstractKeycloakTest {
     private void validateDockerStarted() {
         final Callable<Boolean> checkStrategy = () -> {
             try {
-                final String commandResult = dockerClientContainer.execInContainer("docker", "ps").getStderr();
-                return !commandResult.contains("Cannot connect");
+                final String commandResult = dockerClientContainer.execInContainer("docker", "info").getStdout();
+                return commandResult.contains("Server Version: ");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             } catch (Exception e) {

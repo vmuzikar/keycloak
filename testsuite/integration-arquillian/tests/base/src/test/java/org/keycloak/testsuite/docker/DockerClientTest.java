@@ -121,8 +121,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
                 .withNetworkMode("host")
                 .withPrivilegedMode(true);
         dockerClientContainer.start();
-
-        validateDockerStarted();
     }
 
     @Override
@@ -133,22 +131,6 @@ public class DockerClientTest extends AbstractKeycloakTest {
 
         dockerClientContainer.close();
         dockerRegistryContainer.close();
-    }
-
-    private void validateDockerStarted() throws Exception {
-        log.info("Waiting for docker service...");
-        for (int i = 1; i <= 30; i++) {
-            log.info("Attempt #" + i);
-            Container.ExecResult result = dockerClientContainer.execInContainer("dockerxxx", "info");
-            if (result.getStdout().contains("Server Version:")) {
-                log.info("Docker service successfully started");
-                return;
-            }
-            log.info("Docker service not yet started...");
-            printCommandResult(result);
-            pause(1000);
-        }
-        throw new RuntimeException("Docker service didn't start in time");
     }
 
     @Test

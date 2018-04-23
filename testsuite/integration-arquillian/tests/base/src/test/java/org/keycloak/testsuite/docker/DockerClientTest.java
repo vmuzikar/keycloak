@@ -122,6 +122,8 @@ public class DockerClientTest extends AbstractKeycloakTest {
                 .withPrivilegedMode(true);
         dockerClientContainer.start();
 
+        pause(30000);
+
         validateDockerStarted();
     }
 

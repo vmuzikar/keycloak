@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Red Hat, Inc. and/or its affiliates
+ * Copyright 2018 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,6 +60,11 @@ public abstract class AbstractApprovalHandler implements ApprovalHandler {
         }
 
         return rep;
+    }
+
+    @Override
+    public String getEvaluatorId() {
+        return null;
     }
 
     @Override

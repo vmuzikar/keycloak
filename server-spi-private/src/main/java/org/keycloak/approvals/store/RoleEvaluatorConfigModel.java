@@ -24,15 +24,54 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * Configuration for {@link org.keycloak.approvals.evaluators.RoleEvaluator} and a specific {@link ApprovalAction}.
+ * It's basically a list of roles for a given {@link ApprovalAction}. Those roles then requires an approval for given
+ * {@link ApprovalAction}.
+ *
+ * @see ApprovalStore
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface RoleEvaluatorConfigModel {
+    /**
+     * Retrieves the action.
+     *
+     * @return the action
+     */
     ApprovalAction getAction();
 
+    /**
+     * Retrieves information if the configuration for current {@link ApprovalAction} is enabled.
+     *
+     * @return {@code true} if enabled, {@code false} otherwise
+     */
     boolean isEnabled();
+
+    /**
+     * Sets if the configuration for current {@link ApprovalAction} is enabled.
+     *
+     * @param enabled
+     */
     void setEnabled(boolean enabled);
 
+    /**
+     * Retrieves the list of roles that requires approval for current {@link ApprovalAction}.
+     *
+     * @return the list of roles.
+     */
     List<RoleModel> getRoles();
+
+    /**
+     * Replaces the roles with new ones that are specified by their IDs.
+     *
+     * @param roles the role IDs
+     */
     void setRolesByIds(Set<String> roles);
+
+    /**
+     * Adds a single role.
+     *
+     * @param roleId the role ID
+     */
     void addRole(String roleId);
 }

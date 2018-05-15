@@ -20,12 +20,43 @@ package org.keycloak.representations.idm;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
+ * A representation of some configuration-changing action that's watched by the Approvals System.
+ * It's intended to be implemented by an {@code enum}.
+ *
+ * @see org.keycloak.approvals.ApprovalManager
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface ApprovalAction {
+    /**
+     * The identification of a specific {@link org.keycloak.approvals.ApprovalHandler} implementation that is able of
+     * handling this action.
+     *
+     * @return the provider id
+     */
     String getHandlerId();
+
+    /**
+     * The identification of a specific {@link org.keycloak.approvals.ApprovalEvaluator} which should be used to evaluate
+     * this action. This is optional. If no evaluator is specified, the default one specified by
+     * {@link org.keycloak.approvals.ApprovalManager} is used.
+     *
+     * @return the provider id
+     */
     String getEvaluatorId();
+
+    /**
+     * The identification of this action.
+     *
+     * @return the identification
+     */
     String getActionId();
+
+    /**
+     * Retrieves the human readable description of this Approval Request. It's used in the UI.
+     *
+     * @return the description
+     */
     String getDescription();
 }

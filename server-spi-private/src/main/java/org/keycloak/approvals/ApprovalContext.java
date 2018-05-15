@@ -24,8 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The context for currently processed action (e.g. creating a user). Carries all the necessary information (like
- * representations and models) for evaluating an action, creating an approval request, approving an action etc.
+ * The context for currently processed action (e.g. a user creation). Carries all the necessary information (like
+ * representations and models) for an action description.
  *
  * @see ApprovalEvaluator
  * @see ApprovalHandler
@@ -98,44 +98,105 @@ public class ApprovalContext {
      * Retrieves an attribute stored in this context.
      *
      * @param name the key for storing the attribute
-     * @return The retrieved attribute or null if no attribute is stored in the context for given key.
+     * @return The retrieved attribute or {@code null} if no attribute is stored in the context for given key.
      */
     public Object getAttribute(String name) {
         return attributes.get(name);
     }
 
 
+    /**
+     * Retrieves the target realm where the action is taking place.
+     *
+     * @return The realm.
+     */
     public RealmModel getRealm() {
         return realm;
     }
 
+    /**
+     * Sets the target realm where the action is taking place.
+     *
+     * @param realm
+     * @return The context.
+     */
     public ApprovalContext setRealm(RealmModel realm) {
         this.realm = realm;
         return this;
     }
 
+    /**
+     * Retrieves the action.
+     * @see ApprovalAction
+     *
+     * @return The action.
+     */
     public ApprovalAction getAction() {
         return action;
     }
 
+    /**
+     * Sets the action.
+     *
+     * @param action
+     * @return This context.
+     */
     public ApprovalContext setAction(ApprovalAction action) {
         this.action = action;
         return this;
     }
 
+    /**
+     * Retrieves the representation attribute stored in this context.
+     * This is a shortcut for {@code getAttribute(REPRESENTATION_ATTR)}.
+     * A representation can be any DTO, e.g. {@link org.keycloak.representations.idm.UserRepresentation}.
+     *
+     * @see #getAttribute(String)
+     *
+     * @return A representation or {@code null} if no representation was stored in the context.
+     */
     public Object getRepresentation() {
         return getAttribute(REPRESENTATION_ATTR);
     }
 
+    /**
+     * Stores a representation attribute.
+     * This is a shortcut for {@code setAttribute(REPRESENTATION_ATTR, representation)}.
+     * A representation can be any DTO, e.g. {@link org.keycloak.representations.idm.UserRepresentation}.
+     *
+     * @see #setAttribute(String, Object)
+     *
+     * @param representation
+     * @return This context.
+     */
     public ApprovalContext setRepresentation(Object representation) {
         setAttribute(REPRESENTATION_ATTR, representation);
         return this;
     }
 
+    /**
+     * Retrieves the model attribute stored in this context.
+     * This is a shortcut for {@code getAttribute(MODEL_ATTR)}.
+     * A model can be any DAO, e.g. {@link org.keycloak.models.UserModel}.
+     *
+     * @see #getAttribute(String)
+     *
+     * @return A model or {@code null} if no model was stored in the context.
+     */
     public Object getModel() {
         return getAttribute(MODEL_ATTR);
     }
 
+    /**
+     * Stores a model attribute.
+     * This is a shortcut for {@code setAttribute(MODEL_ATTR, model)}
+     * A model can be any DAO, e.g. {@link org.keycloak.models.UserModel}.
+     *
+     * @see #setAttribute(String, Object)
+     *
+     * @param model
+     * @return This context.
+     */
     public ApprovalContext setModel(Object model) {
         setAttribute(MODEL_ATTR, model);
         return this;

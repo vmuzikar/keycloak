@@ -18,6 +18,8 @@
 package org.keycloak.approvals;
 
 /**
+ * Is meant to intercept an ongoing configuration-changing action.
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class InterceptedException extends Exception {

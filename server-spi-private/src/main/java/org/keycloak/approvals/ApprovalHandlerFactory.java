@@ -21,8 +21,15 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.representations.idm.ApprovalAction;
 
 /**
+ * Factory for {@link ApprovalHandler}.
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalHandlerFactory extends ProviderFactory<ApprovalHandler> {
+    /**
+     * Retries a list of actions that are supported by the {@link ApprovalHandler} implementation.
+     *
+     * @return the supported actions list
+     */
     ApprovalAction[] getActions();
 }

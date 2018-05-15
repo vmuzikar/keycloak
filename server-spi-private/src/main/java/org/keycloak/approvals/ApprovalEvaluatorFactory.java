@@ -20,6 +20,8 @@ package org.keycloak.approvals;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * Factory for {@link ApprovalEvaluator}.
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalEvaluatorFactory extends ProviderFactory<ApprovalEvaluator> {

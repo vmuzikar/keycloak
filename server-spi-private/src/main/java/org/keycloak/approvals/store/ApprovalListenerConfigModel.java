@@ -22,14 +22,57 @@ import org.keycloak.models.RealmModel;
 import java.util.Map;
 
 /**
+ * The general configuration for a single {@link org.keycloak.approvals.ApprovalListener} implementation.
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalListenerConfigModel {
+    /**
+     * The identification of the specific {@link org.keycloak.approvals.ApprovalListener} implementation.
+     *
+     * @return the identification
+     */
     String getProviderId();
+
+    /**
+     * Determines if the Approval Listener is enabled.
+     *
+     * @return {@code true} if enabled, {@code false} otherwise
+     */
     boolean isEnabled();
+
+    /**
+     * Sets if the Approval Listener is enabled.
+     *
+     * @param enabled
+     */
     void setEnabled(boolean enabled);
+
+    /**
+     * Retrieves all configuration as a key-value pairs for the Approval Listener.
+     *
+     * @return the configuration
+     */
     Map<String, String> getConfigs();
+
+    /**
+     * Replace all the configuration by new one.
+     *
+     * @param configs key-value paired configuration
+     */
     void setConfigs(Map<String, String> configs);
+
+    /**
+     * Merge configuration with the current one. Replace conflicts.
+     *
+     * @param configs key-value paired configuration
+     */
     void mergeConfigs(Map<String, String> configs);
+
+    /**
+     * Retrieves the realm for which is the configuration stored.
+     *
+     * @return the realm
+     */
     RealmModel getRealm();
 }

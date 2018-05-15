@@ -20,8 +20,18 @@ package org.keycloak.approvals;
 import org.keycloak.provider.Provider;
 
 /**
+ * Evaluates if some configuration-changing action requires an approval.
+ *
+ * @see ApprovalManager
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalEvaluator extends Provider {
+    /**
+     * Evaluates the action. Called by {@link ApprovalManager}.
+     *
+     * @param context the context for an ongoing configuration-changing action
+     * @return {@code true} if the action requires an approval, {@code false} otherwise
+     */
     boolean needsApproval(ApprovalContext context);
 }

@@ -22,6 +22,8 @@ import org.keycloak.provider.ProviderFactory;
 import java.util.Map;
 
 /**
+ * Factory for {@link ApprovalListener}.
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalListenerFactory extends ProviderFactory<ApprovalListener> {

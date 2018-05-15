@@ -22,12 +22,47 @@ import org.keycloak.approvals.store.ApprovalRequestModel;
 import org.keycloak.provider.Provider;
 
 /**
+ * An SPI which listens to all Approvals System related operations.
+ *
+ * @see ApprovalManager
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public interface ApprovalListener extends Provider {
+    /**
+     * Is called after an Approval Request creation, i.e. after intercepting of some configuration-changing action that
+     * requires an approval.
+     *
+     * @param request the newly created Approval Request
+     * @param context the context for an ongoing configuration-changing action
+     */
     void afterRequestCreation(ApprovalRequestModel request, ApprovalContext context);
+
+    /**
+     * Is called after approving of some Approval Request, i.e. after the configuration changes are applied.
+     *
+     * @param request the Approval Request that was recently approved
+     */
     void afterRequestApproval(ApprovalRequestModel request);
+
+    /**
+     * Is called after rejecting of some Approval Action.
+     *
+     * @param request the Approval Request that was recently rejected
+     */
     void afterRequestRejection(ApprovalRequestModel request);
+
+    /**
+     * Retrieves the configuration for the {@link ApprovalListener} implementation.
+     *
+     * @return the configuration
+     */
     ApprovalListenerConfigModel getConfig();
+
+    /**
+     * Stores the configuration in the {@link ApprovalListener} implementation.
+     *
+     * @param config
+     */
     void setConfig(ApprovalListenerConfigModel config);
 }

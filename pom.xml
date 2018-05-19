@@ -88,7 +88,7 @@
         <xmlsec.version>2.0.8</xmlsec.version>
         <glassfish.json.version>1.0.4</glassfish.json.version>
         <wildfly.common.version>1.2.0.Final</wildfly.common.version>
-        <kie.server.version>6.5.0.Final</kie.server.version>
+        <kie.server.version>7.0.0.Final</kie.server.version>
 
         <!-- Authorization Drools Policy Provider -->
         <version.org.drools>6.5.0.Final</version.org.drools>
@@ -438,6 +438,11 @@
             <dependency>
                 <groupId>org.kie.server</groupId>
                 <artifactId>kie-server-api</artifactId>
+                <version>${kie.server.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.server</groupId>
+                <artifactId>kie-server-common</artifactId>
                 <version>${kie.server.version}</version>
             </dependency>
 

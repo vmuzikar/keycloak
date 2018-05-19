@@ -135,6 +135,15 @@
             <groupId>org.drools</groupId>
             <artifactId>drools-compiler</artifactId>
         </dependency>
+        <!-- Approvals -->
+        <dependency>
+            <groupId>org.kie.server</groupId>
+            <artifactId>kie-server-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.kie.server</groupId>
+            <artifactId>kie-server-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.eclipse.aether</groupId>
             <artifactId>aether-api</artifactId>

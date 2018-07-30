@@ -44,6 +44,10 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannel.Streaming;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.hamcrest.Matchers;
+import org.keycloak.testsuite.util.DroneUtils;
+import org.keycloak.testsuite.util.WaitUtils;
+import org.openqa.selenium.By;
+
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
@@ -91,13 +95,9 @@ public abstract class AbstractFuseAdminAdapterTest extends AbstractExampleAdapte
         log.debug("logging in as mary");
         testRealmLoginPage.form().login("mary", "password");
         log.debug("Previous WARN waitForPageToLoad time exceeded! is expected");
-        
-        assertThat(driver.getPageSource(), 
-                allOf(
-                    containsString("Unauthorized User"),
-                    not(containsString("welcome"))
-                )
-        );
+
+        WaitUtils.waitUntilElement(By.xpath("//img[@alt='Red Hat Fuse Management Console']")).is().present();
+        assertThat(DroneUtils.getCurrentDriver().getPageSource(), not(containsString("Camel")));
     }
     
     

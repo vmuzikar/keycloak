@@ -124,6 +124,7 @@
         <selenium.version>2.35.0</selenium.version>
         <xml-apis.version>1.4.01</xml-apis.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
+        <littleproxy.version>1.1.2</littleproxy.version>
 
         <!-- Maven Plugins -->
         <enforcer.plugin.version>1.4</enforcer.plugin.version>
@@ -475,6 +476,13 @@
                 <artifactId>subethasmtp</artifactId>
                 <version>${subethasmtp.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Test proxy server -->
+            <dependency>
+                <groupId>org.littleshoot</groupId>
+                <artifactId>littleproxy</artifactId>
+                <version>${littleproxy.version}</version>
             </dependency>
 
             <!-- Apache DS -->

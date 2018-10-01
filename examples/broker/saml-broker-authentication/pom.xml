@@ -23,7 +23,7 @@
     <parent>
         <artifactId>keycloak-examples-broker-parent</artifactId>
         <groupId>org.keycloak</groupId>
-        <version>3.4.13.Final</version>
+        <version>3.4.13.Final-redhat-00001</version>
     </parent>
 
     <name>Keycloak Broker Examples - SAML Identity Provider Brokering</name>

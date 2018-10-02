@@ -25,6 +25,8 @@ import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.keycloak.adapters.saml.SamlAuthenticationError;
+import org.keycloak.adapters.spi.AuthenticationError;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.AccountRoles;
@@ -67,7 +69,7 @@ public class LDAPRoleMappingsNoImportTest extends AbstractLDAPTest {
                 .addPackages(true,
                         "org.keycloak.testsuite",
                         "org.keycloak.testsuite.federation.ldap",
-                        "org.keycloak.testsuite.federation.ldap.noimport");
+                        "org.keycloak.testsuite.federation.ldap.noimport").addClass(SamlAuthenticationError.class).addClass(AuthenticationError.class);
     }
 
 

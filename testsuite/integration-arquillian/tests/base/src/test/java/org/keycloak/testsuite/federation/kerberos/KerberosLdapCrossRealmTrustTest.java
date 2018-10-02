@@ -26,6 +26,8 @@ import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.keycloak.adapters.saml.SamlAuthenticationError;
+import org.keycloak.adapters.spi.AuthenticationError;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.federation.kerberos.CommonKerberosConfig;
 import org.keycloak.models.RealmModel;
@@ -56,7 +58,7 @@ public class KerberosLdapCrossRealmTrustTest extends AbstractKerberosTest {
                 .addPackages(true,
                         "org.keycloak.testsuite",
                         "org.keycloak.testsuite.federation.ldap",
-                        "org.keycloak.testsuite.federation.kerberos");
+                        "org.keycloak.testsuite.federation.kerberos").addClass(SamlAuthenticationError.class).addClass(AuthenticationError.class);
     }
 
 

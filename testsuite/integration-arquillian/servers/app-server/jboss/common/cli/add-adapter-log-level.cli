@@ -1,1 +1,2 @@
 /subsystem=logging/logger=org.keycloak.adapters:add(level=DEBUG)
+/system-property=propertyname:write-attribute(name="jackson.deserialization.whitelist.packages", value="org.keycloak")

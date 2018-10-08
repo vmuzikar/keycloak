@@ -25,6 +25,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.services.Urls;
 
 import javax.ws.rs.core.UriInfo;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -76,6 +78,10 @@ public class RedirectUtils {
     }
 
     private static String verifyRedirectUri(UriInfo uriInfo, String rootUrl, String redirectUri, RealmModel realm, Set<String> validRedirects, boolean requireRedirectUri) {
+
+        if (redirectUri != null)
+            redirectUri = normalizeUrl(redirectUri);
+
         if (redirectUri == null) {
             if (!requireRedirectUri) {
                 redirectUri = getSingleValidRedirectUri(validRedirects);
@@ -171,4 +177,12 @@ public class RedirectUtils {
         return validRedirect;
     }
 
+    private static String normalizeUrl(String url) {
+        try {
+            URI uri = new URI(url);
+            return uri.normalize().toString();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid URL syntax: " + e.getMessage());
+        }
+    }
 }

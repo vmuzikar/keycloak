@@ -22,7 +22,7 @@
     <parent>
         <artifactId>keycloak-examples-saml-parent</artifactId>
         <groupId>org.keycloak</groupId>
-        <version>3.4.13.Final-redhat-00001</version>
+        <version>3.4.14.Final-redhat-00001</version>
     </parent>
 
     <artifactId>sales-post-sig</artifactId>

@@ -38,12 +38,12 @@
             <dependency>
                 <groupId>org.keycloak</groupId>
                 <artifactId>keycloak-core</artifactId>
-                <version>3.4.13.Final-redhat-00001</version>
+                <version>3.4.14.Final-redhat-00001</version>
             </dependency>
             <dependency>
                 <groupId>org.keycloak</groupId>
                 <artifactId>keycloak-server-spi</artifactId>
-                <version>3.4.13.Final-redhat-00001</version>
+                <version>3.4.14.Final-redhat-00001</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

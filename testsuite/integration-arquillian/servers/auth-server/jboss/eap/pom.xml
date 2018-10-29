@@ -36,7 +36,7 @@
         <auth.server.home>${project.build.directory}/unpacked/${product.unpacked.folder.name}</auth.server.home>
 
         <!--server-dist-->
-        <auth.server.dist.version>3.4.3.Final-redhat-2</auth.server.dist.version>
+        <auth.server.dist.version>${product.version}</auth.server.dist.version>
         <auth.server.dist.unpacked.folder.name>${product.unpacked.folder.name}</auth.server.dist.unpacked.folder.name>
 
         <!--server-overlay-->

@@ -1581,7 +1581,7 @@
                 <product.slot>keycloak</product.slot>
                 <product.wildfly.console.slot>main</product.wildfly.console.slot>
                 <product.name-html>\u003Cdiv class="kc-logo-text"\u003E\u003Cspan\u003EKeycloak\u003C\u002Fspan\u003E\u003C\u002Fdiv\u003E</product.name-html>
-                <product.version>${project.version}</product.version>
+                <product.version>3.4.3.Final-redhat-2</product.version>
                 <product.default-profile>community</product.default-profile>
             </properties>
             <modules>

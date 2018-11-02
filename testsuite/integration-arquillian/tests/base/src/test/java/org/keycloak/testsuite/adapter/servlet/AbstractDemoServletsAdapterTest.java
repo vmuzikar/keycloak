@@ -496,22 +496,20 @@ public abstract class AbstractDemoServletsAdapterTest extends AbstractServletsAd
 
     @Test
     public void testVersion() {
+        String serverVersion = adminClient.serverInfo().getInfo().getSystemInfo().getVersion();
+
+        assertNotNull(serverVersion);
+
         Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(authServerPage.createUriBuilder()).path("version");
-        VersionRepresentation version = target.request().get(VersionRepresentation.class);
-        assertNotNull(version);
-        assertNotNull(version.getVersion());
-        assertNotNull(version.getBuildTime());
-        assertNotEquals(version.getVersion(), Version.UNKNOWN);
-        assertNotEquals(version.getBuildTime(), Version.UNKNOWN);
 
         VersionRepresentation version2 = client.target(securePortal.toString()).path(AdapterConstants.K_VERSION).request().get(VersionRepresentation.class);
         assertNotNull(version2);
         assertNotNull(version2.getVersion());
         assertNotNull(version2.getBuildTime());
+
+        log.info("version is " + version2.getVersion());
         if (!suiteContext.isAdapterCompatTesting()) {
-            assertEquals(version.getVersion(), version2.getVersion());
-            assertEquals(version.getBuildTime(), version2.getBuildTime());
+            assertEquals(serverVersion, version2.getVersion());
         }
         client.close();
     }

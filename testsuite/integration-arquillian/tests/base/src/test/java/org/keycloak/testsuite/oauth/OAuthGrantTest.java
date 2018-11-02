@@ -179,10 +179,8 @@ public class OAuthGrantTest extends AbstractKeycloakTest {
         // Assert permissions granted on Account mgmt. applications page
         accountAppsPage.open();
         AccountApplicationsPage.AppEntry thirdPartyEntry = accountAppsPage.getApplications().get(THIRD_PARTY_APP);
-        Assert.assertTrue(thirdPartyEntry.getRolesGranted().contains(ROLE_USER));
-        Assert.assertTrue(thirdPartyEntry.getRolesGranted().contains("Have Customer User privileges in test-app"));
-        Assert.assertTrue(thirdPartyEntry.getProtocolMappersGranted().contains("Full name"));
-        Assert.assertTrue(thirdPartyEntry.getProtocolMappersGranted().contains("Email"));
+        thirdPartyEntry.getClientScopesGranted().contains(OAuthGrantPage.PROFILE_CONSENT_TEXT);
+        thirdPartyEntry.getClientScopesGranted().contains(OAuthGrantPage.EMAIL_CONSENT_TEXT);
 
         // Open login form and assert grantPage not shown
         oauth.openLoginForm();
@@ -245,8 +243,7 @@ public class OAuthGrantTest extends AbstractKeycloakTest {
         // Assert new role and protocol mapper not in account mgmt.
         accountAppsPage.open();
         AccountApplicationsPage.AppEntry appEntry = accountAppsPage.getApplications().get(THIRD_PARTY_APP);
-        Assert.assertFalse(appEntry.getRolesGranted().contains("new-role"));
-        Assert.assertFalse(appEntry.getProtocolMappersGranted().contains(KerberosConstants.GSS_DELEGATION_CREDENTIAL_DISPLAY_NAME));
+        Assert.assertFalse(appEntry.getClientScopesGranted().contains("foo-scope"));
 
         // Show grant page another time. Just new role and protocol mapper are on the page
         oauth.openLoginForm();
@@ -265,8 +262,7 @@ public class OAuthGrantTest extends AbstractKeycloakTest {
         // Go to account mgmt. Everything is granted now
         accountAppsPage.open();
         appEntry = accountAppsPage.getApplications().get(THIRD_PARTY_APP);
-        Assert.assertTrue(appEntry.getRolesGranted().contains("new-role"));
-        Assert.assertTrue(appEntry.getProtocolMappersGranted().contains(KerberosConstants.GSS_DELEGATION_CREDENTIAL_DISPLAY_NAME));
+        Assert.assertTrue(appEntry.getClientScopesGranted().contains("foo-scope"));
 
         // Revoke
         accountAppsPage.revokeGrant(THIRD_PARTY_APP);
@@ -383,7 +379,7 @@ public class OAuthGrantTest extends AbstractKeycloakTest {
         Assert.assertTrue(accountAppsPage.isCurrent());
         Map<String, AccountApplicationsPage.AppEntry> apps = accountAppsPage.getApplications();
         Assert.assertTrue(apps.containsKey("third-party"));
-        Assert.assertTrue(apps.get("third-party").getProtocolMappersGranted().contains("Address"));
+        Assert.assertTrue(apps.get("third-party").getClientScopesGranted().contains("foo-addr"));
 
         // Login as admin and see the consent screen of particular user
         UserResource user = ApiUtil.findUserByUsernameId(appRealm, "test-user@localhost");

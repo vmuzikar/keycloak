@@ -35,6 +35,7 @@ public class ProfileAssume {
 
     private static Set<String> disabledFeatures;
     private static String profile;
+    private static final boolean adapterCompatTesting = Boolean.parseBoolean(System.getProperty("testsuite.adapter.compat.testing"));
 
     static {
         String host = System.getProperty("auth.server.host", "localhost");
@@ -42,7 +43,7 @@ public class ProfileAssume {
 
         String authServerContextRoot = "http://" + host + ":" + port;
         try {
-            Keycloak adminClient = AdminClientUtil.createAdminClient(false, authServerContextRoot);
+            Keycloak adminClient = AdminClientUtil.createAdminClient(adapterCompatTesting, authServerContextRoot);
             ProfileInfoRepresentation profileInfo = adminClient.serverInfo().getInfo().getProfileInfo();
             profile = profileInfo.getName();
             List<String> disabled = profileInfo.getDisabledFeatures();

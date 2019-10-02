@@ -38,8 +38,8 @@
         <!--server-dist-->
         <auth.server.dist.groupId>org.keycloak</auth.server.dist.groupId>
         <auth.server.dist.artifactId>keycloak-server-dist</auth.server.dist.artifactId>
-        <auth.server.dist.version>${project.version}</auth.server.dist.version>
-        <auth.server.dist.unpacked.folder.name>keycloak-${auth.server.dist.version}</auth.server.dist.unpacked.folder.name>
+        <auth.server.dist.version>4.8.3.Final-redhat-00001</auth.server.dist.version>
+        <auth.server.dist.unpacked.folder.name>rh-sso-7.3</auth.server.dist.unpacked.folder.name>
 
         <!--server-overlay-->
         <auth.server.overlay.groupId>org.keycloak</auth.server.overlay.groupId>

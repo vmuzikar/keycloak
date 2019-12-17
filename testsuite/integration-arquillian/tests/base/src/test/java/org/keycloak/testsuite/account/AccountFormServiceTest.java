@@ -82,6 +82,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.keycloak.testsuite.arquillian.AuthServerTestEnricher.AUTH_SERVER_SSL_REQUIRED;
 import static org.keycloak.testsuite.arquillian.AuthServerTestEnricher.getAuthServerContextRoot;
+import static org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer.REMOTE;
+
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer;
 
 
@@ -1026,7 +1028,7 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
     }
 
     @Test
-    @AuthServerContainerExclude(AuthServer.REMOTE) // we need to do domain name -> ip address to make this test work in remote testing
+    @AuthServerContainerExclude(REMOTE) // we need to do domain name -> ip address to make this test work in remote testing
     public void sessions() {
         loginPage.open();
         loginPage.clickRegister();
@@ -1125,6 +1127,7 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
 
     // More tests (including revoke) are in OAuthGrantTest and OfflineTokenTest
     @Test
+    @AuthServerContainerExclude(REMOTE)
     public void applications() {
         applicationsPage.open();
         loginPage.login("test-user@localhost", "password");
@@ -1156,10 +1159,10 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
         Assert.assertTrue(thirdPartyEntry.getRolesAvailable().contains("Have User privileges"));
         Assert.assertTrue(thirdPartyEntry.getRolesAvailable().contains("Have Customer User privileges in test-app"));
         Assert.assertEquals(0, thirdPartyEntry.getClientScopesGranted().size());
-        Assert.assertEquals(getAuthServerContextRoot() + "/auth/realms/master/app/auth", thirdPartyEntry.getHref());
+        Assert.assertEquals("http://localhost:8180/auth/realms/master/app/auth", thirdPartyEntry.getHref());
 
         AccountApplicationsPage.AppEntry testAppNamed = apps.get("Test App Named - ${client_account}");
-        Assert.assertEquals(getAuthServerContextRoot() + "/varnamedapp/base", testAppNamed.getHref());
+        Assert.assertEquals("http://localhost:8180/varnamedapp/base", testAppNamed.getHref());
 
         AccountApplicationsPage.AppEntry rootUrlClient = apps.get("root-url-client");
         Assert.assertEquals("http://localhost:8180/foo/bar/baz", rootUrlClient.getHref());
@@ -1168,7 +1171,7 @@ public class AccountFormServiceTest extends AbstractTestRealmKeycloakTest {
         Assert.assertEquals(oauth.SERVER_ROOT + "/test-app-authz", authzApp.getHref());
 
         AccountApplicationsPage.AppEntry namedApp = apps.get("My Named Test App");
-        Assert.assertEquals(getAuthServerContextRoot() + "/namedapp/base", namedApp.getHref());
+        Assert.assertEquals("http://localhost:8180/namedapp/base", namedApp.getHref());
 
         AccountApplicationsPage.AppEntry testAppScope = apps.get("test-app-scope");
         Assert.assertNull(testAppScope.getHref());

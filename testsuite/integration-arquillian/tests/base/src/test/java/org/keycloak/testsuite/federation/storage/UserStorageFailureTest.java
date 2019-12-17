@@ -65,6 +65,8 @@ import java.util.List;
 import java.util.Map;
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude.AuthServer;
 import org.keycloak.testsuite.util.ContainerAssume;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.WebDriverException;
 
 
 /**
@@ -79,7 +81,8 @@ public class UserStorageFailureTest extends AbstractTestRealmKeycloakTest {
     @Deployment
     public static WebArchive deploy() {
         return RunOnServerDeployment.create(ComponentExportImportTest.class, AbstractAuthTest.class, RealmResource.class)
-                .addPackages(true, "org.keycloak.testsuite");
+                .addPackages(true, "org.keycloak.testsuite")
+                .addClasses(TimeoutException.class, WebDriverException.class);
     }
 
     private static final String LOCAL_USER = "localUser";

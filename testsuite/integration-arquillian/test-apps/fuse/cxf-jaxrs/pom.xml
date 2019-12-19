@@ -38,7 +38,7 @@
             META-INF.cxf.osgi;version="[2.7,3.2)";resolution:=optional,
             org.apache.cxf.transport.http;version="[2.7,3.2)",
             org.apache.cxf.*;version="[2.7,3.2)",
-            com.fasterxml.jackson.jaxrs.json;version="${jackson.version}",
+            com.fasterxml.jackson.jaxrs.json;version="[2.9,3.0)",
             org.eclipse.jetty.security;version="[8,10)",
             org.eclipse.jetty.util.security;version="[8,10)",
             org.keycloak.*;version="${project.version}",

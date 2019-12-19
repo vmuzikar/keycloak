@@ -105,6 +105,7 @@ public class LDAPSyncTest extends AbstractLDAPTest {
             // Delete all LDAP users and add 5 new users for testing
             LDAPStorageProvider ldapFedProvider = LDAPTestUtils.getLdapProvider(session, ldapModel);
             LDAPTestUtils.removeAllLDAPUsers(ldapFedProvider, appRealm);
+            LDAPTestUtils.removeAllLDAPGroups(session, appRealm, ctx.getLdapModel(), "groupsMapper");
 
             for (int i=1 ; i<=5 ; i++) {
                 LDAPObject ldapUser = LDAPTestUtils.addLDAPUser(ldapFedProvider, appRealm, "user" + i, "User" + i + "FN", "User" + i + "LN", "user" + i + "@email.org", null, "12" + i);

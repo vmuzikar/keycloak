@@ -83,11 +83,16 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
 
     @Before
     public void setDefaultEnvironment() {
-        testAppUrl = authServerContextRootPage + JAVASCRIPT_URL + "/index.html";
+        testAppUrl = authServerContextRootPage.toString().replace("localhost", NIP_IO_URL) + JAVASCRIPT_URL + "/index.html";
 
         jsDriverTestRealmLoginPage.setAuthRealm(REALM_NAME);
         oAuthGrantPage.setAuthRealm(REALM_NAME);
         applicationsPage.setAuthRealm(REALM_NAME);
+
+        jsDriver.navigate().to(oauth.getLoginFormUrl());
+        waitForPageToLoad();
+        events.poll();
+        jsDriver.manage().deleteAllCookies();
 
         jsDriver.navigate().to(testAppUrl);
 
@@ -141,8 +146,15 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
                 .login(this::assertOnLoginPage)
                 .loginForm(testUser, this::assertOnTestAppUrl)
                 .init(defaultArguments(), this::assertSuccessfullyLoggedIn)
+                .logout(this::assertOnTestAppUrl)
+
+                .init(defaultArguments(), this::assertInitNotAuth)
                 .login("{kcLocale: 'de'}", assertLocaleIsSet("de"))
+                .loginForm(testUser, this::assertOnTestAppUrl)
                 .init(defaultArguments(), this::assertSuccessfullyLoggedIn)
+                .logout(this::assertOnTestAppUrl)
+
+                .init(defaultArguments(), this::assertInitNotAuth)
                 .login("{kcLocale: 'en'}", assertLocaleIsSet("en"));
     }
 
@@ -166,7 +178,7 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
                 .init(checkSSO, this::assertSuccessfullyLoggedIn)
                 .refresh()
                 .init(checkSSO
-                        .add("silentCheckSsoRedirectUri", authServerContextRootPage + JAVASCRIPT_URL + "/silent-check-sso.html")
+                        .add("silentCheckSsoRedirectUri", authServerContextRootPage.toString().replace("localhost", NIP_IO_URL) + JAVASCRIPT_URL + "/silent-check-sso.html")
                         , this::assertSuccessfullyLoggedIn);
     }
 
@@ -179,8 +191,8 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
                 .init(checkSSO, this::assertSuccessfullyLoggedIn)
                 .refresh()
                 .init(checkSSO
-                        .add("checkLoginIframe", false)
-                        .add("silentCheckSsoRedirectUri", authServerContextRootPage + JAVASCRIPT_URL + "/silent-check-sso.html")
+                        .disableCheckLoginIframe()
+                        .add("silentCheckSsoRedirectUri", authServerContextRootPage.toString().replace("localhost", NIP_IO_URL) + JAVASCRIPT_URL + "/silent-check-sso.html")
                         , this::assertSuccessfullyLoggedIn);
     }
 
@@ -205,7 +217,7 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
         JSObjectBuilder checkSSO = defaultArguments().checkSSOOnLoad();
         testExecutor.init(checkSSO
                 .add("checkLoginIframe", false)
-                .add("silentCheckSsoRedirectUri", authServerContextRootPage + JAVASCRIPT_URL + "/silent-check-sso.html")
+                .add("silentCheckSsoRedirectUri", authServerContextRootPage.toString().replace("localhost", NIP_IO_URL) + JAVASCRIPT_URL + "/silent-check-sso.html")
                 , this::assertInitNotAuth);
     }
 
@@ -378,7 +390,7 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
                 .addHeader("Authorization", "Bearer ' + keycloak.token + '");
 
         testExecutor.init(defaultArguments())
-                .sendXMLHttpRequest(request, assertResponseStatus(401))
+                .sendXMLHttpRequest(request, assertResponseStatus(0))
                 .refresh();
         if (!"phantomjs".equals(System.getProperty("js.browser"))) {
             // I have no idea why, but this request doesn't work with phantomjs, it works in chrome
@@ -422,7 +434,7 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
 
         setTimeOffset(67);
         testExecutor.addTimeSkew(-34)
-                .sendXMLHttpRequest(request, assertResponseStatus(401))
+                .sendXMLHttpRequest(request, assertResponseStatus(0))
                 .refreshToken(5, assertEventsContains("Auth Refresh Success"))
                 .sendXMLHttpRequest(request, assertResponseStatus(200));
     }

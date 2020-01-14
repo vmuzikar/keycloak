@@ -622,7 +622,7 @@ public class AuthenticationManager {
             maxAge = realm.getSsoSessionMaxLifespanRememberMe() > 0 ? realm.getSsoSessionMaxLifespanRememberMe() : realm.getSsoSessionMaxLifespan();
         }
         logger.debugv("Create login cookie - name: {0}, path: {1}, max-age: {2}", KEYCLOAK_IDENTITY_COOKIE, cookiePath, maxAge);
-        CookieHelper.addCookie(KEYCLOAK_IDENTITY_COOKIE, encoded, cookiePath, null, null, maxAge, secureOnly, true, null);
+        CookieHelper.addCookie(KEYCLOAK_IDENTITY_COOKIE, encoded, cookiePath, null, null, maxAge, secureOnly, true, SAME_SITE.NONE);
         //builder.cookie(new NewCookie(cookieName, encoded, cookiePath, null, null, maxAge, secureOnly));// todo httponly , true);
 
         String sessionCookieValue = realm.getName() + "/" + user.getId();
@@ -661,18 +661,18 @@ public class AuthenticationManager {
     public static void expireIdentityCookie(RealmModel realm, UriInfo uriInfo, ClientConnection connection) {
         logger.debug("Expiring identity cookie");
         String path = getIdentityCookiePath(realm, uriInfo);
-        expireCookie(realm, KEYCLOAK_IDENTITY_COOKIE, path, true, connection, null);
+        expireCookie(realm, KEYCLOAK_IDENTITY_COOKIE, path, true, connection, SAME_SITE.NONE);
         expireCookie(realm, KEYCLOAK_SESSION_COOKIE, path, false, connection, SAME_SITE.NONE);
 
         String oldPath = getOldCookiePath(realm, uriInfo);
-        expireCookie(realm, KEYCLOAK_IDENTITY_COOKIE, oldPath, true, connection, null);
+        expireCookie(realm, KEYCLOAK_IDENTITY_COOKIE, oldPath, true, connection, SAME_SITE.NONE);
         expireCookie(realm, KEYCLOAK_SESSION_COOKIE, oldPath, false, connection, SAME_SITE.NONE);
     }
     public static void expireOldIdentityCookie(RealmModel realm, UriInfo uriInfo, ClientConnection connection) {
         logger.debug("Expiring old identity cookie with wrong path");
 
         String oldPath = getOldCookiePath(realm, uriInfo);
-        expireCookie(realm, KEYCLOAK_IDENTITY_COOKIE, oldPath, true, connection, null);
+        expireCookie(realm, KEYCLOAK_IDENTITY_COOKIE, oldPath, true, connection, SAME_SITE.NONE);
         expireCookie(realm, KEYCLOAK_SESSION_COOKIE, oldPath, false, connection, SAME_SITE.NONE);
     }
 

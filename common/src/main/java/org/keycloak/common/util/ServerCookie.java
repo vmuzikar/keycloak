@@ -33,7 +33,19 @@ public class ServerCookie implements Serializable {
     private static final String tspecials2 = "()<>@,;:\\\"/[]?={} \t";
 
     public enum SameSiteAttributeValue {
-        NONE // we currently support only SameSite=None; this might change in the future
+        NONE("None"), // we currently support only SameSite=None; this might change in the future
+        STRICT("Strict"),
+        LAX("Lax");
+
+        private final String specValue;
+        SameSiteAttributeValue(String specValue) {
+            this.specValue = specValue;
+        }
+
+        @Override
+        public java.lang.String toString() {
+            return specValue;
+        }
     }
 
     /*
@@ -235,9 +247,8 @@ public class ServerCookie implements Serializable {
 
         // SameSite
         if (sameSite != null) {
-            String sameSiteStr = sameSite.name().substring(0,1).toUpperCase() + sameSite.name().substring(1).toLowerCase();
             buf.append("; SameSite=");
-            buf.append(sameSiteStr);
+            buf.append(sameSite.toString());
         }
 
         // Secure

@@ -22,7 +22,7 @@
     <parent>
         <artifactId>keycloak-examples-saml-parent</artifactId>
         <groupId>org.keycloak</groupId>
-        <version>4.8.17.Final</version>
+        <version>4.8.17.Final-redhat-00001</version>
     </parent>
 
     <artifactId>saml-post-encryption</artifactId>

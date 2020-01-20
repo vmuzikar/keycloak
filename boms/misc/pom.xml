@@ -37,7 +37,7 @@
             <dependency>
                 <groupId>org.keycloak</groupId>
                 <artifactId>keycloak-test-helper</artifactId>
-                <version>4.8.17.Final</version>
+                <version>4.8.17.Final-redhat-00001</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

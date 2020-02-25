@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Red Hat, Inc. and/or its affiliates
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,16 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.credential;
 
-/**
- *
- *
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- * @version $Revision: 1 $
- */
-public interface CredentialInput {
-    String getCredentialId();
-    String getType();
-    String getChallengeResponse();
+package org.keycloak.models.credential;
+
+import org.keycloak.credential.CredentialModel;
+import org.keycloak.util.JsonSerialization;
+
+import java.io.IOException;
+
+public class PasswordCredentialModel extends CredentialModel {
+
+    public final static String TYPE = "password";
+    public final static String PASSWORD_HISTORY = "password-history";
+
+
 }

@@ -160,4 +160,14 @@ public class UserCredentialModel implements CredentialInput {
     public Object getNote(String key) {
         return this.notes.get(key);
     }
+
+    @Override
+    public String getCredentialId() {
+        return null;
+    }
+
+    @Override
+    public String getChallengeResponse() {
+        return null;
+    }
 }

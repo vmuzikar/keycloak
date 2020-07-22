@@ -1637,6 +1637,7 @@
                 <product.name-html>\u003Cdiv class="kc-logo-text"\u003E\u003Cspan\u003EKeycloak\u003C\u002Fspan\u003E\u003C\u002Fdiv\u003E</product.name-html>
                 <product.version>${project.version}</product.version>
                 <product.default-profile>community</product.default-profile>
+                <product.default-theme>keycloak.v2</product.default-theme>
             </properties>
         </profile>
 
@@ -1655,6 +1656,7 @@
                 <product.name-html>\u003Cstrong\u003ERed Hat\u003C\u002Fstrong\u003E\u003Csup\u003E\u00AE\u003C\u002Fsup\u003E Single Sign On</product.name-html>
                 <product.version>${product.rhsso.version}</product.version>
                 <product.default-profile>product</product.default-profile>
+                <product.default-theme>rh-sso.v2</product.default-theme>
             </properties>
             <build>
                 <plugins>

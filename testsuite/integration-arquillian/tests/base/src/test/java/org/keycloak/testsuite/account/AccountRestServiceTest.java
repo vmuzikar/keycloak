@@ -76,7 +76,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.keycloak.common.Profile.Feature.ACCOUNT_API;
 import org.keycloak.testsuite.util.UserBuilder;
 
 /**
@@ -84,7 +83,6 @@ import org.keycloak.testsuite.util.UserBuilder;
  */
 @AuthServerContainerExclude(AuthServer.REMOTE)
 @EnableFeature(value = Profile.Feature.WEB_AUTHN, skipRestart = true, onlyForProduct = true)
-@EnableFeature(value = ACCOUNT_API, skipRestart = true)
 public class AccountRestServiceTest extends AbstractRestServiceTest {
 
     @Test

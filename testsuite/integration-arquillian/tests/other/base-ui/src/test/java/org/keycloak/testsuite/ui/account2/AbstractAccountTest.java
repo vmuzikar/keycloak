@@ -19,7 +19,9 @@ package org.keycloak.testsuite.ui.account2;
 
 import org.jboss.arquillian.graphene.page.Page;
 import org.junit.Before;
+import org.keycloak.common.Profile;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.testsuite.arquillian.annotation.EnableFeature;
 import org.keycloak.testsuite.ui.AbstractUiTest;
 import org.keycloak.testsuite.ui.account2.page.PageNotFound;
 import org.keycloak.testsuite.ui.account2.page.WelcomeScreen;
@@ -31,6 +33,7 @@ import static org.keycloak.testsuite.util.URLAssert.assertCurrentUrlStartsWithLo
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
+@EnableFeature(value = Profile.Feature.ACCOUNT2, skipRestart = true)
 public abstract class AbstractAccountTest extends AbstractUiTest {
     public static final String ACCOUNT_THEME_NAME_KC = "keycloak.v2";
     public static final String ACCOUNT_THEME_NAME_RHSSO = "rh-sso.v2";

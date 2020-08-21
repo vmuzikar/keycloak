@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.keycloak.common.Profile;
 
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
@@ -53,7 +54,7 @@ public class DefaultThemeManager implements ThemeManager {
     public DefaultThemeManager(DefaultThemeManagerFactory factory, KeycloakSession session) {
         this.factory = factory;
         this.session = session;
-        this.defaultTheme = Config.scope("theme").get("default", Version.NAME.toLowerCase());
+        this.defaultTheme = Config.scope("theme").get("default", Version.DEFAULT_THEME.toLowerCase());
     }
 
     @Override
@@ -72,7 +73,7 @@ public class DefaultThemeManager implements ThemeManager {
         if (theme == null) {
             theme = loadTheme(name, type);
             if (theme == null) {
-                theme = loadTheme("keycloak", type);
+                theme = loadTheme("keycloak.v2", type);
                 if (theme == null) {
                     theme = loadTheme("base", type);
                 }
@@ -81,9 +82,19 @@ public class DefaultThemeManager implements ThemeManager {
                 theme = factory.addCachedTheme(name, type, theme);
             }
         }
+        
+        final boolean isAccount2Enabled = Profile.isFeatureEnabled(Profile.Feature.ACCOUNT2);
+        if (!isAccount2Enabled && theme.getName().equals("keycloak.v2")) {
+            theme = loadTheme("keycloak", type);
+        }
+        
+        if (!isAccount2Enabled && theme.getName().equals("rhsso.v2")) {
+            theme = loadTheme("rhsso", type);
+        }
+        
         return theme;
     }
-
+    
     @Override
     public Set<String> nameSet(Theme.Type type) {
         Set<String> themes = new HashSet<String>();

@@ -46,7 +46,7 @@ public class DefaultThemeSelectorProvider implements ThemeSelectorProvider {
         }
 
         if (name == null || name.isEmpty()) {
-            name = Config.scope("theme").get("default", Version.NAME.toLowerCase());
+            name = Config.scope("theme").get("default", Version.DEFAULT_THEME.toLowerCase());
         }
 
         return name;

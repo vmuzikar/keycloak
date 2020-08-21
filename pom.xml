@@ -1695,6 +1695,7 @@
                 <product.default-profile>community</product.default-profile>
                 <apache.httpcomponents.fuse.version>4.5.2</apache.httpcomponents.fuse.version>
                 <apache.httpcomponents.httpcore.fuse.version>4.4.4</apache.httpcomponents.httpcore.fuse.version>
+                <product.default-theme>keycloak.v2</product.default-theme>
             </properties>
         </profile>
 
@@ -1715,6 +1716,7 @@
                 <apache.httpcomponents.fuse.version>4.5.2.redhat-2</apache.httpcomponents.fuse.version>
                 <apache.httpcomponents.httpcore.fuse.version>4.4.4.redhat-2</apache.httpcomponents.httpcore.fuse.version>
                 <product.default-profile>product</product.default-profile>
+                <product.default-theme>rh-sso.v2</product.default-theme>
             </properties>
             <build>
                 <plugins>

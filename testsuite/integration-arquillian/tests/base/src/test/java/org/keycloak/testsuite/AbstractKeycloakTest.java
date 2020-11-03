@@ -98,7 +98,7 @@ import static org.keycloak.testsuite.util.ServerURLs.removeDefaultPorts;
  */
 @RunWith(KcArquillian.class)
 @RunAsClient
-@DisableFeature(value = Profile.Feature.ACCOUNT2, skipRestart = true)
+//@DisableFeature(value = Profile.Feature.ACCOUNT2, skipRestart = true)
 public abstract class AbstractKeycloakTest {
     protected static final String ENGLISH_LOCALE_NAME = "English";
 
@@ -255,19 +255,11 @@ public abstract class AbstractKeycloakTest {
     }
 
     public void deleteAllCookiesForMasterRealm() {
-        deleteAllCookiesForRealm(accountPage);
-    }
-
-    protected void deleteAllCookiesForRealm(Account realmAccountPage) {
-        // masterRealmPage.navigateTo();
-        realmAccountPage.navigateTo(); // Because IE webdriver freezes when loading a JSON page (realm page), we need to use this alternative
-        log.info("deleting cookies in '" + realmAccountPage.getAuthRealm() + "' realm");
-        driver.manage().deleteAllCookies();
+        deleteAllCookiesForRealm(MASTER);
     }
 
     protected void deleteAllCookiesForRealm(String realmName) {
-        // masterRealmPage.navigateTo();
-        navigateToUri(accountPage.getAuthRoot() + "/realms/" + realmName + "/account"); // Because IE webdriver freezes when loading a JSON page (realm page), we need to use this alternative
+        navigateToUri(accountPage.getAuthRoot() + "/realms/" + realmName);
         log.info("deleting cookies in '" + realmName + "' realm");
         driver.manage().deleteAllCookies();
     }

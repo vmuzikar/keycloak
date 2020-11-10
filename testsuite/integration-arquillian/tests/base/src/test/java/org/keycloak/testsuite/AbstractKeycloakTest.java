@@ -98,7 +98,6 @@ import static org.keycloak.testsuite.util.ServerURLs.removeDefaultPorts;
  */
 @RunWith(KcArquillian.class)
 @RunAsClient
-//@DisableFeature(value = Profile.Feature.ACCOUNT2, skipRestart = true)
 public abstract class AbstractKeycloakTest {
     protected static final String ENGLISH_LOCALE_NAME = "English";
 

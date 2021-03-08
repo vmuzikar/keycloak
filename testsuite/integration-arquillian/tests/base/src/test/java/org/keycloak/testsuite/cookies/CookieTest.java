@@ -50,6 +50,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.keycloak.services.managers.AuthenticationManager.KEYCLOAK_IDENTITY_COOKIE;
+import static org.keycloak.services.managers.AuthenticationManager.KEYCLOAK_IFRAME_SESSION_COOKIE;
 import static org.keycloak.services.managers.AuthenticationManager.KEYCLOAK_SESSION_COOKIE;
 import static org.keycloak.services.managers.AuthenticationSessionManager.AUTH_SESSION_ID;
 import static org.keycloak.services.util.CookieHelper.LEGACY_COOKIE;
@@ -178,11 +179,14 @@ public class CookieTest extends AbstractKeycloakTest {
         Cookie legacyIdentityCookie = driver.manage().getCookieNamed(KEYCLOAK_IDENTITY_COOKIE + LEGACY_COOKIE);
         Cookie sameSiteSessionCookie = driver.manage().getCookieNamed(KEYCLOAK_SESSION_COOKIE);
         Cookie legacySessionCookie = driver.manage().getCookieNamed(KEYCLOAK_SESSION_COOKIE + LEGACY_COOKIE);
+        Cookie sameSiteIframeSessionCookie = driver.manage().getCookieNamed(KEYCLOAK_IFRAME_SESSION_COOKIE);
+        Cookie legacyIframeSessionCookie = driver.manage().getCookieNamed(KEYCLOAK_IFRAME_SESSION_COOKIE + LEGACY_COOKIE);
         Cookie sameSiteAuthSessionIdCookie = driver.manage().getCookieNamed(AUTH_SESSION_ID);
         Cookie legacyAuthSessionIdCookie = driver.manage().getCookieNamed(AUTH_SESSION_ID + LEGACY_COOKIE);
 
         assertSameSiteCookies(sameSiteIdentityCookie, legacyIdentityCookie);
         assertSameSiteCookies(sameSiteSessionCookie, legacySessionCookie);
+        assertSameSiteCookies(sameSiteIframeSessionCookie, legacyIframeSessionCookie);
         assertSameSiteCookies(sameSiteAuthSessionIdCookie, legacyAuthSessionIdCookie);
     }
 

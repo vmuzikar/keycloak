@@ -46,6 +46,7 @@ import static org.keycloak.testsuite.util.WaitUtils.pause;
 public abstract class AbstractFailoverClusterTest extends AbstractClusterTest {
 
     public static final String KEYCLOAK_SESSION_COOKIE = "KEYCLOAK_SESSION";
+    public static final String KEYCLOAK_IFRAME_SESSION_COOKIE = "KEYCLOAK_IFRAME_SESSION";
 
     public static final Integer SESSION_CACHE_OWNERS = Integer.parseInt(System.getProperty("session.cache.owners", "1"));
     public static final Integer OFFLINE_SESSION_CACHE_OWNERS = Integer.parseInt(System.getProperty("offline.session.cache.owners", "1"));
@@ -124,7 +125,9 @@ public abstract class AbstractFailoverClusterTest extends AbstractClusterTest {
         loginPage.login("test-user@localhost", "password");
         assertTrue(appPage.isCurrent());
         Cookie sessionCookie = driver.manage().getCookieNamed(KEYCLOAK_SESSION_COOKIE);
+        Cookie iframeSessionCookie = driver.manage().getCookieNamed(KEYCLOAK_IFRAME_SESSION_COOKIE);
         assertNotNull(sessionCookie);
+        assertNotNull(iframeSessionCookie);
         return sessionCookie;
     }
 
@@ -136,13 +139,17 @@ public abstract class AbstractFailoverClusterTest extends AbstractClusterTest {
         // verify on realm path
         URLUtils.navigateToUri(AUTH_SERVER_ROOT + "/realms/test");
         Cookie sessionCookieOnRealmPath = driver.manage().getCookieNamed(KEYCLOAK_SESSION_COOKIE);
+        Cookie iframeSessionCookieOnRealmPath = driver.manage().getCookieNamed(KEYCLOAK_IFRAME_SESSION_COOKIE);
         assertNotNull(sessionCookieOnRealmPath);
+        assertNotNull(iframeSessionCookieOnRealmPath);
         assertEquals(sessionCookieOnRealmPath.getValue(), sessionCookieForVerification.getValue());
         // verify on target page
         appPage.open();
         assertTrue(appPage.isCurrent());
         Cookie sessionCookie = driver.manage().getCookieNamed(KEYCLOAK_SESSION_COOKIE);
+        Cookie iframeSessionCookie = driver.manage().getCookieNamed(KEYCLOAK_IFRAME_SESSION_COOKIE);
         assertNotNull(sessionCookie);
+        assertNotNull(iframeSessionCookie);
         assertEquals(sessionCookie.getValue(), sessionCookieForVerification.getValue());
         return sessionCookie;
     }
@@ -153,6 +160,8 @@ public abstract class AbstractFailoverClusterTest extends AbstractClusterTest {
         driver.navigate().refresh();
         assertTrue(loginPage.isCurrent());
         Cookie sessionCookie = driver.manage().getCookieNamed(KEYCLOAK_SESSION_COOKIE);
+        Cookie iframeSessionCookie = driver.manage().getCookieNamed(KEYCLOAK_IFRAME_SESSION_COOKIE);
         assertNull(sessionCookie);
+        assertNull(iframeSessionCookie);
     }
 }

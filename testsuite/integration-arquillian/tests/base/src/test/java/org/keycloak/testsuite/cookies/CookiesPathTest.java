@@ -67,7 +67,7 @@ public class CookiesPathTest extends AbstractKeycloakTest {
 
     private CloseableHttpClient httpClient = null;
 
-    private static final List<String> KEYCLOAK_COOKIE_NAMES = Arrays.asList("KC_RESTART", "AUTH_SESSION_ID", "KEYCLOAK_IDENTITY", "KEYCLOAK_SESSION");
+    private static final List<String> KEYCLOAK_COOKIE_NAMES = Arrays.asList("KC_RESTART", "AUTH_SESSION_ID", "KEYCLOAK_IDENTITY", "KEYCLOAK_SESSION", "KEYCLOAK_IFRAME_SESSION");
 
     @After
     public void closeHttpClient() throws IOException {
@@ -146,7 +146,7 @@ public class CookiesPathTest extends AbstractKeycloakTest {
         // old cookie has been removed
         // now we have AUTH_SESSION_ID, KEYCLOAK_IDENTITY, KEYCLOAK_SESSION
         Assert.assertThat(cookieStore.getCookies().stream().map(org.apache.http.cookie.Cookie::getName).collect(Collectors.toList()), 
-                Matchers.hasItems("AUTH_SESSION_ID", "KEYCLOAK_IDENTITY", "KEYCLOAK_SESSION"));
+                Matchers.hasItems("AUTH_SESSION_ID", "KEYCLOAK_IDENTITY", "KEYCLOAK_SESSION", "KEYCLOAK_IFRAME_SESSION"));
 
         // does each cookie's path end with "/"
         cookieStore.getCookies().stream().filter(c -> !"OAuth_Token_Request_State".equals(c.getName())).map(org.apache.http.cookie.Cookie::getPath).forEach(path ->Assert.assertThat(path, Matchers.endsWith("/")));
@@ -156,6 +156,10 @@ public class CookiesPathTest extends AbstractKeycloakTest {
         String KCSessionId = cookieStore.getCookies().stream().filter(c -> "KEYCLOAK_SESSION".equals(c.getName())).findFirst().get().getValue();
         String KCSessionSuffix = KCSessionId.split("/")[2];
         Assert.assertThat(authSessionId, Matchers.containsString(KCSessionSuffix));
+
+        // KEYCLOAK_IFRAME_SESSION should equal to AUTH_SESSION_ID value
+        String KCIframeSessionId = cookieStore.getCookies().stream().filter(c -> "KEYCLOAK_IFRAME_SESSION".equals(c.getName())).findFirst().get().getValue();
+        Assert.assertEquals(authSessionId, KCIframeSessionId);
     }
 
     @Test
@@ -181,7 +185,7 @@ public class CookiesPathTest extends AbstractKeycloakTest {
         cookies = driver.manage().getCookies().stream()
                 .filter(cookie -> KEYCLOAK_COOKIE_NAMES.contains(cookie.getName()))
                 .collect(Collectors.toSet());
-        Assert.assertThat(cookies, Matchers.hasSize(3));
+        Assert.assertThat(cookies, Matchers.hasSize(4));
 
         // does each cookie's path end with "/"
         cookies.stream().map(Cookie::getPath).forEach(path -> Assert.assertThat(path, Matchers.endsWith("/")));
@@ -191,6 +195,10 @@ public class CookiesPathTest extends AbstractKeycloakTest {
         String KCSessionId = cookies.stream().filter(c -> "KEYCLOAK_SESSION".equals(c.getName())).findFirst().get().getValue();
         String KCSessionSuffix = KCSessionId.split("/")[2];
         Assert.assertThat(authSessionId, Matchers.containsString(KCSessionSuffix));
+
+        // KEYCLOAK_IFRAME_SESSION should equal to AUTH_SESSION_ID value
+        String KCIframeSessionId = cookies.stream().filter(c -> "KEYCLOAK_IFRAME_SESSION".equals(c.getName())).findFirst().get().getValue();
+        Assert.assertEquals(authSessionId, KCIframeSessionId);
     }
 
     @Test
@@ -216,7 +224,7 @@ public class CookiesPathTest extends AbstractKeycloakTest {
         // old cookie has been removed
         // now we have AUTH_SESSION_ID, KEYCLOAK_IDENTITY, KEYCLOAK_SESSION, OAuth_Token_Request_State
         Assert.assertThat(cookieStore.getCookies().stream().map(org.apache.http.cookie.Cookie::getName).collect(Collectors.toList()), 
-                Matchers.hasItems("AUTH_SESSION_ID", "KEYCLOAK_IDENTITY", "KEYCLOAK_SESSION"));
+                Matchers.hasItems("AUTH_SESSION_ID", "KEYCLOAK_IDENTITY", "KEYCLOAK_SESSION", "KEYCLOAK_IFRAME_SESSION"));
 
         // does each cookie's path end with "/"
         cookieStore.getCookies().stream().filter(c -> !"OAuth_Token_Request_State".equals(c.getName())).map(org.apache.http.cookie.Cookie::getPath).forEach(path ->Assert.assertThat(path, Matchers.endsWith("/")));
@@ -226,6 +234,10 @@ public class CookiesPathTest extends AbstractKeycloakTest {
         String KCSessionId = cookieStore.getCookies().stream().filter(c -> "KEYCLOAK_SESSION".equals(c.getName())).findFirst().get().getValue();
         String KCSessionSuffix = KCSessionId.split("/")[2];
         Assert.assertThat(authSessionId, Matchers.containsString(KCSessionSuffix));
+
+        // KEYCLOAK_IFRAME_SESSION should equal to AUTH_SESSION_ID value
+        String KCIframeSessionId = cookieStore.getCookies().stream().filter(c -> "KEYCLOAK_IFRAME_SESSION".equals(c.getName())).findFirst().get().getValue();
+        Assert.assertEquals(authSessionId, KCIframeSessionId);
     }
 
     /**

@@ -49,8 +49,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.keycloak.services.managers.AuthenticationManager.KEYCLOAK_IDENTITY_COOKIE;
+import static org.keycloak.services.managers.AuthenticationManager.KEYCLOAK_IFRAME_SESSION_COOKIE;
+import static org.keycloak.services.managers.AuthenticationManager.KEYCLOAK_SESSION_COOKIE;
 import static org.keycloak.testsuite.util.ServerURLs.AUTH_SERVER_HOST;
 import static org.keycloak.testsuite.util.URLAssert.assertCurrentUrlDoesntStartWith;
 import static org.keycloak.testsuite.util.URLAssert.assertCurrentUrlStartsWith;
@@ -773,6 +777,31 @@ public class JavascriptAdapterTest extends AbstractJavascriptTest {
         testExecutor.attachCheck3pCookiesIframeMutationObserver()
                 .init(defaultArguments(), this::assertInitNotAuth);
     }
+
+//    @Test
+//    // KEYCLOAK-12880
+//    public void testIframeSessionCookie() {
+//        JSObjectBuilder iframeInterval = defaultArguments().setCheckLoginIframeIntervalTo1(); // to speed up the test a bit
+//
+//        // first login
+//        testExecutor.init(iframeInterval)
+//                .login()
+//                .loginForm(testUser)
+//                .init(iframeInterval);
+//
+//        // simulate that browser was closed
+//        jsDriver.navigate().to(accountPage.getAuthRoot() + "/realms/" + REALM_NAME + "/super-random-page");
+//        jsDriver.manage().deleteCookieNamed(KEYCLOAK_IDENTITY_COOKIE);
+//        jsDriver.manage().deleteCookieNamed(KEYCLOAK_IFRAME_SESSION_COOKIE);
+//        assertNotNull(jsDriver.manage().getCookieNamed(KEYCLOAK_SESSION_COOKIE));
+//
+//        // second login
+//        navigateToTestApp(testAppUrl);
+//        testExecutor.init(iframeInterval)
+//                .login()
+//                .loginForm(testUser)
+//                .init(iframeInterval).wait(2000, this::assertAdapterIsLoggedIn);
+//    }
 
     protected void assertAdapterIsLoggedIn(WebDriver driver1, Object output, WebElement events) {
         assertTrue(testExecutor.isLoggedIn());

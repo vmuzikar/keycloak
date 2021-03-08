@@ -25,8 +25,7 @@
 
         var checkCookie = function() {
             if (clientId === init.clientId && origin === init.origin) {
-                var c = cookie.split('/');
-                if (sessionState === c[2]) {
+                if (sessionState === cookie) {
                     callback('unchanged');
                 } else {
                     callback('changed');
@@ -81,9 +80,9 @@
 
     function getCookie()
     {
-        var cookie = getCookieByName('KEYCLOAK_SESSION');
+        var cookie = getCookieByName('KEYCLOAK_IFRAME_SESSION');
         if (cookie === null) {
-            return getCookieByName('KEYCLOAK_SESSION_LEGACY');
+            return getCookieByName('KEYCLOAK_IFRAME_SESSION_LEGACY');
         }
         return cookie;
     }

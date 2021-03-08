@@ -97,7 +97,7 @@ public class LoginStatusIframeEndpointTest extends AbstractKeycloakTest {
             Header setSessionCookieHeader = null;
             for (Header h : response.getAllHeaders()) {
                 if (h.getName().equals("Set-Cookie")) {
-                    if (h.getValue().contains("KEYCLOAK_SESSION")) {
+                    if (h.getValue().contains("KEYCLOAK_IFRAME_SESSION")) {
                         setSessionCookieHeader = h;
 
                     } else if (h.getValue().contains("KEYCLOAK_IDENTITY")) {
@@ -115,7 +115,7 @@ public class LoginStatusIframeEndpointTest extends AbstractKeycloakTest {
 
             Cookie sessionCookie = null;
             for (Cookie cookie : cookieStore.getCookies()) {
-                if (cookie.getName().equals("KEYCLOAK_SESSION")) {
+                if (cookie.getName().equals("KEYCLOAK_IFRAME_SESSION")) {
                     sessionCookie = cookie;
                     break;
                 }

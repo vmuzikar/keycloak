@@ -137,6 +137,7 @@ public class AuthenticationManager {
     public static final String KEYCLOAK_IDENTITY_COOKIE = "KEYCLOAK_IDENTITY";
     // used solely to determine is user is logged in
     public static final String KEYCLOAK_SESSION_COOKIE = "KEYCLOAK_SESSION";
+    public static final String KEYCLOAK_IFRAME_SESSION_COOKIE = "KEYCLOAK_IFRAME_SESSION";
     public static final String KEYCLOAK_REMEMBER_ME = "KEYCLOAK_REMEMBER_ME";
     public static final String KEYCLOAK_LOGOUT_PROTOCOL = "KEYCLOAK_LOGOUT_PROTOCOL";
     private static final TokenTypeCheck VALIDATE_IDENTITY_COOKIE = new TokenTypeCheck(TokenUtil.TOKEN_TYPE_KEYCLOAK_ID);
@@ -690,6 +691,13 @@ public class AuthenticationManager {
         // Max age should be set to the max lifespan of the session as it's used to invalidate old-sessions on re-login
         int sessionCookieMaxAge = session.isRememberMe() && realm.getSsoSessionMaxLifespanRememberMe() > 0 ? realm.getSsoSessionMaxLifespanRememberMe() : realm.getSsoSessionMaxLifespan();
         CookieHelper.addCookie(KEYCLOAK_SESSION_COOKIE, sessionCookieValue, cookiePath, null, null, sessionCookieMaxAge, secureOnly, false, SameSiteAttributeValue.NONE);
+
+        if (session != null) {
+            // Basically to be used only by the JS adapter. It is very similar to KEYCLOAK_SESSION (which was previously
+            // used by the JS adapter) but with the same max-age as KEYCLOAK_IDENTITY. For more details see KEYCLOAK-12880.
+            CookieHelper.addCookie(KEYCLOAK_IFRAME_SESSION_COOKIE, session.getId(), cookiePath, null, null, maxAge, secureOnly, false, SameSiteAttributeValue.NONE);
+        }
+
         P3PHelper.addP3PHeader();
     }
 
@@ -720,10 +728,12 @@ public class AuthenticationManager {
         String path = getIdentityCookiePath(realm, uriInfo);
         expireCookie(realm, KEYCLOAK_IDENTITY_COOKIE, path, true, connection, SameSiteAttributeValue.NONE);
         expireCookie(realm, KEYCLOAK_SESSION_COOKIE, path, false, connection, SameSiteAttributeValue.NONE);
+        expireCookie(realm, KEYCLOAK_IFRAME_SESSION_COOKIE, path, false, connection, SameSiteAttributeValue.NONE);
 
         String oldPath = getOldCookiePath(realm, uriInfo);
         expireCookie(realm, KEYCLOAK_IDENTITY_COOKIE, oldPath, true, connection, SameSiteAttributeValue.NONE);
         expireCookie(realm, KEYCLOAK_SESSION_COOKIE, oldPath, false, connection, SameSiteAttributeValue.NONE);
+        // KEYCLOAK_IFRAME_SESSION was never used with the old path
     }
     public static void expireOldIdentityCookie(RealmModel realm, UriInfo uriInfo, ClientConnection connection) {
         logger.debug("Expiring old identity cookie with wrong path");

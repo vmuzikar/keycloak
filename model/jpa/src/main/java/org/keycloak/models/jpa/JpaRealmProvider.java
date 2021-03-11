@@ -21,6 +21,7 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,11 @@ import javax.persistence.LockModeType;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+
 import org.jboss.logging.Logger;
 import org.keycloak.common.util.Time;
 import org.keycloak.connections.jpa.util.JpaUtils;
@@ -52,6 +57,7 @@ import org.keycloak.models.RealmProvider;
 import org.keycloak.models.RoleContainerModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.RoleProvider;
+import org.keycloak.models.jpa.entities.ClientAttributeEntity;
 import org.keycloak.models.jpa.entities.ClientEntity;
 import org.keycloak.models.jpa.entities.ClientInitialAccessEntity;
 import org.keycloak.models.jpa.entities.ClientScopeEntity;
@@ -676,6 +682,36 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
 
         Stream<String> results = paginateQuery(query, firstResult, maxResults).getResultStream();
         return closing(results.map(c -> session.clients().getClientById(realm, c)));
+    }
+
+    @Override
+    public Stream<ClientModel> searchClientsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults) {
+        CriteriaBuilder builder = em.getCriteriaBuilder();
+        CriteriaQuery<ClientEntity> queryBuilder = builder.createQuery(ClientEntity.class);
+        Root<ClientEntity> root = queryBuilder.from(ClientEntity.class);
+
+        List<Predicate> predicates = new ArrayList<>();
+
+        Join<ClientEntity, RealmEntity> realmJoin = root.join("realm");
+        predicates.add(builder.equal(realmJoin.get("id"), realm.getId()));
+
+        for (Map.Entry<String, String> entry : attributes.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            Join<ClientEntity, ClientAttributeEntity> attributeJoin = root.join("attributes");
+
+            Predicate attrNamePredicate = builder.equal(attributeJoin.get("name"), key);
+            Predicate attrValuePredicate = builder.equal(attributeJoin.get("value"), value);
+            predicates.add(builder.and(attrNamePredicate, attrValuePredicate));
+        }
+
+        Predicate finalPredicate = builder.and(predicates.toArray(new Predicate[0]));
+        queryBuilder.where(finalPredicate).orderBy(builder.asc(root.get("clientId")));
+
+        TypedQuery<ClientEntity> query = em.createQuery(queryBuilder);
+        return closing(paginateQuery(query, firstResult, maxResults).getResultStream())
+                .map(c -> session.clients().getClientById(realm, c.getId()));
     }
 
     @Override

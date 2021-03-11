@@ -92,6 +92,12 @@ public class HardcodedClientStorageProvider implements ClientStorageProvider, Cl
         return Stream.empty();
     }
 
+    @Override
+    public Stream<ClientModel> searchClientsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults) {
+        // TODO implement this!
+        return Stream.empty();
+    }
+
     public class ClientAdapter extends AbstractReadOnlyClientStorageAdapter {
 
         public ClientAdapter(RealmModel realm) {

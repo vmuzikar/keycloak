@@ -30,6 +30,7 @@ import org.keycloak.storage.client.ClientStorageProviderFactory;
 import org.keycloak.storage.client.ClientStorageProviderModel;
 import org.keycloak.utils.ServicesUtils;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -156,6 +157,20 @@ public class ClientStorageManager implements ClientProvider {
                 .flatMap(ServicesUtils.timeBound(session,
                         clientStorageProviderTimeout,
                         p -> ((ClientLookupProvider) p).searchClientsByClientIdStream(realm, clientId, firstResult, maxResults)));
+
+        return Stream.concat(local, ext);
+    }
+
+    /**
+     * @see {@link #searchClientsByClientIdStream(RealmModel, String, Integer, Integer)}
+     */
+    @Override
+    public Stream<ClientModel> searchClientsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults) {
+        Stream<ClientModel> local = session.clientLocalStorage().searchClientsByAttributes(realm, attributes,  firstResult, maxResults);
+        Stream<ClientModel> ext = getEnabledStorageProviders(session, realm, ClientLookupProvider.class)
+                .flatMap(ServicesUtils.timeBound(session,
+                        clientStorageProviderTimeout,
+                        p -> ((ClientLookupProvider) p).searchClientsByAttributes(realm, attributes, firstResult, maxResults)));
 
         return Stream.concat(local, ext);
     }

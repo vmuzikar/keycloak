@@ -54,7 +54,11 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.lang.Boolean.TRUE;
@@ -100,12 +104,28 @@ public class ClientsResource {
     public Stream<ClientRepresentation> getClients(@QueryParam("clientId") String clientId,
                                                  @QueryParam("viewableOnly") @DefaultValue("false") boolean viewableOnly,
                                                  @QueryParam("search") @DefaultValue("false") boolean search,
+                                                 @QueryParam("q") String searchQuery,
                                                  @QueryParam("first") Integer firstResult,
                                                  @QueryParam("max") Integer maxResults) {
         boolean canView = auth.clients().canView();
         Stream<ClientModel> clientModels = Stream.empty();
 
-        if (clientId == null || clientId.trim().equals("")) {
+        if (searchQuery != null) {
+            Map<String, String> attributes = new HashMap<>();
+
+            Matcher queryMatcher = Pattern.compile("(?<negate>-)?(?:(?<name>[^-:+]+):)?(?<value>[^-:+]+)").matcher(searchQuery);
+            while (queryMatcher.find()) {
+                if (queryMatcher.group("name") == null || queryMatcher.group("negate") != null) {
+                    return Stream.empty(); // skip generic search and negative search for now
+                }
+
+                attributes.put(queryMatcher.group("name"), queryMatcher.group("value"));
+            }
+
+            clientModels = canView
+                    ? realm.searchClientByAttributes(attributes, firstResult, maxResults)
+                    : realm.searchClientByAttributes(attributes, -1, -1);
+        } else if (clientId == null || clientId.trim().equals("")) {
             clientModels = canView
                     ? realm.getClientsStream(firstResult, maxResults)
                     : realm.getClientsStream();

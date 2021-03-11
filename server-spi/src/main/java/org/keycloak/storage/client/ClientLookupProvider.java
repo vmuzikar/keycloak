@@ -20,6 +20,7 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.RealmModel;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -92,4 +93,6 @@ public interface ClientLookupProvider {
      * @return Stream of ClientModel or an empty stream if no client is found. Never returns {@code null}.
      */
     Stream<ClientModel> searchClientsByClientIdStream(RealmModel realm, String clientId, Integer firstResult, Integer maxResults);
+
+    Stream<ClientModel> searchClientsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults);
 }

@@ -270,6 +270,12 @@ public class MapClientProvider implements ClientProvider {
     }
 
     @Override
+    public Stream<ClientModel> searchClientsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults) {
+        // TODO implement this!
+        return Stream.empty();
+    }
+
+    @Override
     public void close() {
         
     }

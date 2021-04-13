@@ -346,7 +346,7 @@ jobs:
     name: Trigger Quickstart tests
     runs-on: ubuntu-latest
     env:
-      QS_REPO: vmuzikar/quickstarts
+      QS_REPO: vmuzikar/keycloak-quickstarts
     steps:
       - uses: octokit/request-action@v2.x
         id: create_check_run
@@ -361,6 +361,9 @@ jobs:
         with:
           route: POST /repos/${{ env.QS_REPO }}/dispatches
           event_type: kc_push
-          client_payload: '{"head_sha":"${{ github.sha }}", "repo":"${{ github.repository }}", "check_run_url":"${{ fromJson(steps.create_check_run.outputs.data).url }}"}'
+          client_payload: |
+            head_sha: ${{ github.sha }}
+            repo: ${{ github.repository }}
+            check_run_url: ${{ fromJson(steps.create_check_run.outputs.data).url }}
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}

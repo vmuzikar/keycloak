@@ -1,0 +1,25 @@
+# We cannot update the check run directly from the QS repo so we need to trigger a GH Actions Workflow and do it from
+# here instead. This is because check runs do not work with personal access tokens (unlike repository_dispatch)
+# and require application installation tokens. We have an installation token inside a workflow run (GITHUB_TOKEN) but
+# it is issued for the repo where it is running. To avoid creating and installing apps, we just use a personal access
+# token in the QS repo with access to the KC repo. It then uses that token to trigger this workflow which is then able
+# to update the check run. It acts sort of like a proxy.
+
+name: Quickstarts Event Listener
+on:
+  repository_dispatch:
+    types: [qs_update]
+
+jobs:
+  update_check_run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: octokit/request-action@v2.x
+        id: update_check_run
+        with:
+          route: PATCH ${{ github.event.client_payload.check_run_url }}
+          details_url: ${{ github.event.client_payload.workflow_url }}
+          status: ${{ github.event.client_payload.status }}
+          conclusion: ${{ github.event.client_payload.conclusion }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

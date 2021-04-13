@@ -341,3 +341,26 @@ jobs:
           retention-days: 14
           path: reports-quarkus-cluster-tests.zip
           if-no-files-found: ignore
+
+  quickstarts:
+    name: Trigger Quickstart tests
+    runs-on: ubuntu-latest
+    env:
+      QS_REPO: vmuzikar/quickstarts
+    steps:
+      - uses: octokit/request-action@v2.x
+        id: create_check_run
+        with:
+          route: POST /repos/${{ github.repository }}/check-runs
+          name: "Quickstarts Tests"
+          head_sha: ${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: octokit/request-action@v2.x
+        id: dispatch_event
+        with:
+          route: POST /repos/${{ env.QS_REPO }}/dispatches
+          event_type: kc_push
+          client_payload: '{"head_sha":"${{ github.sha }}", "repo":"${{ github.repository }}", "check_run_url":"${{ fromJson(steps.create_check_run.outputs.data).url }}"}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}

@@ -344,6 +344,7 @@ jobs:
 
   quickstarts:
     name: Trigger Quickstart tests
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     env:
       QS_REPO: vmuzikar/keycloak-quickstarts
@@ -360,7 +361,7 @@ jobs:
         id: dispatch_event
         with:
           route: POST /repos/${{ env.QS_REPO }}/dispatches
-          event_type: kc_push
+          event_type: keycloak_pr
           client_payload: |
             head_sha: ${{ github.sha }}
             repo: ${{ github.repository }}

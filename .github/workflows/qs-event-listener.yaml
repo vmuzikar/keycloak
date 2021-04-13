@@ -8,7 +8,7 @@
 name: Quickstarts Event Listener
 on:
   repository_dispatch:
-    types: [qs_update]
+    types: [quickstarts_test_status_updated]
 
 jobs:
   update_check_run:

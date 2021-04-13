@@ -367,4 +367,4 @@ jobs:
             repo: ${{ github.repository }}
             check_run_url: ${{ fromJson(steps.create_check_run.outputs.data).url }}
         env:
-          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

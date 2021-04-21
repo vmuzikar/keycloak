@@ -62,12 +62,9 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.utils.AuthenticationFlowResolver;
 import org.keycloak.models.utils.FormMessage;
 import org.keycloak.protocol.LoginProtocol;
-import org.keycloak.protocol.LoginProtocolFactory;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.protocol.oidc.utils.RedirectUtils;
-import org.keycloak.protocol.saml.SamlProtocol;
-import org.keycloak.protocol.saml.SamlService;
 import org.keycloak.protocol.saml.SamlSessionUtils;
 import org.keycloak.protocol.saml.preprocessor.SamlAuthenticationPreprocessor;
 import org.keycloak.representations.AccessToken;
@@ -129,6 +126,7 @@ public class IdentityBrokerService implements IdentityProvider.AuthenticationCal
 
     // Authentication session note, which references identity provider that is currently linked
     private static final String LINKING_IDENTITY_PROVIDER = "LINKING_IDENTITY_PROVIDER";
+    public static final String FEDERATED_AUTH_TIME = "FEDERATED_AUTH_TIME";
 
     private static final Logger logger = Logger.getLogger(IdentityBrokerService.class);
 
@@ -825,6 +823,8 @@ public class IdentityBrokerService implements IdentityProvider.AuthenticationCal
         context.getIdp().authenticationFinished(authSession, context);
         authSession.setUserSessionNote(Details.IDENTITY_PROVIDER, providerId);
         authSession.setUserSessionNote(Details.IDENTITY_PROVIDER_USERNAME, context.getUsername());
+
+        authSession.setUserSessionNote(FEDERATED_AUTH_TIME, String.valueOf(context.getContextData().get(FEDERATED_AUTH_TIME)));
 
         event.detail(Details.IDENTITY_PROVIDER, providerId)
                 .detail(Details.IDENTITY_PROVIDER_USERNAME, context.getUsername());

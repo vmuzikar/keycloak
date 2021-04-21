@@ -17,7 +17,7 @@
 package org.keycloak.broker.oidc;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.jboss.logging.Logger;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.OAuthErrorException;
@@ -67,9 +67,11 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.security.PublicKey;
+
+import static org.keycloak.services.resources.IdentityBrokerService.FEDERATED_AUTH_TIME;
 
 /**
  * @author Pedro Igor
@@ -377,7 +379,9 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
             }
 
             identity.getContextData().put(BROKER_NONCE_PARAM, idToken.getOtherClaims().get(OIDCLoginProtocol.NONCE_PARAM));
-            
+            identity.getContextData().put(FEDERATED_AUTH_TIME, idToken.getOtherClaims().get(IDToken.AUTH_TIME));
+
+
             if (getConfig().isStoreToken()) {
                 if (tokenResponse.getExpiresIn() > 0) {
                     long accessTokenExpiration = Time.currentTime() + tokenResponse.getExpiresIn();
@@ -781,6 +785,19 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
 
         authenticationSession.setClientNote(BROKER_NONCE_PARAM, nonce);
         uriBuilder.queryParam(OIDCLoginProtocol.NONCE_PARAM, nonce);
+
+        ObjectNode claims = JsonSerialization.createObjectNode();
+        claims.putObject("id_token")
+                .putObject("auth_time")
+                    .put("essential", true);
+
+        try {
+            String claimsStr = JsonSerialization.writeValueAsString(claims);
+            uriBuilder.queryParam(OIDCLoginProtocol.CLAIMS_PARAM, URLEncoder.encode(claimsStr, "UTF-8"));
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         return uriBuilder;
     }

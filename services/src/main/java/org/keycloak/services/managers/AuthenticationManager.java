@@ -102,6 +102,7 @@ import java.util.stream.Stream;
 
 import static org.keycloak.common.util.ServerCookie.SameSiteAttributeValue;
 import static org.keycloak.protocol.oidc.grants.device.DeviceGrantType.isOAuth2DeviceVerificationFlow;
+import static org.keycloak.services.resources.IdentityBrokerService.FEDERATED_AUTH_TIME;
 import static org.keycloak.services.util.CookieHelper.getCookie;
 
 /**
@@ -894,8 +895,9 @@ public class AuthenticationManager {
         if (isSSOAuthentication) {
             clientSession.setNote(SSO_AUTH, "true");
         } else {
-            int authTime = Time.currentTime();
-            userSession.setNote(AUTH_TIME, String.valueOf(authTime));
+            String federatedAuthTime = userSession.getNote(FEDERATED_AUTH_TIME);
+            String authTime = federatedAuthTime != null ? federatedAuthTime : String.valueOf(Time.currentTime());
+            userSession.setNote(AUTH_TIME, authTime);
             clientSession.removeNote(SSO_AUTH);
         }
 

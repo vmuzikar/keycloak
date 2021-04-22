@@ -824,7 +824,7 @@ public class IdentityBrokerService implements IdentityProvider.AuthenticationCal
         authSession.setUserSessionNote(Details.IDENTITY_PROVIDER, providerId);
         authSession.setUserSessionNote(Details.IDENTITY_PROVIDER_USERNAME, context.getUsername());
 
-        authSession.setUserSessionNote(FEDERATED_AUTH_TIME, String.valueOf(context.getContextData().get(FEDERATED_AUTH_TIME)));
+        authSession.setUserSessionNote(FEDERATED_AUTH_TIME, context.getAuthTime());
 
         event.detail(Details.IDENTITY_PROVIDER, providerId)
                 .detail(Details.IDENTITY_PROVIDER_USERNAME, context.getUsername());

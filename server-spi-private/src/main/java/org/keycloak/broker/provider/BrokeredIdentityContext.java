@@ -43,6 +43,7 @@ public class BrokeredIdentityContext {
     private String brokerSessionId;
     private String brokerUserId;
     private String token;
+    private String authTime;
     private IdentityProviderModel idpConfig;
     private IdentityProvider idp;
     private Map<String, Object> contextData = new HashMap<>();
@@ -133,6 +134,14 @@ public class BrokeredIdentityContext {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public String getAuthTime() {
+        return authTime;
+    }
+
+    public void setAuthTime(String authTime) {
+        this.authTime = authTime;
     }
 
     public IdentityProviderModel getIdpConfig() {

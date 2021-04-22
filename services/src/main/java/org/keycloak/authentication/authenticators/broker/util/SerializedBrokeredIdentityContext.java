@@ -53,6 +53,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
     private String brokerUserId;
     private String code;
     private String token;
+    private String authTime;
 
     @JsonIgnore
     private boolean emailAsUsername;
@@ -163,6 +164,14 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
         this.token = token;
     }
 
+    public String getAuthTime() {
+        return authTime;
+    }
+
+    public void setAuthTime(String authTime) {
+        this.authTime = authTime;
+    }
+
     public String getIdentityProviderId() {
         return identityProviderId;
     }
@@ -261,6 +270,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
         ctx.setBrokerSessionId(getBrokerSessionId());
         ctx.setBrokerUserId(getBrokerUserId());
         ctx.setToken(getToken());
+        ctx.setAuthTime(getAuthTime());
 
         RealmModel realm = authSession.getRealm();
         IdentityProviderModel idpConfig = realm.getIdentityProviderByAlias(getIdentityProviderId());
@@ -301,6 +311,7 @@ public class SerializedBrokeredIdentityContext implements UpdateProfileContext {
         ctx.setBrokerSessionId(context.getBrokerSessionId());
         ctx.setBrokerUserId(context.getBrokerUserId());
         ctx.setToken(context.getToken());
+        ctx.setAuthTime(context.getAuthTime());
         ctx.setIdentityProviderId(context.getIdpConfig().getAlias());
 
         ctx.emailAsUsername = context.getAuthenticationSession().getRealm().isRegistrationEmailAsUsername();

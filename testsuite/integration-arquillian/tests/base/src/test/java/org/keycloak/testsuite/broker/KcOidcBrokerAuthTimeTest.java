@@ -21,7 +21,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.junit.Test;
+import org.keycloak.OAuth2Constants;
 import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.models.Constants;
+import org.keycloak.models.UserModel;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.representations.IDToken;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -36,6 +39,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.keycloak.models.Constants.KC_ACTION;
 import static org.keycloak.testsuite.broker.BrokerTestTools.getConsumerRoot;
 import static org.keycloak.testsuite.util.ProtocolMapperUtil.createHardcodedClaim;
 
@@ -55,7 +59,7 @@ public class KcOidcBrokerAuthTimeTest extends AbstractInitializedBaseBrokerTest 
                 List<ProtocolMapperRepresentation> mappers = new ArrayList<>();
 
                 ProtocolMapperRepresentation hardcodedClaim = createHardcodedClaim("auth_time-override",
-                        "auth_time", String.valueOf(AUTH_TIME_VALUE), "Integer", false, true);
+                        "auth_time", String.valueOf(AUTH_TIME_VALUE), "long", false, true);
 
                 mappers.add(hardcodedClaim);
                 clients.get(0).setProtocolMappers(mappers);
@@ -85,20 +89,36 @@ public class KcOidcBrokerAuthTimeTest extends AbstractInitializedBaseBrokerTest 
     public void testClaimPresent() throws Exception {
         driver.navigate().to(getAccountUrl(getConsumerRoot(), bc.consumerRealmName()));
 
+        String claimsParamStr = getProviderLoginParam(OIDCLoginProtocol.CLAIMS_PARAM);
+
+        ObjectNode claimsParam = JsonSerialization.readValue(claimsParamStr, ObjectNode.class);
+        assertTrue(claimsParam.get("id_token").get("auth_time").get("essential").asBoolean());
+    }
+
+    @Test
+    public void testMaxAgePresent() throws Exception {
+        driver.navigate().to(getAccountUrl(getConsumerRoot(), bc.consumerRealmName()));
+
+        // initiate AIA
+        String queryString = "&" + KC_ACTION + "=" + UserModel.RequiredAction.UPDATE_PASSWORD.name();
+        driver.navigate().to(driver.getCurrentUrl() + queryString);
+
+        int maxAge = Integer.parseInt(getProviderLoginParam(OAuth2Constants.MAX_AGE));
+        assertEquals(Constants.KC_ACTION_MAX_AGE, maxAge);
+    }
+
+    public String getProviderLoginParam(String paramName) throws Exception {
         log.debug("Clicking social " + bc.getIDPAlias());
         loginPage.clickSocial(bc.getIDPAlias());
 
         String currentUrl = driver.getCurrentUrl();
         log.debug("Current URL: " + currentUrl);
 
-        String claimsParamStr = URLEncodedUtils.parse(new URI(currentUrl), Charset.defaultCharset())
+        return URLEncodedUtils.parse(new URI(currentUrl), Charset.defaultCharset())
                 .stream()
-                .filter(p -> OIDCLoginProtocol.CLAIMS_PARAM.equals(p.getName()))
+                .filter(p -> paramName.equals(p.getName()))
                 .map(NameValuePair::getValue)
                 .findAny()
-                .orElseThrow(() -> new AssertionError("\"claims\" param was not found"));
-        ObjectNode claimsParam = JsonSerialization.readValue(claimsParamStr, ObjectNode.class);
-
-        assertTrue(claimsParam.get("id_token").get("auth_time").get("essential").asBoolean());
+                .orElseThrow(() -> new AssertionError("Param was not found:" + paramName));
     }
 }

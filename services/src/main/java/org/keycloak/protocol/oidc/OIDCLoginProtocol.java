@@ -24,7 +24,7 @@ import org.jboss.logging.Logger;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.TokenIdGenerator;
-import org.keycloak.authentication.RequiredActionProvider;
+import org.keycloak.authentication.requiredactions.util.InitiatedActionsUtil;
 import org.keycloak.common.util.Time;
 import org.keycloak.connections.httpclient.HttpClientProvider;
 import org.keycloak.constants.AdapterConstants;
@@ -40,7 +40,6 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.protocol.LoginProtocol;
-import org.keycloak.protocol.oidc.grants.device.DeviceGrantType;
 import org.keycloak.protocol.oidc.utils.OIDCRedirectUriBuilder;
 import org.keycloak.protocol.oidc.utils.OIDCResponseMode;
 import org.keycloak.protocol.oidc.utils.OIDCResponseType;
@@ -388,13 +387,11 @@ public class OIDCLoginProtocol implements LoginProtocol {
     }
 
     protected boolean isReAuthRequiredForKcAction(UserSessionModel userSession, AuthenticationSessionModel authSession) {
-        if (authSession.getClientNote(Constants.KC_ACTION) != null) {
-            String providerId = authSession.getClientNote(Constants.KC_ACTION);
-            RequiredActionProvider requiredActionProvider = this.session.getProvider(RequiredActionProvider.class, providerId);
+        Integer AIAMaxAge = InitiatedActionsUtil.getCurrentActionMaxAuthAge(authSession, session);
+        if (AIAMaxAge != null) {
             String authTime = userSession.getNote(AuthenticationManager.AUTH_TIME);
             int authTimeInt = authTime == null ? 0 : Integer.parseInt(authTime);
-            int maxAgeInt = requiredActionProvider.getMaxAuthAge();
-            return authTimeInt + maxAgeInt < Time.currentTime();
+            return authTimeInt + AIAMaxAge < Time.currentTime();
         } else {
             return false;
         }

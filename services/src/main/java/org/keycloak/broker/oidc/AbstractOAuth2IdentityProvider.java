@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.OAuthErrorException;
+import org.keycloak.authentication.requiredactions.util.InitiatedActionsUtil;
 import org.keycloak.broker.provider.AbstractIdentityProvider;
 import org.keycloak.broker.provider.AuthenticationRequest;
 import org.keycloak.broker.provider.BrokeredIdentityContext;
@@ -347,6 +348,13 @@ public abstract class AbstractOAuth2IdentityProvider<C extends OAuth2IdentityPro
         if (acr != null) {
             uriBuilder.queryParam(OAuth2Constants.ACR_VALUES, acr);
         }
+
+        // AIA re-auth
+        Integer AIAMaxAge = InitiatedActionsUtil.getCurrentActionMaxAuthAge(request.getAuthenticationSession(), session);
+        if (AIAMaxAge != null) {
+            uriBuilder.queryParam(OAuth2Constants.MAX_AGE, AIAMaxAge);
+        }
+
         String forwardParameterConfig = getConfig().getForwardParameters() != null ? getConfig().getForwardParameters(): "";
         List<String> forwardParameters = Arrays.asList(forwardParameterConfig.split("\\s*,\\s*"));
         for(String forwardParameter: forwardParameters) {

@@ -68,7 +68,6 @@ import org.keycloak.protocol.oidc.BackchannelLogoutResponse;
 import org.keycloak.protocol.oidc.OIDCAdvancedConfigWrapper;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.TokenManager;
-import org.keycloak.protocol.saml.SamlClient;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.Urls;
@@ -896,8 +895,13 @@ public class AuthenticationManager {
             clientSession.setNote(SSO_AUTH, "true");
         } else {
             String federatedAuthTime = userSession.getNote(FEDERATED_AUTH_TIME);
-            String authTime = federatedAuthTime != null ? federatedAuthTime : String.valueOf(Time.currentTime());
-            userSession.setNote(AUTH_TIME, authTime);
+            if (federatedAuthTime != null) {
+                logger.debugv("Using federated auth_time: {0}", federatedAuthTime);
+                userSession.setNote(AUTH_TIME, federatedAuthTime);
+            }
+            else {
+                userSession.setNote(AUTH_TIME, String.valueOf(Time.currentTime()));
+            }
             clientSession.removeNote(SSO_AUTH);
         }
 

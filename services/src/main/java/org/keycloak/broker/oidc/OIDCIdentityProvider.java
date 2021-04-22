@@ -88,6 +88,15 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
     public static final String EXCHANGE_PROVIDER = "EXCHANGE_PROVIDER";
     private static final String BROKER_NONCE_PARAM = "BROKER_NONCE";
 
+    // auth_time claim might be optional; we can try to ask the OP to provide it
+    private static final ObjectNode CLAIMS;
+    static {
+        CLAIMS = JsonSerialization.createObjectNode();
+        CLAIMS.putObject("id_token")
+                .putObject("auth_time")
+                .put("essential", true);
+    }
+
     public OIDCIdentityProvider(KeycloakSession session, OIDCIdentityProviderConfig config) {
         super(session, config);
 
@@ -379,7 +388,7 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
             }
 
             identity.getContextData().put(BROKER_NONCE_PARAM, idToken.getOtherClaims().get(OIDCLoginProtocol.NONCE_PARAM));
-            identity.getContextData().put(FEDERATED_AUTH_TIME, idToken.getOtherClaims().get(IDToken.AUTH_TIME));
+            identity.setAuthTime(String.valueOf(idToken.getOtherClaims().get(IDToken.AUTH_TIME)));
 
 
             if (getConfig().isStoreToken()) {
@@ -786,14 +795,9 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         authenticationSession.setClientNote(BROKER_NONCE_PARAM, nonce);
         uriBuilder.queryParam(OIDCLoginProtocol.NONCE_PARAM, nonce);
 
-        ObjectNode claims = JsonSerialization.createObjectNode();
-        claims.putObject("id_token")
-                .putObject("auth_time")
-                    .put("essential", true);
-
         try {
-            String claimsStr = JsonSerialization.writeValueAsString(claims);
-            uriBuilder.queryParam(OIDCLoginProtocol.CLAIMS_PARAM, URLEncoder.encode(claimsStr, "UTF-8"));
+            String claimsUrlEncoded = URLEncoder.encode(JsonSerialization.writeValueAsString(getClaims(request)), "UTF-8");
+            uriBuilder.queryParam(OIDCLoginProtocol.CLAIMS_PARAM, claimsUrlEncoded);
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -822,5 +826,9 @@ public class OIDCIdentityProvider extends AbstractOAuth2IdentityProvider<OIDCIde
         if (!nonce.equals(expectedNonce)) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_TOKEN, "invalid nonce", Response.Status.BAD_REQUEST);
         }
+    }
+
+    protected ObjectNode getClaims(AuthenticationRequest request) {
+        return CLAIMS;
     }
 }

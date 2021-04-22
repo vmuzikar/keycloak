@@ -894,7 +894,7 @@ public class AuthenticationManager {
         if (isSSOAuthentication) {
             clientSession.setNote(SSO_AUTH, "true");
         } else {
-            String federatedAuthTime = userSession.getNote(FEDERATED_AUTH_TIME);
+            String federatedAuthTime = authSession.getAuthNote(FEDERATED_AUTH_TIME);
             if (federatedAuthTime != null) {
                 logger.debugv("Using federated auth_time: {0}", federatedAuthTime);
                 userSession.setNote(AUTH_TIME, federatedAuthTime);

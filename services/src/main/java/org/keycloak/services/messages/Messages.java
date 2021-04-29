@@ -268,6 +268,9 @@ public class Messages {
     public static final String DELETE_ACCOUNT_LACK_PRIVILEDGES = "deletingAccountForbidden";
     public static final String DELETE_ACCOUNT_ERROR = "errorDeletingAccount";
 
+    public static final String NO_CREDENTIAL_ID_SPECIFIED = "noCredentialIdSpecified";
+    public static final String CREDENTIAL_ID_NOT_FOUND = "credentialIdNotFound";
+
     // OAuth 2.0 Device Authorization Grant
     public static final String OAUTH2_DEVICE_AUTHORIZATION_GRANT_DISABLED = "oauth2DeviceAuthorizationGrantDisabledMessage";
     public static final String OAUTH2_DEVICE_INVALID_USER_CODE = "oauth2DeviceInvalidUserCodeMessage";

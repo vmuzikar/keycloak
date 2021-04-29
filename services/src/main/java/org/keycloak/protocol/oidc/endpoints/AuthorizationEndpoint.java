@@ -479,7 +479,9 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
 
         if (request.getAdditionalReqParams() != null) {
             for (String paramName : request.getAdditionalReqParams().keySet()) {
+                // put it both into auth session and client session so that the consumer can choose whether it wants the param to be client session scoped or auth session scoped
                 authenticationSession.setClientNote(LOGIN_SESSION_NOTE_ADDITIONAL_REQ_PARAMS_PREFIX + paramName, request.getAdditionalReqParams().get(paramName));
+                authenticationSession.setAuthNote(LOGIN_SESSION_NOTE_ADDITIONAL_REQ_PARAMS_PREFIX + paramName, request.getAdditionalReqParams().get(paramName));
             }
         }
     }

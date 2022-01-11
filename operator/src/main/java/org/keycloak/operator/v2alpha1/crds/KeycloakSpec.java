@@ -16,9 +16,16 @@
  */
 package org.keycloak.operator.v2alpha1.crds;
 
+import io.fabric8.kubernetes.api.model.PodTemplate;
+
+import java.util.Map;
+
 public class KeycloakSpec {
 
     private int instances = 1;
+    private String image;
+    private Map<String, String> distConfig;
+    private PodTemplate podTemplate;
 
     public int getInstances() {
         return instances;
@@ -26,5 +33,29 @@ public class KeycloakSpec {
 
     public void setInstances(int instances) {
         this.instances = instances;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
+    }
+
+    public Map<String, String> getDistConfig() {
+        return distConfig;
+    }
+
+    public void setDistConfig(Map<String, String> distConfig) {
+        this.distConfig = distConfig;
+    }
+
+    public PodTemplate getPodTemplate() {
+        return podTemplate;
+    }
+
+    public void setPodTemplate(PodTemplate podTemplate) {
+        this.podTemplate = podTemplate;
     }
 }

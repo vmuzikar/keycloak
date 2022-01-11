@@ -16,9 +16,13 @@
  */
 package org.keycloak.operator.v2alpha1.crds;
 
+import io.fabric8.kubernetes.api.model.PodTemplate;
+
 public class KeycloakSpec {
 
     private int instances = 1;
+
+    private PodTemplate podTemplate;
 
     public int getInstances() {
         return instances;
@@ -26,5 +30,13 @@ public class KeycloakSpec {
 
     public void setInstances(int instances) {
         this.instances = instances;
+    }
+
+    public PodTemplate getPodTemplate() {
+        return podTemplate;
+    }
+
+    public void setPodTemplate(PodTemplate podTemplate) {
+        this.podTemplate = podTemplate;
     }
 }

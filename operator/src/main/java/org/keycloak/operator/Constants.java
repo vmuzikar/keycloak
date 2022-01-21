@@ -26,6 +26,7 @@ public final class Constants {
     public static final String PLURAL_NAME = "keycloaks";
     public static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     public static final String MANAGED_BY_VALUE = "keycloak-operator";
+    public static final String DEPENDENCY_LABEL = Constants.CRDS_GROUP + "/type";
 
     public static final Map<String, String> DEFAULT_LABELS = Map.of(
             "app", NAME,

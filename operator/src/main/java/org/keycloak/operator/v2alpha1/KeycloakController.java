@@ -38,7 +38,6 @@ import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEven
 import io.quarkus.logging.Log;
 import org.keycloak.operator.Config;
 import org.keycloak.operator.Constants;
-import org.keycloak.operator.WatchedResourcesStore;
 import org.keycloak.operator.v2alpha1.crds.Keycloak;
 import org.keycloak.operator.v2alpha1.crds.KeycloakStatus;
 import org.keycloak.operator.v2alpha1.crds.KeycloakStatusBuilder;
@@ -47,9 +46,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static io.javaoperatorsdk.operator.api.reconciler.Constants.NO_FINALIZER;
 import static io.javaoperatorsdk.operator.api.reconciler.Constants.WATCH_CURRENT_NAMESPACE;
 
 @ControllerConfiguration(namespaces = WATCH_CURRENT_NAMESPACE)
@@ -60,8 +57,6 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
 
     @Inject
     Config config;
-
-    private final WatchedResourcesStore watchedSecrets = new WatchedResourcesStore();
 
     @Override
     public List<EventSource> prepareEventSources(EventSourceContext<Keycloak> context) {
@@ -80,21 +75,11 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
                     }
         });
 
-        // TODO optimize this (set labels?) to not watch all namespaces
-        SharedIndexInformer<Secret> secretsInformer =
-                client.secrets().inAnyNamespace()
-                        .runnableInformer(0);
-
-        EventSource secretEvent = new InformerEventSource<>(
-                secretsInformer, s ->
-                    watchedSecrets.getCRNamesForResource(s.getMetadata().getName()).stream()
-                        .map(cr -> {
-                            watchedSecrets.setResourceModified(s.getMetadata().getNamespace(), cr, s.getMetadata().getName(), true);
-                            return new ResourceID(cr, s.getMetadata().getNamespace());
-                        })
-                        .collect(Collectors.toSet()));
-
-        return List.of(deploymentEvent, secretEvent);
+        return List.of(
+                deploymentEvent,
+                WatchedResourcesStore.getStoreEventSource(client, Secret.class),
+                WatchedResourcesStore.getWatchedResourcesEventSource(client, Secret.class)
+        );
     }
 
     @Override
@@ -112,11 +97,13 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
         kcDeployment.updateStatus(statusBuilder);
         kcDeployment.createOrUpdateReconciled();
 
-        watchedSecrets.setResourcesForCr(namespace, kcName, kcDeployment.getConfigSecretsNames());
-        if (watchedSecrets.resetModified(namespace, kcName)) {
+        var watchedSecrets = new WatchedResourcesStore<>(Secret.class, kcDeployment.getConfigSecretsNames(), client, kc);
+        if (watchedSecrets.requiresRestart()) {
             Log.info("Config Secrets modified, restarting deployment");
             kcDeployment.rollingRestart();
         }
+        watchedSecrets.createOrUpdateReconciled();
+        watchedSecrets.reconcileWatchedResourcesLabels();
 
         var status = statusBuilder.build();
 
@@ -149,7 +136,7 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
         String namespace = kc.getMetadata().getNamespace();
         Log.infof("--- Cleaning up Keycloak: %s in namespace: %s", kcName, namespace);
 
-        watchedSecrets.removeResourcesForCR(namespace, kcName);
+        new WatchedResourcesStore<>(Secret.class, null, client, kc).reconcileWatchedResourcesLabels();
 
         return DeleteControl.defaultDelete();
     }

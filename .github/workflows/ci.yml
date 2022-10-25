@@ -20,7 +20,6 @@ concurrency:
 jobs:
   build:
     name: Build
-    if: ${{ ( github.event_name != 'schedule' ) || ( github.event_name == 'schedule' && github.repository == 'keycloak/keycloak' ) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -65,11 +64,7 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Check whether HEAD^ contains HotRod storage relevant changes
-        run: echo "GIT_HOTROD_RELEVANT_DIFF=$( git diff --name-only HEAD^ | egrep -ic -e '^model/map-hot-rod|^model/map/|^model/build-processor' )" >> $GITHUB_ENV
-
       - name: Cache Maven packages
-        if: ${{ github.event_name != 'pull_request' || matrix.server != 'quarkus-map-hot-rod' || env.GIT_HOTROD_RELEVANT_DIFF != 0 }}
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -77,7 +72,6 @@ jobs:
           restore-keys: cache-1-${{ runner.os }}-m2
 
       - name: Download built keycloak
-        if: ${{ github.event_name != 'pull_request' || matrix.server != 'quarkus-map-hot-rod' || env.GIT_HOTROD_RELEVANT_DIFF != 0 }}
         id: download-keycloak
         uses: actions/download-artifact@v3
         with:
@@ -90,23 +84,14 @@ jobs:
       #     ls -lR ~/.m2/repository
 
       - uses: actions/setup-java@v3
-        if: ${{ github.event_name != 'pull_request' || matrix.server != 'quarkus-map-hot-rod' || env.GIT_HOTROD_RELEVANT_DIFF != 0 }}
         with:
           distribution: 'adopt'
           java-version: ${{ env.DEFAULT_JDK_VERSION }}
       - name: Update maven settings
-        if: ${{ github.event_name != 'pull_request' || matrix.server != 'quarkus-map-hot-rod' || env.GIT_HOTROD_RELEVANT_DIFF != 0 }}
         run: mkdir -p ~/.m2 ; cp .github/settings.xml ~/.m2/
-      - name: Prepare test providers
-        if: ${{ matrix.server == 'quarkus' || matrix.server == 'quarkus-map' }}
-        run: ./mvnw clean install -nsu -B -e -f testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers -Pauth-server-quarkus
       - name: Run base tests
-        if: ${{ github.event_name != 'pull_request' || matrix.server != 'quarkus-map-hot-rod' || env.GIT_HOTROD_RELEVANT_DIFF != 0 }}
         timeout-minutes: 6
         run: |
-          declare -A PARAMS TESTGROUP
-          PARAMS["quarkus"]="-Pauth-server-quarkus"
-
           ./mvnw clean install -nsu -B -Pauth-server-quarkus -Dtest=KcOidcBrokerTest -f testsuite/integration-arquillian/tests/base/pom.xml -Dkeycloak.logging.level=debug -Dkeycloak.testsuite.logging.level=debug
 
           TEST_RESULT=${PIPESTATUS[0]}

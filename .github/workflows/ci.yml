@@ -95,19 +95,6 @@ jobs:
           find . -path '*/target/surefire-reports/*.xml' | zip -q reports-quarkus-tests.zip -@
           exit $TEST_RESULT
 
-      - name: Run Quarkus Storage Tests
-        run: |
-          ./mvnw clean install -nsu -B -f quarkus/tests/pom.xml -Ptest-database -Dtest=PostgreSQLDistTest,MariaDBDistTest#testSuccessful,MySQLDistTest#testSuccessful,DatabaseOptionsDistTest,JPAStoreDistTest,HotRodStoreDistTest,MixedStoreDistTest | misc/log/trimmer.sh
-          TEST_RESULT=${PIPESTATUS[0]}
-          find . -path '*/target/surefire-reports/*.xml' | zip -q reports-quarkus-tests.zip -@
-          exit $TEST_RESULT
-
-      - name: Run Quarkus Tests in Docker
-        run: |
-          ./mvnw clean install -nsu -B -f quarkus/tests/pom.xml -Dkc.quarkus.tests.dist=docker | misc/log/trimmer.sh
-          TEST_RESULT=${PIPESTATUS[0]}
-          exit $TEST_RESULT
-
       - name: Analyze Test and/or Coverage Results
         uses: runforesight/foresight-test-kit-action@v1.3.0
         if: always() && github.repository == 'keycloak/keycloak'

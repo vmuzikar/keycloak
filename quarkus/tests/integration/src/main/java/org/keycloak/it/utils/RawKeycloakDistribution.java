@@ -17,6 +17,27 @@
 
 package org.keycloak.it.utils;
 
+import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.fs.util.ZipUtils;
+import org.jboss.logging.Logger;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.exporter.ZipExporter;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.keycloak.common.Version;
+import org.keycloak.it.TestProvider;
+import org.keycloak.it.junit5.extension.CLIResult;
+import org.keycloak.quarkus.runtime.cli.command.Build;
+import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper;
+import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,31 +61,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.fs.util.ZipUtils;
-
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.keycloak.common.Version;
-import org.keycloak.it.TestProvider;
-import org.keycloak.it.junit5.extension.CLIResult;
-import org.keycloak.quarkus.runtime.cli.command.Build;
-import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper;
-import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers;
 
 import static org.keycloak.quarkus.runtime.Environment.LAUNCH_MODE;
 import static org.keycloak.quarkus.runtime.Environment.isWindows;
@@ -88,6 +91,7 @@ public final class RawKeycloakDistribution implements KeycloakDistribution {
     private ExecutorService outputExecutor;
     private boolean inited = false;
     private Map<String, String> envVars = new HashMap<>();
+    private Logger log = Logger.getLogger(RawKeycloakDistribution.class);
 
     public RawKeycloakDistribution(boolean debug, boolean manualStop, boolean reCreate, boolean removeBuildOptionsAfterBuild,
             boolean createAdminUser) {
@@ -137,6 +141,7 @@ public final class RawKeycloakDistribution implements KeycloakDistribution {
     @Override
     public void stop() {
         if (isRunning()) {
+            log.info("Server running, stopping it...");
             try {
                 // On Windows, we need to make sure sub-processes are terminated first
                 destroyDescendantsOnWindows(keycloak, false);
@@ -152,6 +157,7 @@ public final class RawKeycloakDistribution implements KeycloakDistribution {
         }
 
         shutdownOutputExecutor();
+        log.info("Server stopped");
     }
 
     private void destroyDescendantsOnWindows(Process parent, boolean force) {
@@ -238,6 +244,8 @@ public final class RawKeycloakDistribution implements KeycloakDistribution {
     }
 
     private void waitForReadiness() throws MalformedURLException {
+        log.info("Waiting for KC readiness");
+
         URL contextRoot = new URL("http://localhost:" + httpPort + ("/" + relativePath + "/realms/master/").replace("//", "/"));
         HttpURLConnection connection = null;
         long startTime = System.currentTimeMillis();
@@ -264,6 +272,7 @@ public final class RawKeycloakDistribution implements KeycloakDistribution {
                 connection.connect();
 
                 if (connection.getResponseCode() == 200) {
+                    log.info("Server started");
                     break;
                 }
             } catch (Exception ignore) {

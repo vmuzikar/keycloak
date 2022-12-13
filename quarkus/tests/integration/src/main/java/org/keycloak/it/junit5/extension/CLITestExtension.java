@@ -17,15 +17,28 @@
 
 package org.keycloak.it.junit5.extension;
 
-import static org.keycloak.it.junit5.extension.DistributionTest.ReInstall.BEFORE_ALL;
-import static org.keycloak.it.junit5.extension.DistributionType.RAW;
-import static org.keycloak.quarkus.runtime.Environment.forceTestLaunchMode;
-import static org.keycloak.quarkus.runtime.cli.command.Main.CONFIG_FILE_LONG_NAME;
-import static org.keycloak.quarkus.runtime.cli.command.Main.CONFIG_FILE_SHORT_NAME;
+import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
+import io.quarkus.test.junit.QuarkusMainTestExtension;
+import io.quarkus.test.junit.main.Launch;
+import io.quarkus.test.junit.main.LaunchResult;
+import org.jboss.logging.Logger;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
+import org.keycloak.it.utils.KeycloakDistribution;
+import org.keycloak.it.utils.RawDistRootPath;
+import org.keycloak.it.utils.RawKeycloakDistribution;
+import org.keycloak.quarkus.runtime.Environment;
+import org.keycloak.quarkus.runtime.cli.command.Start;
+import org.keycloak.quarkus.runtime.cli.command.StartDev;
+import org.keycloak.quarkus.runtime.configuration.KeycloakPropertiesConfigSource;
+import org.keycloak.quarkus.runtime.configuration.test.TestConfigArgsConfigSource;
+import org.keycloak.quarkus.runtime.integration.QuarkusPlatform;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,25 +48,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.runtime.configuration.QuarkusConfigFactory;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ParameterContext;
-import org.junit.jupiter.api.extension.ParameterResolutionException;
-import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
-import org.keycloak.it.utils.RawDistRootPath;
-import org.keycloak.it.utils.KeycloakDistribution;
-import org.keycloak.it.utils.RawKeycloakDistribution;
-import org.keycloak.quarkus.runtime.Environment;
-import org.keycloak.quarkus.runtime.cli.command.Start;
-import org.keycloak.quarkus.runtime.cli.command.StartDev;
-
-import io.quarkus.test.junit.QuarkusMainTestExtension;
-import io.quarkus.test.junit.main.Launch;
-import io.quarkus.test.junit.main.LaunchResult;
-import org.keycloak.quarkus.runtime.configuration.KeycloakPropertiesConfigSource;
-import org.keycloak.quarkus.runtime.configuration.test.TestConfigArgsConfigSource;
-import org.keycloak.quarkus.runtime.integration.QuarkusPlatform;
+import static org.keycloak.it.junit5.extension.DistributionTest.ReInstall.BEFORE_ALL;
+import static org.keycloak.it.junit5.extension.DistributionType.RAW;
+import static org.keycloak.quarkus.runtime.Environment.forceTestLaunchMode;
+import static org.keycloak.quarkus.runtime.cli.command.Main.CONFIG_FILE_LONG_NAME;
+import static org.keycloak.quarkus.runtime.cli.command.Main.CONFIG_FILE_SHORT_NAME;
 
 public class CLITestExtension extends QuarkusMainTestExtension {
 
@@ -62,9 +61,12 @@ public class CLITestExtension extends QuarkusMainTestExtension {
     private final Set<String> testSysProps = new HashSet<>();
     private DatabaseContainer databaseContainer;
     private CLIResult result;
+    private Logger log = Logger.getLogger(CLITestExtension.class);
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
+        log.info("--- Starting test: " + context.getDisplayName());
+
         DistributionTest distConfig = getDistributionConfig(context);
         Launch launch = context.getRequiredTestMethod().getAnnotation(Launch.class);
 
@@ -176,6 +178,8 @@ public class CLITestExtension extends QuarkusMainTestExtension {
 
         super.afterEach(context);
         reset(distConfig);
+
+        log.info("--- Finished test: " + context.getDisplayName());
     }
 
     private void reset(DistributionTest distConfig) {

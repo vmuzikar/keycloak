@@ -254,7 +254,7 @@ public abstract class BaseOperatorTest {
     }
 
     Log.info("Deleting namespace : " + namespace);
-    assertThat(k8sclient.namespaces().withName(namespace).delete()).isTrue();
+    assertThat(k8sclient.namespaces().withName(namespace).delete()).isNotNull().isNotEmpty();
     k8sclient.close();
   }
 }

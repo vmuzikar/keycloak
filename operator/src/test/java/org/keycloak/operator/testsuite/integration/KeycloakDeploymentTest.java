@@ -159,7 +159,7 @@ public class KeycloakDeploymentTest extends BaseOperatorTest {
             deployKeycloak(k8sclient, kc, true);
 
             Log.info("Trying to delete deployment");
-            assertThat(k8sclient.apps().statefulSets().withName(deploymentName).delete()).isTrue();
+            assertThat(k8sclient.apps().statefulSets().withName(deploymentName).delete()).isNotNull().isNotEmpty();
             Awaitility.await()
                     .untilAsserted(() -> assertThat(k8sclient.apps().statefulSets().withName(deploymentName).get()).isNotNull());
 

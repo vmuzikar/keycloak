@@ -152,7 +152,7 @@ public class KeycloakIngressTest extends BaseOperatorTest {
                 .withName(ingress.getName());
 
         Log.info("Trying to delete the ingress");
-        assertThat(ingressSelector.delete()).isTrue();
+        assertThat(ingressSelector.delete()).isNotNull().isNotEmpty();
         Awaitility.await()
                 .untilAsserted(() -> assertThat(ingressSelector.get()).isNotNull());
 

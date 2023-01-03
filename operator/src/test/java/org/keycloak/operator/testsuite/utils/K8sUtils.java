@@ -60,7 +60,7 @@ public final class K8sUtils {
 
         var resources = client.resources(Keycloak.class);
         if (namespace != null) {
-            resources.inNamespace(namespace);
+            resources.inNamespace(namespace); // otherwise rely on a default namespace
         }
         resources.createOrReplace(kc);
 
@@ -88,11 +88,13 @@ public final class K8sUtils {
                 .timeout(5, TimeUnit.MINUTES)
                 .ignoreExceptions()
                 .untilAsserted(() -> {
-                    var currentKc = client
-                            .resources(Keycloak.class)
-                            .inNamespace(kc.getMetadata().getNamespace())
-                            .withName(kc.getMetadata().getName())
-                            .get();
+                    final String namespace = kc.getMetadata().getNamespace();
+                    var kcResources = client.resources(Keycloak.class);
+                    if (namespace != null) {
+                        kcResources.inNamespace(namespace);
+                    }
+
+                    var currentKc = kcResources.withName(kc.getMetadata().getName()).get();
 
                     CRAssert.assertKeycloakStatusCondition(currentKc, KeycloakStatusCondition.READY, true);
                     CRAssert.assertKeycloakStatusCondition(currentKc, KeycloakStatusCondition.HAS_ERRORS, false);

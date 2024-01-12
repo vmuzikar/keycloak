@@ -14,6 +14,13 @@
             "frontendUrl": "${keycloak.frontendUrl:}",
             "adminUrl": "${keycloak.adminUrl:}",
             "forceBackendUrlToFrontendUrl": "${keycloak.hostname.default.forceBackendUrlToFrontendUrl:false}"
+        },
+
+        "v2": {
+            "hostname": "${keycloak.hostname:}",
+            "hostname-admin": "${keycloak.hostname-admin:}",
+            "hostname-backchannel-dynamic": "${keycloak.hostname-backchannel-dynamic:}",
+            "hostname-strict": "${keycloak.hostname-strict:}"
         }
     },
 

@@ -107,7 +107,7 @@ public class Profile {
         OFFLINE_SESSION_PRELOADING("Offline session preloading", Type.DEPRECATED),
 
         HOSTNAME_V1("Hostname Options V1", Type.DEFAULT),
-        //HOSTNAME_V2("Hostname Options V2", Type.DEFAULT, 2),
+        HOSTNAME_V2("Hostname Options V2", Type.PREVIEW_DISABLED_BY_DEFAULT, 2),
 
         DECLARATIVE_UI("declarative ui spi", Type.EXPERIMENTAL),
         ;

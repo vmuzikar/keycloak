@@ -49,7 +49,18 @@ public class KeycloakContainerFeaturesController {
 
     public enum FeatureAction {
         ENABLE(KeycloakTestingClient::enableFeature),
-        DISABLE(KeycloakTestingClient::disableFeature);
+        ENABLE_AND_RESET((c, f) -> {
+            c.enableFeature(f);
+            // Without reset, feature will be persisted resulting e.g. in versioned features being disabled which is an invalid operation.
+            // At the same time we can't just reset the feature as we don't know in the server context whether the feature should be enabled
+            // or disabled after the reset.
+            c.resetFeature(f);
+        }),
+        DISABLE(KeycloakTestingClient::disableFeature),
+        DISABLE_AND_RESET((c, f) -> {
+            c.disableFeature(f);
+            c.resetFeature(f);
+        });
 
         private BiConsumer<KeycloakTestingClient, Profile.Feature> featureConsumer;
 
@@ -90,7 +101,8 @@ public class KeycloakContainerFeaturesController {
 
         public void performAction() {
             if ((action == FeatureAction.ENABLE && !ProfileAssume.isFeatureEnabled(feature))
-                    || (action == FeatureAction.DISABLE && ProfileAssume.isFeatureEnabled(feature))) {
+                    || (action == FeatureAction.DISABLE && ProfileAssume.isFeatureEnabled(feature))
+                    || action == FeatureAction.ENABLE_AND_RESET || action == FeatureAction.DISABLE_AND_RESET) {
                 action.accept(testContextInstance.get().getTestingClient(), feature);
                 SetDefaultProvider setDefaultProvider = annotatedElement.getAnnotation(SetDefaultProvider.class);
                 if (setDefaultProvider != null) {
@@ -178,12 +190,12 @@ public class KeycloakContainerFeaturesController {
 
         ret.addAll(Arrays.stream(annotatedElement.getAnnotationsByType(EnableFeature.class))
                 .map(annotation -> new UpdateFeature(annotation.value(), annotation.skipRestart(),
-                        state == State.BEFORE ? FeatureAction.ENABLE : FeatureAction.DISABLE, annotatedElement))
+                        state == State.BEFORE ? FeatureAction.ENABLE : FeatureAction.DISABLE_AND_RESET, annotatedElement))
                 .collect(Collectors.toSet()));
 
         ret.addAll(Arrays.stream(annotatedElement.getAnnotationsByType(DisableFeature.class))
                 .map(annotation -> new UpdateFeature(annotation.value(), annotation.skipRestart(),
-                        state == State.BEFORE ? FeatureAction.DISABLE : FeatureAction.ENABLE, annotatedElement))
+                        state == State.BEFORE ? FeatureAction.DISABLE : FeatureAction.ENABLE_AND_RESET, annotatedElement))
                 .collect(Collectors.toSet()));
 
         return ret;

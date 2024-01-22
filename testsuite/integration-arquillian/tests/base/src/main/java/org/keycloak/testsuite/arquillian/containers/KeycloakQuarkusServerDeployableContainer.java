@@ -10,6 +10,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileVisitResult;
@@ -47,7 +48,7 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
         try {
             importRealm();
             container = startContainer();
-            logProcessor = new LogProcessor(container.inputReader());
+            logProcessor = new LogProcessor(new BufferedReader(new InputStreamReader(container.getInputStream())));
             stdoutForwarderThread = new Thread(logProcessor);
             stdoutForwarderThread.start();
             waitForReadiness();

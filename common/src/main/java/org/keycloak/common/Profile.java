@@ -287,9 +287,9 @@ public class Profile {
         }
     }
 
-    private static ProfileConfigResolver.FeatureConfig getFeatureConfig(String unversionedFeature,
+    private static ProfileConfigResolver.FeatureConfig getFeatureConfig(String feature,
             ProfileConfigResolver... resolvers) {
-        ProfileConfigResolver.FeatureConfig configuration = Arrays.stream(resolvers).map(r -> r.getFeatureConfig(unversionedFeature))
+        ProfileConfigResolver.FeatureConfig configuration = Arrays.stream(resolvers).map(r -> r.getFeatureConfig(feature))
                 .filter(r -> !r.equals(ProfileConfigResolver.FeatureConfig.UNCONFIGURED))
                 .findFirst()
                 .orElse(ProfileConfigResolver.FeatureConfig.UNCONFIGURED);

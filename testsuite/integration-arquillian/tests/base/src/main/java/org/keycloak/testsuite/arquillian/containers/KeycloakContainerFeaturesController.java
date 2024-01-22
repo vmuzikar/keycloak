@@ -96,7 +96,7 @@ public class KeycloakContainerFeaturesController {
                             " feature " + feature.getKey() + ", however after performing this operation " +
                             "the feature is not in desired state" ,
                     ProfileAssume.isFeatureEnabled(feature),
-                    is(action == FeatureAction.ENABLE));
+                    is(action == FeatureAction.ENABLE || action == FeatureAction.ENABLE_AND_RESET));
         }
 
         public void performAction() {
@@ -107,7 +107,7 @@ public class KeycloakContainerFeaturesController {
                 SetDefaultProvider setDefaultProvider = annotatedElement.getAnnotation(SetDefaultProvider.class);
                 if (setDefaultProvider != null) {
                     try {
-                        if (action == FeatureAction.ENABLE) {
+                        if (action == FeatureAction.ENABLE || action == FeatureAction.ENABLE_AND_RESET) {
                             SpiProvidersSwitchingUtils.addProviderDefaultValue(suiteContextInstance.get(), setDefaultProvider);
                         } else {
                             SpiProvidersSwitchingUtils.removeProvider(suiteContextInstance.get(), setDefaultProvider);

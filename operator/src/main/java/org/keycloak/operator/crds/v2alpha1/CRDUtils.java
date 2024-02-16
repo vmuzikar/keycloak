@@ -26,9 +26,16 @@ import java.util.Optional;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public final class CRDUtils {
+    public static final String OPENSHIFT_DEFAULT = "openshift-default";
+
     public static boolean isTlsConfigured(Keycloak keycloakCR) {
         var tlsSecret = Optional.ofNullable(keycloakCR.getSpec().getHttpSpec()).map(HttpSpec::getTlsSecret);
         return tlsSecret.isPresent() && !tlsSecret.get().trim().isEmpty();
+    }
+
+    public static boolean isDefaultOpenShiftIngress(Keycloak keycloakCR) {
+        return keycloakCR.getSpec().getIngressSpec() != null && keycloakCR.getSpec().getIngressSpec().isIngressEnabled()
+                && OPENSHIFT_DEFAULT.equals(keycloakCR.getSpec().getIngressSpec().getIngressClassName());
     }
 
 }

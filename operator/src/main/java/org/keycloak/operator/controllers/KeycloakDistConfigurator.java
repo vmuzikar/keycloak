@@ -48,6 +48,8 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import static io.smallrye.config.common.utils.StringUtil.replaceNonAlphanumericByUnderscores;
+import static org.keycloak.operator.crds.v2alpha1.CRDUtils.isDefaultOpenShiftIngress;
+import static org.keycloak.operator.crds.v2alpha1.CRDUtils.isTlsConfigured;
 
 /**
  * Configuration for the Keycloak Statefulset
@@ -134,7 +136,15 @@ public class KeycloakDistConfigurator {
 
     void configureProxy() {
         optionMapper(keycloakCR -> keycloakCR.getSpec().getProxySpec())
-                .mapOption("proxy-headers", ProxySpec::getHeaders);
+                .mapOption("proxy-headers", ProxySpec::getHeaders, keycloakCR -> {
+                    // Accept the Forwarded header by default only if openshift-default ingressClass is used (which we
+                    // know how it behaves) and if TLS is not configured, i.e. TLS edge termination is used.
+                    if (isDefaultOpenShiftIngress(keycloakCR) && !isTlsConfigured(keycloakCR)) {
+                        Log.debugf("Using default OpenShift Ingress, setting proxy-headers=forwarded");
+                        return "forwarded";
+                    }
+                    return null;
+                });
     }
 
     /* ---------- END of configuration of first-class citizen fields ---------- */
@@ -172,23 +182,19 @@ public class KeycloakDistConfigurator {
 
         private class Mapper<R> {
             Function<T, R> optionValueSupplier;
+            Function<Keycloak, R> defaultValueSupplier;
 
-            public Mapper(Function<T, R> optionValueSupplier) {
+            public Mapper(Function<T, R> optionValueSupplier, Function<Keycloak, R> defaultValueSupplier) {
                 this.optionValueSupplier = optionValueSupplier;
+                this.defaultValueSupplier = defaultValueSupplier;
             }
 
             void map(String optionName, Keycloak keycloak, List<EnvVar> variables) {
-                var categorySpec = optionSpec.apply(keycloak);
-
-                if (categorySpec == null) {
-                    Log.debugf("No category spec provided for %s", optionName);
-                    return;
+                R value = mapFromValue(optionName, keycloak);
+                if (value == null) {
+                    value = mapFromDefaultValue(optionName, keycloak);
                 }
-
-                R value = optionValueSupplier.apply(categorySpec);
-
-                if (value == null || value.toString().trim().isEmpty()) {
-                    Log.debugf("No value provided for %s", optionName);
+                if (value == null) {
                     return;
                 }
 
@@ -203,6 +209,39 @@ public class KeycloakDistConfigurator {
 
                 variables.add(envVarBuilder.build());
             }
+
+            private R mapFromValue(String optionName, Keycloak keycloak) {
+                T categorySpec = optionSpec.apply(keycloak);
+
+                if (categorySpec == null) {
+                    Log.debugf("No category spec provided for %s", optionName);
+                    return null;
+                }
+
+                R value = optionValueSupplier.apply(categorySpec);
+
+                if (value == null || value.toString().trim().isEmpty()) {
+                    Log.debugf("No value explicitly provided for %s", optionName);
+                    return null;
+                }
+
+                return value;
+            }
+
+            private R mapFromDefaultValue(String optionName, Keycloak keycloak) {
+                if (defaultValueSupplier == null) {
+                    Log.debugf("No default value provider set for %s", optionName);
+                    return null;
+                }
+
+                R value = defaultValueSupplier.apply(keycloak);
+                if (value == null || value.toString().trim().isEmpty()) {
+                    Log.debugf("No default value provided for %s", optionName);
+                    return null;
+                }
+                Log.debugf("Using default value for %s", optionName);
+                return value;
+            }
         }
 
         private final Function<Keycloak, T> optionSpec;
@@ -212,7 +251,11 @@ public class KeycloakDistConfigurator {
         }
 
         public <R> OptionMapper<T> mapOption(String optionName, Function<T, R> optionValueSupplier) {
-            firstClassConfigOptions.put(optionName, new Mapper<>(optionValueSupplier));
+            return mapOption(optionName, optionValueSupplier, null);
+        }
+
+        public <R> OptionMapper<T> mapOption(String optionName, Function<T, R> optionValueSupplier, Function<Keycloak, R> defaultValueSupplier) {
+            firstClassConfigOptions.put(optionName, new Mapper<>(optionValueSupplier, defaultValueSupplier));
             return this;
         }
 

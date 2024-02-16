@@ -67,6 +67,8 @@ public class KeycloakIngressDependentResource extends CRUDKubernetesDependentRes
             annotations.put("route.openshift.io/termination", "edge");
         }
 
+        annotations.put("haproxy.router.openshift.io/set-forwarded-headers", "replace");
+
         var optionalSpec = Optional.ofNullable(keycloak.getSpec().getIngressSpec());
         optionalSpec.map(IngressSpec::getAnnotations).ifPresent(annotations::putAll);
 

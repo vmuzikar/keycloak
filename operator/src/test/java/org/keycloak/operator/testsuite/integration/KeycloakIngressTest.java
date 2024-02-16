@@ -28,21 +28,24 @@ import io.restassured.RestAssured;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.keycloak.operator.Constants;
-import org.keycloak.operator.controllers.KeycloakController;
 import org.keycloak.operator.controllers.KeycloakIngressDependentResource;
+import org.keycloak.operator.crds.v2alpha1.CRDUtils;
 import org.keycloak.operator.crds.v2alpha1.deployment.Keycloak;
+import org.keycloak.operator.crds.v2alpha1.deployment.ValueOrSecret;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.HostnameSpecBuilder;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.IngressSpec;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.IngressSpecBuilder;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.UnsupportedSpecBuilder;
 import org.keycloak.operator.testsuite.utils.K8sUtils;
 
+import java.util.List;
 import java.util.Map;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @QuarkusTest
 public class KeycloakIngressTest extends BaseOperatorTest {
@@ -56,7 +59,7 @@ public class KeycloakIngressTest extends BaseOperatorTest {
                 .withStrict(false)
                 .withStrictBackchannel(false);
         if (isOpenShift) {
-            kc.getSpec().setIngressSpec(new IngressSpecBuilder().withIngressClassName(KeycloakController.OPENSHIFT_DEFAULT).build());
+            kc.getSpec().setIngressSpec(new IngressSpecBuilder().withIngressClassName(CRDUtils.OPENSHIFT_DEFAULT).build());
 
             // see https://github.com/keycloak/keycloak/issues/14400#issuecomment-1659900081
             kc.getSpec().setUnsupported(new UnsupportedSpecBuilder()
@@ -97,7 +100,7 @@ public class KeycloakIngressTest extends BaseOperatorTest {
                 .withStrict(false)
                 .withStrictBackchannel(false);
         if (isOpenShift) {
-            kc.getSpec().setIngressSpec(new IngressSpecBuilder().withIngressClassName(KeycloakController.OPENSHIFT_DEFAULT).build());
+            kc.getSpec().setIngressSpec(new IngressSpecBuilder().withIngressClassName(CRDUtils.OPENSHIFT_DEFAULT).build());
         }
         kc.getSpec().setHostnameSpec(hostnameSpecBuilder.build());
 
@@ -111,6 +114,60 @@ public class KeycloakIngressTest extends BaseOperatorTest {
         }
 
         testIngressURLs("https://" + testHostname + ":443");
+    }
+
+    @Test
+    public void testProxyConfiguredAutomaticallyOnOpenShift() {
+        assumeTrue(isOpenShift);
+
+        // The proxy defaults are set only if TLS edge termination is used and only with openshift-default ingressClass
+        var kc = getTestKeycloakDeployment(false);
+        kc.getSpec().getHttpSpec().setTlsSecret(null);
+        kc.getSpec().getHttpSpec().setHttpEnabled(true);
+        var hostnameSpecBuilder = new HostnameSpecBuilder()
+                .withStrict(false)
+                .withStrictBackchannel(false);
+        kc.getSpec().setHostnameSpec(hostnameSpecBuilder.build());
+        kc.getSpec().setIngressSpec(new IngressSpecBuilder().withIngressClassName(CRDUtils.OPENSHIFT_DEFAULT).build());
+        kc.getSpec().setProxySpec(null);
+        kc.getSpec().setAdditionalOptions(List.of(new ValueOrSecret("hostname-debug", "true")));
+
+        K8sUtils.deployKeycloak(k8sclient, kc, true);
+
+        // Test that the OpenShift Route correctly overrides the forwarded header
+        // we need to be extra careful as this is configured by the Operator automatically, so we take the responsibility if misconfigured
+        // this is configured by the haproxy.router.openshift.io/set-forwarded-headers annotation
+        var hostname = k8sclient.resource(kc).get().getSpec().getHostnameSpec().getHostname();
+        var url = "https://" + hostname + ":443/realms/master/hostname-debug";
+        Awaitility.await()
+                .ignoreExceptions()
+                .untilAsserted(() -> {
+                    Log.info("Testing URL: " + url);
+
+                    var output = RestAssured.given()
+                            .relaxedHTTPSValidation()
+                            .headers(Map.of(
+                                    "forwarded", "by=192.168.1.1;for=127.0.0.2;host=foobar;proto=http",
+                                    "x-forwarded-for", "127.0.0.2",
+                                    "x-forwarded-host", "foobar",
+                                    "x-forwarded-proto", "http"
+                            ))
+                            .get(url)
+                            .body()
+                            .asString();
+
+                    // All should be overwritten by OpenShift
+                    assertThat(output)
+                            .doesNotContain("foobar")
+                            .doesNotContain("192.168.1.1")
+                            .doesNotContain("127.0.0.2")
+                            .contains("host=" + hostname);
+                });
+
+        var envVars = k8sclient.apps().statefulSets().withName(kc.getMetadata().getName()).get()
+                .getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        assertThat(envVars).anyMatch(e -> "KC_PROXY_HEADERS".equals(e.getName()) && "forwarded".equals(e.getValue()));
+        assertThat(envVars).noneMatch(e -> "KC_PROXY".equals(e.getName()));
     }
 
     private void testIngressURLs(String baseUrl) {

@@ -125,9 +125,10 @@ public class KeycloakIngressTest extends BaseOperatorTest {
                             .get(url)
                             .body()
                             .jsonPath()
-                            .getString("realm");
+                            .getString("token-service");
 
-                    assertEquals("master", output);
+                    // the Keycloak URL must be without port, otherwise proxy resolution doesn't work correctly
+                    assertEquals(url.replaceAll(":\\d+", "") + "/protocol/openid-connect", output);
                 });
 
         Awaitility.await()

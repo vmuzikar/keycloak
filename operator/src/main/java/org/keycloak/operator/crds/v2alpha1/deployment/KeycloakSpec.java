@@ -25,6 +25,7 @@ import org.keycloak.operator.crds.v2alpha1.deployment.spec.FeatureSpec;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.HostnameSpec;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.HttpSpec;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.IngressSpec;
+import org.keycloak.operator.crds.v2alpha1.deployment.spec.ProxySpec;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.TransactionsSpec;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.Truststore;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.UnsupportedSpec;
@@ -94,6 +95,10 @@ public class KeycloakSpec {
     @JsonProperty("cache")
     @JsonPropertyDescription("In this section you can configure Keycloak's cache")
     private CacheSpec cacheSpec;
+
+    @JsonProperty("proxy")
+    @JsonPropertyDescription("In this section you can configure Keycloak's reverse proxy setting")
+    private ProxySpec proxySpec;
 
     public HttpSpec getHttpSpec() {
         return httpSpec;
@@ -213,4 +218,11 @@ public class KeycloakSpec {
         this.cacheSpec = cache;
     }
 
+    public ProxySpec getProxySpec() {
+        return proxySpec;
+    }
+
+    public void setProxySpec(ProxySpec proxySpec) {
+        this.proxySpec = proxySpec;
+    }
 }

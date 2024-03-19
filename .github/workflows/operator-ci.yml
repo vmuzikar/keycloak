@@ -91,13 +91,13 @@ jobs:
           (cd quarkus/container && docker build --build-arg KEYCLOAK_DIST=$(ls keycloak-*.tar.gz) . -t keycloak:${{ env.version_local }})
           (cd operator && ./scripts/build-testing-docker-images.sh ${{ env.version_local }} keycloak custom-keycloak)
 
-#      - name: Test operator running locally
-#        run: |
-#          ./mvnw install -Poperator -pl :keycloak-operator -am \
-#              -Dquarkus.kubernetes.image-pull-policy=IfNotPresent \
-#              -Dkc.operator.keycloak.image=keycloak:${{ env.version_local }} \
-#              -Dtest.operator.custom.image=custom-keycloak:${{ env.version_local }} \
-#              -Dkc.operator.keycloak.image-pull-policy=Never
+      - name: Test operator running locally
+        run: |
+          ./mvnw install -Poperator -pl :keycloak-operator -am \
+              -Dquarkus.kubernetes.image-pull-policy=IfNotPresent \
+              -Dkc.operator.keycloak.image=keycloak:${{ env.version_local }} \
+              -Dtest.operator.custom.image=custom-keycloak:${{ env.version_local }} \
+              -Dkc.operator.keycloak.image-pull-policy=Never
 #
 #  test-remote:
 #    name: Test remote

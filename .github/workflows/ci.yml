@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ci: ${{ steps.conditional.outputs.ci }}
+      ci-quarkus: ${{ steps.conditional.outputs.ci-quarkus }}
       ci-store: ${{ steps.conditional.outputs.ci-store }}
       ci-sssd: ${{ steps.conditional.outputs.ci-sssd }}
       ci-store-matrix: ${{ steps.conditional-stores.outputs.matrix }}
@@ -174,7 +175,8 @@ jobs:
 
   quarkus-unit-tests:
     name: Quarkus UT
-    needs: build
+    needs: [build, conditional]
+    if: needs.conditional.outputs.ci-quarkus == 'true'
     timeout-minutes: 15
     strategy:
       matrix:
@@ -204,7 +206,8 @@ jobs:
 
   quarkus-integration-tests:
     name: Quarkus IT
-    needs: build
+    needs: [build, conditional]
+    if: needs.conditional.outputs.ci-quarkus == 'true'
     timeout-minutes: 115
     strategy:
       matrix:

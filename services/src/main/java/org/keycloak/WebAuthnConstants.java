@@ -18,7 +18,7 @@ package org.keycloak;
 
 public interface WebAuthnConstants {
 
-    // Interface binded by FreeMarker template between UA and RP
+    // Interface binded by FreeMarker template between UA and RP abc
     String USER_ID = "userid";
     String USER_NAME = "username";
     String CHALLENGE = "challenge";

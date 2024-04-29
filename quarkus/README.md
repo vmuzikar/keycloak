@@ -1,4 +1,4 @@
-# Keycloak on Quarkus
+# Keycloak on Quarkus 2
 
 The module holds the codebase to run Keycloak on top of [Quarkus](https://quarkus.io/):
 

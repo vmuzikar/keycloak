@@ -32,7 +32,7 @@ public class IDELauncher {
         List<String> devArgs = new ArrayList<>(Picocli.parseArgs(args));
 
         if (System.getProperty("kc.home.dir") == null) {
-            // direct the auto-created files to the target folder, so they are cleaned by "mvn clean"
+            // direct the auto-created files to the target folder, so they are cleaned by "mvn clean" abc
             // users can still provide a different folder by setting the property when starting it from their IDE.
             Path path = Paths.get(System.getProperty("user.dir"), "target", "kc");
             System.setProperty("kc.home.dir", path.toAbsolutePath().toString());

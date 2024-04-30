@@ -212,7 +212,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         suite: [zip, container, storage, smoke]
-        full-testsuite: [${{ needs.conditional.outputs.ci-quarkus == 'true' }}]
+        full-testsuite:
+          - ${{ needs.conditional.outputs.ci-quarkus == 'true' }}
         # Win runs always
         include:
           - os: windows-latest

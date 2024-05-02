@@ -22,7 +22,7 @@ import io.quarkus.runtime.Quarkus;
  * </ul>
  *
  * <p>Despite the limitations, it should be possible to debug the extension (e.g.: deployment steps) as well as perform changes at runtime
- * without having to restart the JVM.
+ * without having to restart the JVM.x
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */

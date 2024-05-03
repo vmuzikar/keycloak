@@ -220,13 +220,13 @@ jobs:
             suite: win
         # Either run smoke tests, or full testsuite
         exclude:
-          - full-testsuite: false
+          - full-testsuite: "false"
             suite: zip
-          - full-testsuite: false
+          - full-testsuite: "false"
             suite: container
-          - full-testsuite: false
+          - full-testsuite: "false"
             suite: storage
-          - full-testsuite: true
+          - full-testsuite: "true"
             suite: smoke
       fail-fast: false
     runs-on: ${{ matrix.os }}

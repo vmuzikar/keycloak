@@ -213,20 +213,20 @@ jobs:
         os: [ubuntu-latest]
         suite: [zip, container, storage, smoke]
         full-testsuite:
-          - ${{ needs.conditional.outputs.ci-quarkus }}
-        # Win runs always
+          - ${{ needs.conditional.outputs.ci-quarkus == 'true' }}
+        # Win runs always as includes are evaluated after excludes
         include:
           - os: windows-latest
             suite: win
         # Either run smoke tests, or full testsuite
         exclude:
-          - full-testsuite: "false"
+          - full-testsuite: false
             suite: zip
-          - full-testsuite: "false"
+          - full-testsuite: false
             suite: container
-          - full-testsuite: "false"
+          - full-testsuite: false
             suite: storage
-          - full-testsuite: "true"
+          - full-testsuite: true
             suite: smoke
       fail-fast: false
     runs-on: ${{ matrix.os }}

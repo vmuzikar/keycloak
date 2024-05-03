@@ -1,11 +1,11 @@
 name: Keycloak JavaScript CI
 
 on:
-  push:
-    branches-ignore:
-      - main
-      - dependabot/**
-      - quarkus-next
+#  push:
+#    branches-ignore:
+#      - main
+#      - dependabot/**
+#      - quarkus-next
   pull_request:
   workflow_dispatch:
 

@@ -1,10 +1,10 @@
 name: Keycloak CI
 
 on:
-  push:
-    branches-ignore:
-      - main
-      - dependabot/**
+#  push:
+#    branches-ignore:
+#      - main
+#      - dependabot/**
   pull_request:
   workflow_dispatch:
 

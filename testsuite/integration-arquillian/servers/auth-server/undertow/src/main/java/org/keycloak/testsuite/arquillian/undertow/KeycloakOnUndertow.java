@@ -236,7 +236,7 @@ public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUnderto
         try (KeycloakSession session = sessionFactory.create()) {
             session.getTransactionManager().begin();
             if (new ApplianceBootstrap(session).isNoMasterUser()) {
-                new ApplianceBootstrap(session).createMasterRealmUser("admin", "admin");
+                new ApplianceBootstrap(session).createTemporaryMasterRealmAdmin("admin", "admin");
             }
         }
     }

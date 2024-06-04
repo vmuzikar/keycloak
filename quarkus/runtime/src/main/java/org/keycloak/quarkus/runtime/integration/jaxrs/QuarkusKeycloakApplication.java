@@ -83,7 +83,7 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
 
         try {
             KeycloakModelUtils.runJobInTransaction(sessionFactory, session -> {
-                new ApplianceBootstrap(session).createMasterRealmUser(adminUserName, adminPassword);
+                new ApplianceBootstrap(session).createTemporaryMasterRealmAdmin(adminUserName, adminPassword);
             });
         } catch (Throwable t) {
             ServicesLogger.LOGGER.addUserFailed(t, adminUserName, Config.getAdminRealm());

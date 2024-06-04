@@ -32,12 +32,18 @@ import org.keycloak.representations.userprofile.config.UPAttribute;
 import org.keycloak.representations.userprofile.config.UPConfig;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.userprofile.UserProfileProvider;
+import org.keycloak.utils.StringUtil;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ApplianceBootstrap {
+
+    public static final String DEFAULT_TEMP_ADMIN_USERNAME = "temp-admin";
+    public static final int DEFAULT_TEMP_ADMIN_EXPIRATION = 120;
+    public static final String ADMIN_TEMP_ADMIN_ATTR = "temporary_admin";
+    public static final String ADMIN_TEMP_ADMIN_EXPIRATION_MINUTES_ATTR = "temporary_admin_expiration_minutes";
 
     private final KeycloakSession session;
 
@@ -106,17 +112,27 @@ public class ApplianceBootstrap {
         return true;
     }
 
-    public void createMasterRealmUser(String username, String password) {
+    public void createTemporaryMasterRealmAdmin(String username, String password) {
+        createTemporaryMasterRealmAdmin(username, password, null, true);
+    }
+
+    public void createTemporaryMasterRealmAdmin(String username, String password, Integer expriationMinutes, boolean initialUser) {
         RealmModel realm = session.realms().getRealmByName(Config.getAdminRealm());
         session.getContext().setRealm(realm);
 
-        if (session.users().getUsersCount(realm) > 0) {
+        username = StringUtil.isBlank(username) ? DEFAULT_TEMP_ADMIN_USERNAME : username;
+        expriationMinutes = expriationMinutes == null ? DEFAULT_TEMP_ADMIN_EXPIRATION : expriationMinutes;
+
+        if (initialUser && session.users().getUsersCount(realm) > 0) {
             ServicesLogger.LOGGER.addAdminUserFailedAdminExists(Config.getAdminRealm());
             return;
         }
 
         UserModel adminUser = session.users().addUser(realm, username);
         adminUser.setEnabled(true);
+        // TODO: is this appropriate, does it need to be managed?
+        adminUser.setSingleAttribute("temporary_admin", Boolean.TRUE.toString());
+        // also set the expiration - could be relative to a creation timestamp, or computed
 
         UserCredentialModel usrCredModel = UserCredentialModel.password(password);
         adminUser.credentialManager().updateCredential(usrCredModel);
@@ -125,6 +141,22 @@ public class ApplianceBootstrap {
         adminUser.grantRole(adminRole);
 
         ServicesLogger.LOGGER.addUserSuccess(username, Config.getAdminRealm());
+    }
+
+    public static boolean isExpiredAdmin(UserModel user) {
+        if (user == null || !Boolean.parseBoolean(user.getFirstAttribute(ADMIN_TEMP_ADMIN_ATTR)) || user.getFirstAttribute(ADMIN_TEMP_ADMIN_EXPIRATION_MINUTES_ATTR) == null) {
+            return false;
+        }
+        return user.getCreatedTimestamp() + Long.parseLong(user.getFirstAttribute(ADMIN_TEMP_ADMIN_EXPIRATION_MINUTES_ATTR)) * 60L * 1000L < System.currentTimeMillis();
+    }
+
+    public static void deleteExpiredAdminUsers(KeycloakSession session) {
+        RealmModel realm = session.realms().getRealmByName(Config.getAdminRealm());
+        session.users().searchForUserByUserAttributeStream(realm, ADMIN_TEMP_ADMIN_ATTR, Boolean.TRUE.toString()).forEach(user -> {
+            if (isExpiredAdmin(user)) {
+                session.users().removeUser(realm, user);
+            }
+        });
     }
 
 }

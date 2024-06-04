@@ -136,7 +136,7 @@ public class WelcomeResource {
             expireCsrfCookie();
 
             ApplianceBootstrap applianceBootstrap = new ApplianceBootstrap(session);
-            applianceBootstrap.createMasterRealmUser(username, password);
+            applianceBootstrap.createTemporaryMasterRealmAdmin(username, password);
 
             shouldBootstrap.set(false);
             ServicesLogger.LOGGER.createdInitialAdminUser(username);

@@ -26,6 +26,7 @@ import { WhoAmIContextProvider } from "./context/whoami/WhoAmI";
 import type { Environment } from "./environment";
 import { SubGroups } from "./groups/SubGroupsContext";
 import { AuthWall } from "./root/AuthWall";
+import { Banners } from "./Banner";
 
 const AppContexts = ({ children }: PropsWithChildren) => (
   <ErrorBoundaryProvider>
@@ -71,6 +72,7 @@ export const App = () => {
           <ErrorBoundaryFallback fallback={ErrorRenderer}>
             <Suspense fallback={<KeycloakSpinner />}>
               <AuthWall>
+                <Banners />
                 <Outlet />
               </AuthWall>
             </Suspense>

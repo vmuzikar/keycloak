@@ -45,6 +45,7 @@ public class ApplianceBootstrap {
     public static final String DEFAULT_TEMP_ADMIN_USERNAME = "temp-admin";
     public static final String DEFAULT_TEMP_ADMIN_SERVICE = "temp-admin-service";
     public static final int DEFAULT_TEMP_ADMIN_EXPIRATION = 120;
+    public static final String TEMP_ADMIN_ATTR_NAME = "temporary_admin";
 
     private final KeycloakSession session;
 
@@ -127,8 +128,7 @@ public class ApplianceBootstrap {
 
         UserModel adminUser = session.users().addUser(realm, username);
         adminUser.setEnabled(true);
-        // TODO: is this appropriate, does it need to be managed?
-        // adminUser.setSingleAttribute("temporary_admin", Boolean.TRUE.toString());
+        adminUser.setSingleAttribute(TEMP_ADMIN_ATTR_NAME, Boolean.TRUE.toString());
         // also set the expiration - could be relative to a creation timestamp, or computed
 
         UserCredentialModel usrCredModel = UserCredentialModel.password(password);
@@ -161,7 +161,7 @@ public class ApplianceBootstrap {
         RoleModel adminRole = realm.getRole(AdminRoles.ADMIN);
         serviceAccount.grantRole(adminRole);
 
-        // TODO: set temporary
+        serviceAccount.setSingleAttribute(TEMP_ADMIN_ATTR_NAME, Boolean.TRUE.toString());
         // also set the expiration - could be relative to a creation timestamp, or computed
 
         ServicesLogger.LOGGER.createdTemporaryAdminService(clientId);

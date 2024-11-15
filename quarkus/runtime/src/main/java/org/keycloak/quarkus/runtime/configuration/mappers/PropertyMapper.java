@@ -31,6 +31,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
@@ -69,6 +70,7 @@ public class PropertyMapper<T> {
     private final String description;
     private final BooleanSupplier required;
     private final String requiredWhen;
+    private final Pattern wildcardPattern;
 
     PropertyMapper(Option<T> option, String to, BooleanSupplier enabled, String enabledWhen,
                    BiFunction<String, ConfigSourceInterceptorContext, String> mapper,
@@ -90,6 +92,10 @@ public class PropertyMapper<T> {
         this.validator = validator;
         this.description = description;
         this.parentMapper = parentMapper;
+
+        String pattern = Pattern.quote(this.to);
+        pattern = Option.WILD_CARD_PATTERN.matcher(pattern).replaceFirst(Option.WILD_CARD_PATTERN.pattern());
+        this.wildcardPattern = Pattern.compile(pattern);
     }
 
     ConfigValue getConfigValue(ConfigSourceInterceptorContext context) {
@@ -232,6 +238,14 @@ public class PropertyMapper<T> {
 
     public Optional<DeprecatedMetadata> getDeprecatedMetadata() {
         return option.getDeprecatedMetadata();
+    }
+
+    public boolean hasWildcard() {
+        return option.hasWildcard();
+    }
+
+    public boolean keyMatchesWildcard(String key) {
+        return wildcardPattern.matcher(key).matches();
     }
 
     private ConfigValue transformValue(String name, ConfigValue configValue, ConfigSourceInterceptorContext context, boolean parentValue) {

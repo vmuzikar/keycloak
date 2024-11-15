@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.Locale;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import org.jboss.logmanager.LogContext;
@@ -104,6 +105,10 @@ public final class LoggingPropertyMappers {
                         .validator(LoggingPropertyMappers::validateLogLevel)
                         .paramLabel("category:level")
                         .build(),
+                fromOption(LoggingOptions.LOG_LEVEL_CATEGORY)
+                        .transformer(LoggingPropertyMappers::setCategoryLogLevel)
+                        .paramLabel("level")
+                        .build(),
                 // Syslog
                 fromOption(LoggingOptions.LOG_SYSLOG_ENABLED)
                         .mapFrom(LoggingOptions.LOG, LoggingPropertyMappers.resolveLogHandler("syslog"))
@@ -189,8 +194,11 @@ public final class LoggingPropertyMappers {
         return LogContext.getLogContext().getLevelForName(categoryLevel.toUpperCase(Locale.ROOT));
     }
 
-    private static void setCategoryLevel(String category, String level) {
-        LogContext.getLogContext().getLogger(category).setLevel(toLevel(level));
+    private static void setCategoryLevel(String category, String level, boolean overwrite) {
+        Logger logger = LogContext.getLogContext().getLogger(category);
+        if (overwrite || logger.getLevel() == null) {
+            logger.setLevel(toLevel(level));
+        }
     }
 
     record CategoryLevel(String category, String levelName) {}
@@ -225,11 +233,16 @@ public final class LoggingPropertyMappers {
             if (categoryLevel.category == null) {
                 rootLevel = categoryLevel.levelName;
             } else {
-                setCategoryLevel(categoryLevel.category, categoryLevel.levelName);
+                setCategoryLevel(categoryLevel.category, categoryLevel.levelName, false);
             }
         }
 
         return rootLevel;
+    }
+
+    private static String setCategoryLogLevel(String category, ConfigSourceInterceptorContext configSourceInterceptorContext) {
+        setCategoryLevel(category, level, true);
+        return level;
     }
 
     private static String resolveLogOutput(String value, ConfigSourceInterceptorContext context) {

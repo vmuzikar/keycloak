@@ -2,9 +2,11 @@ package org.keycloak.config;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Option<T> {
+    public static final Pattern WILD_CARD_PATTERN = Pattern.compile("<[-a-zA-Z0-9]+>");
 
     private final Class<T> type;
     private final String key;
@@ -17,6 +19,7 @@ public class Option<T> {
     private final boolean strictExpectedValues;
     private final boolean caseInsensitiveExpectedValues;
     private final DeprecatedMetadata deprecatedMetadata;
+    private final boolean hasWildcard;
 
     public Option(Class<T> type, String key, OptionCategory category, boolean hidden, boolean buildTime, String description, Optional<T> defaultValue, List<String> expectedValues, boolean strictExpectedValues, boolean caseInsensitiveExpectedValues, DeprecatedMetadata deprecatedMetadata) {
         this.type = type;
@@ -30,6 +33,7 @@ public class Option<T> {
         this.strictExpectedValues = strictExpectedValues;
         this.caseInsensitiveExpectedValues = caseInsensitiveExpectedValues;
         this.deprecatedMetadata = deprecatedMetadata;
+        this.hasWildcard = key != null ? WILD_CARD_PATTERN.matcher(key).matches() : false;
     }
 
     public Class<T> getType() {
@@ -80,6 +84,10 @@ public class Option<T> {
 
     public Optional<DeprecatedMetadata> getDeprecatedMetadata() {
         return Optional.ofNullable(deprecatedMetadata);
+    }
+
+    public boolean hasWildcard() {
+        return hasWildcard;
     }
 
     public Option<T> withRuntimeSpecificDefault(T defaultValue) {

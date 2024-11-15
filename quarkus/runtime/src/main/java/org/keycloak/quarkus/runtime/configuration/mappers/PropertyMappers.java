@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -220,6 +221,7 @@ public final class PropertyMappers {
 
         private final Map<String, PropertyMapper<?>> disabledBuildTimeMappers = new HashMap<>();
         private final Map<String, PropertyMapper<?>> disabledRuntimeMappers = new HashMap<>();
+        private static final Set<PropertyMapper<?>> wildcardMappers = new HashSet<>();
 
         public void addAll(PropertyMapper<?>[] mappers) {
             for (PropertyMapper<?> mapper : mappers) {
@@ -238,10 +240,14 @@ public final class PropertyMappers {
         }
 
         public void addMapper(PropertyMapper<?> mapper) {
+            if (mapper.hasWildcard()) {
+                wildcardMappers.add(mapper);
+            }
             handleMapper(mapper, this::add);
         }
 
         public void removeMapper(PropertyMapper<?> mapper) {
+            wildcardMappers.remove(mapper);
             handleMapper(mapper, this::remove);
         }
 
@@ -250,6 +256,26 @@ public final class PropertyMappers {
             if (CollectionUtil.isNotEmpty(list)) {
                 list.remove(mapper);
             }
+        }
+
+        @Override
+        public List<PropertyMapper<?>> get(Object key) {
+            // First check if the requested option matches any wildcard mappers
+            String strKey = (String) key;
+            List<PropertyMapper<?>> ret = wildcardMappers.stream()
+                    .filter(m -> m.keyMatchesWildcard(strKey))
+                    .toList();
+            if (!ret.isEmpty()) {
+                return ret;
+            }
+
+            // If no wildcard mappers match, check for exact matches
+            return super.get(key);
+        }
+
+        @Override
+        public List<PropertyMapper<?>> remove(Object mapper) {
+            return super.remove(mapper);
         }
 
         public void sanitizeDisabledMappers() {

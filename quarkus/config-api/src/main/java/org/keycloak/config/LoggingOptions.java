@@ -60,6 +60,11 @@ public class LoggingOptions {
             .description("The log level of the root category or a comma-separated list of individual categories and their levels. For the root category, you don't need to specify a category.")
             .build();
 
+    public static final Option<Level> LOG_LEVEL_CATEGORY = new OptionBuilder<>("log-level-<category>", Level.class)
+            .category(OptionCategory.LOGGING)
+            .description("The log level of a category.")
+            .build();
+
     public enum Output {
         DEFAULT,
         JSON;

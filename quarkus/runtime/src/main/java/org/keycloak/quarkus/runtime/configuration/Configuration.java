@@ -19,6 +19,7 @@ package org.keycloak.quarkus.runtime.configuration;
 
 import static org.keycloak.quarkus.runtime.cli.Picocli.ARG_PREFIX;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -110,6 +111,23 @@ public final class Configuration {
 
     public static ConfigValue getKcConfigValue(String propertyName) {
         return getConfigValue(NS_KEYCLOAK_PREFIX.concat(propertyName));
+    }
+
+    public static Map<String, ConfigValue> getKcConfigValues(Option<?> option) {
+        if (!option.hasWildcard()) {
+            throw new IllegalArgumentException("Option does not have wildcard");
+        }
+
+        // this is not optimal
+        // TODO find an efficient way to get all values that match the wildcard
+        Map<String, ConfigValue> values = new HashMap<>();
+        getPropertyNames().forEach(name -> {
+            String nameWithoutPrefix = name.startsWith(NS_KEYCLOAK_PREFIX) ? name.substring(NS_KEYCLOAK_PREFIX.length()) : name;
+            option.getWildcardValue(nameWithoutPrefix)
+                    .ifPresent(s -> values.put(s, getConfigValue(name)));
+        });
+
+        return values;
     }
 
     public static Optional<String> getOptionalValue(String name) {

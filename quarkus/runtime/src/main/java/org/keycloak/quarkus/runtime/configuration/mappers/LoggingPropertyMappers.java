@@ -5,12 +5,15 @@ import static org.keycloak.quarkus.runtime.configuration.Configuration.isTrue;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import io.smallrye.config.ConfigValue;
 import org.jboss.logmanager.LogContext;
 import org.keycloak.config.LoggingOptions;
 import org.keycloak.config.Option;
@@ -106,7 +109,6 @@ public final class LoggingPropertyMappers {
                         .paramLabel("category:level")
                         .build(),
                 fromOption(LoggingOptions.LOG_LEVEL_CATEGORY)
-                        .transformer(LoggingPropertyMappers::setCategoryLogLevel)
                         .paramLabel("level")
                         .build(),
                 // Syslog
@@ -194,11 +196,8 @@ public final class LoggingPropertyMappers {
         return LogContext.getLogContext().getLevelForName(categoryLevel.toUpperCase(Locale.ROOT));
     }
 
-    private static void setCategoryLevel(String category, String level, boolean overwrite) {
-        Logger logger = LogContext.getLogContext().getLogger(category);
-        if (overwrite || logger.getLevel() == null) {
-            logger.setLevel(toLevel(level));
-        }
+    private static void setCategoryLevel(String category, String level) {
+        LogContext.getLogContext().getLogger(category).setLevel(toLevel(level));
     }
 
     record CategoryLevel(String category, String levelName) {}
@@ -228,21 +227,23 @@ public final class LoggingPropertyMappers {
     private static String resolveLogLevel(String value, ConfigSourceInterceptorContext configSourceInterceptorContext) {
         String rootLevel = LoggingOptions.DEFAULT_LOG_LEVEL.name();
 
+        // category log levels from log-level-<category> take precedence
+        Set<String> configuredCategories = new HashSet<>();
+        Configuration.getKcConfigValues(LoggingOptions.LOG_LEVEL_CATEGORY).forEach((category, configValue) -> {
+            setCategoryLevel(category, configValue.getValue());
+            configuredCategories.add(category);
+        });
+
         for (String level : value.split(",")) {
             var categoryLevel = validateLogLevel(level);
             if (categoryLevel.category == null) {
                 rootLevel = categoryLevel.levelName;
-            } else {
-                setCategoryLevel(categoryLevel.category, categoryLevel.levelName, false);
+            } else if (!configuredCategories.contains(categoryLevel.category)) {
+                setCategoryLevel(categoryLevel.category, categoryLevel.levelName);
             }
         }
 
         return rootLevel;
-    }
-
-    private static String setCategoryLogLevel(String category, ConfigSourceInterceptorContext configSourceInterceptorContext) {
-        setCategoryLevel(category, level, true);
-        return level;
     }
 
     private static String resolveLogOutput(String value, ConfigSourceInterceptorContext context) {

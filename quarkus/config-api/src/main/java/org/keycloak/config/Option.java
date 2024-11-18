@@ -2,11 +2,12 @@ package org.keycloak.config;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Option<T> {
-    public static final Pattern WILD_CARD_PATTERN = Pattern.compile("<[-a-zA-Z0-9]+>");
+    public static final Pattern WILDCARD_PLACEHOLDER_PATTERN = Pattern.compile("<.+>");
 
     private final Class<T> type;
     private final String key;
@@ -19,7 +20,7 @@ public class Option<T> {
     private final boolean strictExpectedValues;
     private final boolean caseInsensitiveExpectedValues;
     private final DeprecatedMetadata deprecatedMetadata;
-    private final boolean hasWildcard;
+    private Pattern optionNameWildcardPattern;
 
     public Option(Class<T> type, String key, OptionCategory category, boolean hidden, boolean buildTime, String description, Optional<T> defaultValue, List<String> expectedValues, boolean strictExpectedValues, boolean caseInsensitiveExpectedValues, DeprecatedMetadata deprecatedMetadata) {
         this.type = type;
@@ -33,7 +34,14 @@ public class Option<T> {
         this.strictExpectedValues = strictExpectedValues;
         this.caseInsensitiveExpectedValues = caseInsensitiveExpectedValues;
         this.deprecatedMetadata = deprecatedMetadata;
-        this.hasWildcard = key != null ? WILD_CARD_PATTERN.matcher(key).matches() : false;
+
+
+        if (key != null) {
+            Matcher matcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(key);
+            if (matcher.find()) {
+                this.optionNameWildcardPattern = Pattern.compile(matcher.replaceFirst("([-\\\\\\\\.a-zA-Z0-9]+)"));
+            }
+        }
     }
 
     public Class<T> getType() {
@@ -87,7 +95,26 @@ public class Option<T> {
     }
 
     public boolean hasWildcard() {
-        return hasWildcard;
+        return optionNameWildcardPattern != null;
+    }
+
+    public boolean matchesWildcardOptionName(String name) {
+        if (!hasWildcard()) {
+            throw new IllegalStateException("Option does not have wildcard");
+        }
+        return optionNameWildcardPattern.matcher(name).matches();
+    }
+
+    public Optional<String> getWildcardValue(String option) {
+        if (!hasWildcard()) {
+            throw new IllegalStateException("Option does not have wildcard");
+        }
+        Matcher matcher = optionNameWildcardPattern.matcher(option);
+        if (matcher.matches()) {
+            return Optional.of(matcher.group(1));
+        } else {
+            return Optional.empty();
+        }
     }
 
     public Option<T> withRuntimeSpecificDefault(T defaultValue) {

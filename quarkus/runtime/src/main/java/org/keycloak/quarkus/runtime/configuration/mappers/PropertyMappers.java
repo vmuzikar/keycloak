@@ -249,7 +249,7 @@ public final class PropertyMappers {
             // First check if the requested option matches any wildcard mappers
             String strKey = (String) key;
             List<PropertyMapper<?>> ret = wildcardMappers.stream()
-                    .filter(m -> m.keyMatchesWildcard(strKey))
+                    .filter(m -> m.matchesWildcardOptionName(strKey))
                     .toList();
             if (!ret.isEmpty()) {
                 return ret;

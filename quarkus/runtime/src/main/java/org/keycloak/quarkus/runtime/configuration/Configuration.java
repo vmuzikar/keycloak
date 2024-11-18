@@ -113,6 +113,13 @@ public final class Configuration {
         return getConfigValue(NS_KEYCLOAK_PREFIX.concat(propertyName));
     }
 
+    /**
+     * Get all Keycloak multivalued config values for a given option. A multivalued config option is a config option that
+     * has a wildcard in its name, e.g. log-level-<category>.
+     *
+     * @param option
+     * @return a map of config values where the key is the resolved wildcard (e.g. category) and the value is the config value
+     */
     public static Map<String, ConfigValue> getKcConfigValues(Option<?> option) {
         if (!option.hasWildcard()) {
             throw new IllegalArgumentException("Option does not have wildcard");

@@ -105,6 +105,7 @@ public class Option<T> {
         return optionNameWildcardPattern.matcher(name).matches();
     }
 
+    // Expects an option name without the "kc." prefix
     public Optional<String> getWildcardValue(String option) {
         if (!hasWildcard()) {
             throw new IllegalStateException("Option does not have wildcard");

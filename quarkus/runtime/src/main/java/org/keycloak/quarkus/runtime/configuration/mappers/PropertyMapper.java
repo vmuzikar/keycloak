@@ -59,9 +59,9 @@ public class PropertyMapper<T> {
     private final String to;
     private BooleanSupplier enabled;
     private String enabledWhen;
-    private final MappingFunction mapper;
+    private final BiFunction<String, ConfigSourceInterceptorContext, String> mapper;
     private final String mapFrom;
-    private final MappingFunction parentMapper;
+    private final BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper;
     private final boolean mask;
     private final String paramLabel;
     private final String envVarFormat;
@@ -73,8 +73,8 @@ public class PropertyMapper<T> {
     private final Pattern wildcardPattern;
 
     PropertyMapper(Option<T> option, String to, BooleanSupplier enabled, String enabledWhen,
-                   MappingFunction mapper,
-                   String mapFrom, MappingFunction parentMapper,
+                   BiFunction<String, ConfigSourceInterceptorContext, String> mapper,
+                   String mapFrom, BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper,
                    String paramLabel, boolean mask, BiConsumer<PropertyMapper<T>, ConfigValue> validator,
                    String description, BooleanSupplier required, String requiredWhen) {
         this.option = option;
@@ -255,7 +255,7 @@ public class PropertyMapper<T> {
         boolean mapped = false;
         var theMapper = parentValue ? this.parentMapper : this.mapper;
         if (theMapper != null && (!name.equals(getFrom()) || parentValue)) {
-            mappedValue = theMapper.map(name, value, context);
+            mappedValue = theMapper.apply(value, context);
             mapped = true;
         }
 
@@ -318,9 +318,9 @@ public class PropertyMapper<T> {
 
         private final Option<T> option;
         private String to;
-        private MappingFunction mapper;
+        private BiFunction<String, ConfigSourceInterceptorContext, String> mapper;
         private String mapFrom = null;
-        private MappingFunction parentMapper;
+        private BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper;
         private boolean isMasked = false;
         private BooleanSupplier isEnabled = () -> true;
         private String enabledWhen = "";
@@ -347,13 +347,8 @@ public class PropertyMapper<T> {
          * <p>
          * The value passed into the transformer may be null if the property has no value set, and no default
          */
-        public Builder<T> transformer(MappingFunction mapper) {
-            this.mapper = mapper;
-            return this;
-        }
-
         public Builder<T> transformer(BiFunction<String, ConfigSourceInterceptorContext, String> mapper) {
-            this.mapper = (k, v, c) -> mapper.apply(v, c);
+            this.mapper = mapper;
             return this;
         }
 
@@ -367,15 +362,9 @@ public class PropertyMapper<T> {
             return this;
         }
 
-        public Builder<T> mapFrom(Option<?> mapFrom, MappingFunction parentMapper) {
-            this.mapFrom = mapFrom.getKey();
-            this.parentMapper = parentMapper;
-            return this;
-        }
-
         public Builder<T> mapFrom(Option<?> mapFrom, BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper) {
             this.mapFrom = mapFrom.getKey();
-            this.parentMapper = (k, v, c) -> parentMapper.apply(v, c);
+            this.parentMapper = parentMapper;
             return this;
         }
 
@@ -548,11 +537,6 @@ public class PropertyMapper<T> {
         }
         return String.format("'%s' in %s", getFrom(),
                 KeycloakConfigSourceProvider.getConfigSourceDisplayName(configValue.getConfigSourceName()));
-    }
-
-    @FunctionalInterface
-    public interface MappingFunction {
-        String map(String key, String value, ConfigSourceInterceptorContext context);
     }
 
 }

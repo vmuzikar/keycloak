@@ -63,6 +63,7 @@ public class LoggingOptions {
     public static final Option<Level> LOG_LEVEL_CATEGORY = new OptionBuilder<>("log-level-<category>", Level.class)
             .category(OptionCategory.LOGGING)
             .description("The log level of a category.")
+            .strictExpectedValues(false)
             .build();
 
     public enum Output {

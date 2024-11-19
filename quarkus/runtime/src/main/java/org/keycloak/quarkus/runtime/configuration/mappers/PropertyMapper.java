@@ -17,11 +17,14 @@
 package org.keycloak.quarkus.runtime.configuration.mappers;
 
 import static java.util.Optional.ofNullable;
+import static org.keycloak.config.Option.WILDCARD_PLACEHOLDER_PATTERN;
 import static org.keycloak.quarkus.runtime.Environment.isRebuild;
+import static org.keycloak.quarkus.runtime.cli.Picocli.ARG_PREFIX;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.OPTION_PART_SEPARATOR;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.OPTION_PART_SEPARATOR_CHAR;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.toCliFormat;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.toEnvVarFormat;
+import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX;
 
 import java.util.Iterator;
 import java.util.List;
@@ -31,6 +34,8 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
@@ -90,6 +95,8 @@ public class PropertyMapper<T> {
     private final String description;
     private final BooleanSupplier required;
     private final String requiredWhen;
+    private Pattern optionNameWildcardPattern;
+    private Pattern envVarNameWildcardPattern;
 
     PropertyMapper(Option<T> option, String to, BooleanSupplier enabled, String enabledWhen,
                    BiFunction<String, ConfigSourceInterceptorContext, String> mapper,
@@ -111,6 +118,17 @@ public class PropertyMapper<T> {
         this.validator = validator;
         this.description = description;
         this.parentMapper = parentMapper;
+
+
+        if (option.getKey() != null) {
+            Matcher matcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(option.getKey());
+            if (matcher.find()) {
+                this.optionNameWildcardPattern = Pattern.compile("(?:" + ARG_PREFIX + "|kc\\.)" + matcher.replaceFirst("([\\\\\\\\.a-zA-Z0-9]+)")); // "--" prefix is to accommodate for CLI options
+
+                Matcher envVarMatcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(option.getKey().toUpperCase().replace("-", "_")); // not using toEnvVarFormat because it would process the whole string incl the <...> wildcard
+                this.envVarNameWildcardPattern = Pattern.compile("KC_" + envVarMatcher.replaceFirst("([_A-Z0-9]+)"));
+            }
+        }
     }
 
     ConfigValue getConfigValue(ConfigSourceInterceptorContext context) {
@@ -256,11 +274,35 @@ public class PropertyMapper<T> {
     }
 
     public boolean hasWildcard() {
-        return option.hasWildcard();
+        return optionNameWildcardPattern != null && envVarNameWildcardPattern != null;
     }
 
     public boolean matchesWildcardOptionName(String name) {
-        return option.matchesWildcardOptionName(name);
+        if (!hasWildcard()) {
+            throw new IllegalStateException("Option does not have wildcard");
+        }
+        return optionNameWildcardPattern.matcher(name).matches() || envVarNameWildcardPattern.matcher(name).matches();
+    }
+
+    // Expects an option name without the "kc." prefix
+    public Optional<String> getWildcardValue(String option) {
+        if (!hasWildcard()) {
+            throw new IllegalStateException("Option does not have wildcard");
+        }
+
+        Matcher matcher = optionNameWildcardPattern.matcher(option);
+        if (matcher.matches()) {
+            return Optional.of(matcher.group(1));
+        }
+
+        matcher = envVarNameWildcardPattern.matcher(option);
+        if (matcher.matches()) {
+            String value = matcher.group(1);
+            value = value.toLowerCase().replace("_", "."); // we opiniotatedly convert env var names to CLI format with dots
+            return Optional.of(value);
+        }
+
+        return Optional.empty();
     }
 
     private ConfigValue transformValue(String name, ConfigValue configValue, ConfigSourceInterceptorContext context, boolean parentValue) {

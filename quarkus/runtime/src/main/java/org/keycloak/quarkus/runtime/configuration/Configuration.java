@@ -121,7 +121,9 @@ public final class Configuration {
      * @return a map of config values where the key is the resolved wildcard (e.g. category) and the value is the config value
      */
     public static Map<String, ConfigValue> getKcConfigValues(Option<?> option) {
-        if (!option.hasWildcard()) {
+        PropertyMapper<?> mapper = PropertyMappers.getMapper(NS_KEYCLOAK_PREFIX + option.getKey());
+
+        if (!mapper.hasWildcard()) {
             throw new IllegalArgumentException("Option does not have wildcard");
         }
 
@@ -129,8 +131,7 @@ public final class Configuration {
         // TODO find an efficient way to get all values that match the wildcard
         Map<String, ConfigValue> values = new HashMap<>();
         getPropertyNames().forEach(name -> {
-            String nameWithoutPrefix = name.startsWith(NS_KEYCLOAK_PREFIX) ? name.substring(NS_KEYCLOAK_PREFIX.length()) : name;
-            option.getWildcardValue(nameWithoutPrefix)
+            mapper.getWildcardValue(name)
                     .ifPresent(s -> values.put(s, getConfigValue(name)));
         });
 

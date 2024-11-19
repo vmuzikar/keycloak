@@ -329,6 +329,12 @@ public class Picocli {
      * @param abstractCommand
      */
     public void validateConfig(List<String> cliArgs, AbstractCommand abstractCommand) {
+        uncrecognizedArgs.removeIf(arg -> {
+            if (arg.contains("=")) {
+                arg = arg.substring(0, arg.indexOf("="));
+            }
+            return PropertyMappers.getMapper(arg) != null;
+        });
         if (!uncrecognizedArgs.isEmpty()) {
             throw new KcUnmatchedArgumentException(abstractCommand.getCommandLine().orElseThrow(), uncrecognizedArgs);
         }

@@ -101,16 +101,11 @@ public class Picocli {
     }
 
     private ExecutionExceptionHandler errorHandler = new ExecutionExceptionHandler();
+    private List<String> uncrecognizedArgs = new ArrayList<>();
 
     public void parseAndRun(List<String> cliArgs) {
         // perform two passes over the cli args. First without option validation to determine the current command, then with option validation enabled
-        CommandLine cmd = createCommandLine(spec -> spec
-                .addUnmatchedArgsBinding(CommandLine.Model.UnmatchedArgsBinding.forStringArrayConsumer(new ISetter() {
-                    @Override
-                    public <T> T set(T value) throws Exception {
-                        return null; // just ignore
-                    }
-                })));
+        CommandLine cmd = createCommandLine(spec -> {}).setUnmatchedArgumentsAllowed(true);
         String[] argArray = cliArgs.toArray(new String[0]);
 
         try {
@@ -156,6 +151,16 @@ public class Picocli {
                 }
 
                 currentSpec = subCommand.getCommandSpec();
+
+                currentSpec.addUnmatchedArgsBinding(CommandLine.Model.UnmatchedArgsBinding.forStringArrayConsumer(new ISetter() {
+                    @Override
+                    public <T> T set(T value) {
+                        if (value != null) {
+                            uncrecognizedArgs.addAll(Arrays.asList((String[]) value));
+                        }
+                        return null; // doesn't matter
+                    }
+                }));
 
                 addHelp(currentSpec);
             }
@@ -324,6 +329,10 @@ public class Picocli {
      * @param abstractCommand
      */
     public void validateConfig(List<String> cliArgs, AbstractCommand abstractCommand) {
+        if (!uncrecognizedArgs.isEmpty()) {
+            throw new KcUnmatchedArgumentException(abstractCommand.getCommandLine().orElseThrow(), uncrecognizedArgs);
+        }
+
         if (cliArgs.contains(OPTIMIZED_BUILD_OPTION_LONG) && !wasBuildEverRun()) {
             throw new PropertyException(Messages.optimizedUsedForFirstStartup());
         }

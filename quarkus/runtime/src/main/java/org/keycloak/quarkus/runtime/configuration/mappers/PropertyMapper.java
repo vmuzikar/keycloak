@@ -120,12 +120,15 @@ public class PropertyMapper<T> {
         this.parentMapper = parentMapper;
 
 
+        // The wildcard pattern (e.g. log-level-<category>) is matching only a-z, 0-0 and dots. For env vars, dots are replaced by underscores.
         if (option.getKey() != null) {
             Matcher matcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(option.getKey());
             if (matcher.find()) {
-                this.optionNameWildcardPattern = Pattern.compile("(?:" + ARG_PREFIX + "|kc\\.)" + matcher.replaceFirst("([\\\\\\\\.a-zA-Z0-9]+)")); // "--" prefix is to accommodate for CLI options
+                // Includes handling for both "--" prefix for CLI options and "kc." prefix
+                this.optionNameWildcardPattern = Pattern.compile("(?:" + ARG_PREFIX + "|kc\\.)" + matcher.replaceFirst("([\\\\\\\\.a-zA-Z0-9]+)"));
 
-                Matcher envVarMatcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(option.getKey().toUpperCase().replace("-", "_")); // not using toEnvVarFormat because it would process the whole string incl the <...> wildcard
+                // Not using toEnvVarFormat because it would process the whole string incl the <...> wildcard.
+                Matcher envVarMatcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(option.getKey().toUpperCase().replace("-", "_"));
                 this.envVarNameWildcardPattern = Pattern.compile("KC_" + envVarMatcher.replaceFirst("([_A-Z0-9]+)"));
             }
         }
@@ -273,10 +276,18 @@ public class PropertyMapper<T> {
         return option.getDeprecatedMetadata();
     }
 
+    /**
+     * An option is considered a wildcard option if its key contains a wildcard placeholder (e.g. log-level-<category>).
+     * The placeholder must be denoted by the '<' and '>' characters.
+     */
     public boolean hasWildcard() {
         return optionNameWildcardPattern != null && envVarNameWildcardPattern != null;
     }
 
+    /**
+     * Checks if the given option name matches the wildcard pattern of this option.
+     * E.g. check if "log-level-io.quarkus" matches the wildcard pattern "log-level-<category>".
+     */
     public boolean matchesWildcardOptionName(String name) {
         if (!hasWildcard()) {
             throw new IllegalStateException("Option does not have wildcard");
@@ -284,7 +295,11 @@ public class PropertyMapper<T> {
         return optionNameWildcardPattern.matcher(name).matches() || envVarNameWildcardPattern.matcher(name).matches();
     }
 
-    // Expects an option name without the "kc." prefix
+    /**
+     * Extracts the wildcard value from the given option name.
+     * E.g. for the option "log-level-<category>" and the option name "log-level-io.quarkus",
+     * the wildcard value would be "io.quarkus".
+     */
     public Optional<String> getWildcardValue(String option) {
         if (!hasWildcard()) {
             throw new IllegalStateException("Option does not have wildcard");

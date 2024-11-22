@@ -19,7 +19,6 @@ package org.keycloak.quarkus.runtime.configuration;
 
 import static org.keycloak.quarkus.runtime.cli.Picocli.ARG_PREFIX;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -111,31 +110,6 @@ public final class Configuration {
 
     public static ConfigValue getKcConfigValue(String propertyName) {
         return getConfigValue(NS_KEYCLOAK_PREFIX.concat(propertyName));
-    }
-
-    /**
-     * Get all Keycloak multivalued config values for a given option. A multivalued config option is a config option that
-     * has a wildcard in its name, e.g. log-level-<category>.
-     *
-     * @param option
-     * @return a map of config values where the key is the resolved wildcard (e.g. category) and the value is the config value
-     */
-    public static Map<String, ConfigValue> getKcConfigValues(Option<?> option) {
-        PropertyMapper<?> mapper = PropertyMappers.getMapper(NS_KEYCLOAK_PREFIX + option.getKey());
-
-        if (!mapper.hasWildcard()) {
-            throw new IllegalArgumentException("Option does not have wildcard");
-        }
-
-        // this is not optimal
-        // TODO find an efficient way to get all values that match the wildcard
-        Map<String, ConfigValue> values = new HashMap<>();
-        getPropertyNames().forEach(name -> {
-            mapper.getWildcardValue(name)
-                    .ifPresent(s -> values.put(s, getConfigValue(name)));
-        });
-
-        return values;
     }
 
     public static Optional<String> getOptionalValue(String name) {

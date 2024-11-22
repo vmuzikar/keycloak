@@ -24,36 +24,39 @@ import static org.keycloak.quarkus.runtime.configuration.Configuration.OPTION_PA
 import static org.keycloak.quarkus.runtime.configuration.Configuration.OPTION_PART_SEPARATOR_CHAR;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.toCliFormat;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.toEnvVarFormat;
-import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.ConfigValue.ConfigValueBuilder;
 import io.smallrye.config.ExpressionConfigSourceInterceptor;
 import io.smallrye.config.Expressions;
-
 import org.keycloak.config.DeprecatedMetadata;
 import org.keycloak.config.Option;
 import org.keycloak.config.OptionCategory;
+import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.cli.PropertyException;
 import org.keycloak.quarkus.runtime.cli.ShortErrorMessageHandler;
 import org.keycloak.quarkus.runtime.configuration.ConfigArgsConfigSource;
 import org.keycloak.quarkus.runtime.configuration.Configuration;
 import org.keycloak.quarkus.runtime.configuration.KcEnvConfigSource;
 import org.keycloak.quarkus.runtime.configuration.KeycloakConfigSourceProvider;
-import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 import org.keycloak.utils.StringUtil;
 
@@ -76,12 +79,15 @@ public class PropertyMapper<T> {
     private final String requiredWhen;
     private Pattern optionNameWildcardPattern;
     private Pattern envVarNameWildcardPattern;
+    private Matcher toWildcardMatcher;
+    private Pattern toWildcardPattern;
+    private Function<Set<String>, Set<String>> wildcardValuesTransformer;
 
     PropertyMapper(Option<T> option, String to, BooleanSupplier enabled, String enabledWhen,
                    BiFunction<String, ConfigSourceInterceptorContext, String> mapper,
                    String mapFrom, BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper,
                    String paramLabel, boolean mask, BiConsumer<PropertyMapper<T>, ConfigValue> validator,
-                   String description, BooleanSupplier required, String requiredWhen) {
+                   String description, BooleanSupplier required, String requiredWhen, Function<Set<String>, Set<String>> wildcardValuesTransformer) {
         this.option = option;
         this.to = to == null ? getFrom() : to;
         this.enabled = enabled;
@@ -109,7 +115,18 @@ public class PropertyMapper<T> {
                 // Not using toEnvVarFormat because it would process the whole string incl the <...> wildcard.
                 Matcher envVarMatcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(option.getKey().toUpperCase().replace("-", "_"));
                 this.envVarNameWildcardPattern = Pattern.compile("KC_" + envVarMatcher.replaceFirst("([_A-Z0-9]+)"));
+
+                if (to != null) {
+                    toWildcardMatcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(to);
+                    if (!toWildcardMatcher.matches()) {
+                        throw new IllegalArgumentException("Attempted to map a wildcard option to a non-wildcard option");
+                    }
+
+                    this.toWildcardPattern = Pattern.compile(toWildcardMatcher.replaceFirst("([\\\\\\\\.a-zA-Z0-9]+)"));
+                }
             }
+
+            this.wildcardValuesTransformer = wildcardValuesTransformer;
         }
     }
 
@@ -155,6 +172,45 @@ public class PropertyMapper<T> {
 
         // now try any defaults from quarkus
         return context.proceed(name);
+    }
+
+    /**
+     * Get all Keycloak multivalued config values for the mapper. A multivalued config option is a config option that
+     * has a wildcard in its name, e.g. log-level-<category>.
+     *
+     * @return a map of config values where the key is the resolved wildcard (e.g. category) and the value is the config value
+     */
+    public Map<String, ConfigValue> getWildcardConfigValues() {
+        return getWildcardValues().stream()
+                .collect(Collectors.toMap(v -> getWildcardValue(v).orElseThrow(), Configuration::getKcConfigValue));
+    }
+
+    public Set<String>  getWildcardValues() {
+        if (!hasWildcard()) {
+            throw new IllegalArgumentException("Option does not have wildcard");
+        }
+
+        // this is not optimal
+        // TODO find an efficient way to get all values that match the wildcard
+        Set<String> values = StreamSupport.stream(Configuration.getPropertyNames().spliterator(), false)
+                .filter(this::matchesWildcardOptionName)
+                .collect(Collectors.toSet());
+
+        if (wildcardValuesTransformer != null) {
+            return wildcardValuesTransformer.apply(values);
+        }
+
+        return values;
+    }
+
+    public Set<String> getMappedWildcardValues() {
+        if (toWildcardMatcher == null) {
+            return Set.of();
+        }
+
+        return getWildcardValues().stream()
+                .map(v -> toWildcardMatcher.replaceFirst(v))
+                .collect(Collectors.toSet());
     }
 
     public Option<T> getOption() {
@@ -271,7 +327,8 @@ public class PropertyMapper<T> {
         if (!hasWildcard()) {
             throw new IllegalStateException("Option does not have wildcard");
         }
-        return optionNameWildcardPattern.matcher(name).matches() || envVarNameWildcardPattern.matcher(name).matches();
+        return optionNameWildcardPattern.matcher(name).matches() || envVarNameWildcardPattern.matcher(name).matches()
+                || (toWildcardPattern != null && toWildcardPattern.matcher(name).matches());
     }
 
     /**
@@ -294,6 +351,12 @@ public class PropertyMapper<T> {
             String value = matcher.group(1);
             value = value.toLowerCase().replace("_", "."); // we opiniotatedly convert env var names to CLI format with dots
             return Optional.of(value);
+        }
+
+        if (toWildcardPattern != null && (matcher = toWildcardPattern.matcher(option)).matches()) {
+            if (matcher.matches()) {
+                return Optional.of(matcher.group(1));
+            }
         }
 
         return Optional.empty();
@@ -380,6 +443,7 @@ public class PropertyMapper<T> {
         private String description;
         private BooleanSupplier isRequired = () -> false;
         private String requiredWhen = "";
+        private Function<Set<String>, Set<String>> wildcardValuesTransformer;
 
         public Builder(Option<T> option) {
             this.option = option;
@@ -504,11 +568,16 @@ public class PropertyMapper<T> {
             return this;
         }
 
+        public Builder<T> addWildcardValuesTransformer(Function<Set<String>, Set<String>> wildcardValuesTransformer) {
+            this.wildcardValuesTransformer = wildcardValuesTransformer;
+            return this;
+        }
+
         public PropertyMapper<T> build() {
             if (paramLabel == null && Boolean.class.equals(option.getType())) {
                 paramLabel = Boolean.TRUE + "|" + Boolean.FALSE;
             }
-            return new PropertyMapper<>(option, to, isEnabled, enabledWhen, mapper, mapFrom, parentMapper, paramLabel, isMasked, validator, description, isRequired, requiredWhen);
+            return new PropertyMapper<>(option, to, isEnabled, enabledWhen, mapper, mapFrom, parentMapper, paramLabel, isMasked, validator, description, isRequired, requiredWhen, wildcardValuesTransformer);
         }
     }
 

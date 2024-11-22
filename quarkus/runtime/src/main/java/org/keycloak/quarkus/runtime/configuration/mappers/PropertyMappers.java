@@ -179,6 +179,10 @@ public final class PropertyMappers {
         return MAPPERS.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
+    public static Set<PropertyMapper<?>> getWildcardMappers() {
+        return MAPPERS.getWildcardMappers();
+    }
+
     public static boolean isSupported(PropertyMapper<?> mapper) {
         ConfigSupportLevel supportLevel = mapper.getCategory().getSupportLevel();
         return supportLevel.equals(ConfigSupportLevel.SUPPORTED) || supportLevel.equals(ConfigSupportLevel.DEPRECATED);
@@ -276,6 +280,10 @@ public final class PropertyMappers {
         @Override
         public List<PropertyMapper<?>> remove(Object mapper) {
             return super.remove(mapper);
+        }
+
+        public Set<PropertyMapper<?>> getWildcardMappers() {
+            return Collections.unmodifiableSet(wildcardMappers);
         }
 
         public void sanitizeDisabledMappers() {

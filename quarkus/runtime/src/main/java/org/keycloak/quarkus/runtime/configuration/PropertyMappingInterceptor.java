@@ -22,12 +22,15 @@ import io.smallrye.config.ConfigValue;
 
 import io.smallrye.config.Priorities;
 import jakarta.annotation.Priority;
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.collections4.iterators.FilterIterator;
 import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper;
 import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers;
 
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import static org.keycloak.quarkus.runtime.Environment.isRebuild;
 
@@ -73,7 +76,13 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
 
     @Override
     public Iterator<String> iterateNames(ConfigSourceInterceptorContext context) {
-        return filterRuntime(context.iterateNames());
+        List<String> mappedWildcardNames = PropertyMappers.getWildcardMappers().stream()
+                .map(PropertyMapper::getMappedWildcardValues)
+                .flatMap(Set::stream)
+                .toList();
+
+        // this could be optimized by filtering the wildcard names in the stream above
+        return filterRuntime(IteratorUtils.chainedIterator(mappedWildcardNames.iterator(), context.iterateNames()));
     }
 
     @Override

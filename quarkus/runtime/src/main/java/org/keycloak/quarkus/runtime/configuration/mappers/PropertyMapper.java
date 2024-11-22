@@ -66,9 +66,9 @@ public class PropertyMapper<T> {
     private final String to;
     private BooleanSupplier enabled;
     private String enabledWhen;
-    private final BiFunction<String, ConfigSourceInterceptorContext, String> mapper;
+    private final ValueMapper mapper;
     private final String mapFrom;
-    private final BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper;
+    private final ValueMapper parentMapper;
     private final boolean mask;
     private final String paramLabel;
     private final String envVarFormat;
@@ -84,8 +84,8 @@ public class PropertyMapper<T> {
     private Function<Set<String>, Set<String>> wildcardValuesTransformer;
 
     PropertyMapper(Option<T> option, String to, BooleanSupplier enabled, String enabledWhen,
-                   BiFunction<String, ConfigSourceInterceptorContext, String> mapper,
-                   String mapFrom, BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper,
+                   ValueMapper mapper,
+                   String mapFrom, ValueMapper parentMapper,
                    String paramLabel, boolean mask, BiConsumer<PropertyMapper<T>, ConfigValue> validator,
                    String description, BooleanSupplier required, String requiredWhen, Function<Set<String>, Set<String>> wildcardValuesTransformer) {
         this.option = option;
@@ -118,7 +118,7 @@ public class PropertyMapper<T> {
 
                 if (to != null) {
                     toWildcardMatcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(to);
-                    if (!toWildcardMatcher.matches()) {
+                    if (!toWildcardMatcher.find()) {
                         throw new IllegalArgumentException("Attempted to map a wildcard option to a non-wildcard option");
                     }
 
@@ -182,10 +182,10 @@ public class PropertyMapper<T> {
      */
     public Map<String, ConfigValue> getWildcardConfigValues() {
         return getWildcardValues().stream()
-                .collect(Collectors.toMap(v -> getWildcardValue(v).orElseThrow(), Configuration::getKcConfigValue));
+                .collect(Collectors.toMap(v -> v, Configuration::getKcConfigValue));
     }
 
-    public Set<String>  getWildcardValues() {
+    public Set<String> getWildcardValues() {
         if (!hasWildcard()) {
             throw new IllegalArgumentException("Option does not have wildcard");
         }
@@ -193,7 +193,9 @@ public class PropertyMapper<T> {
         // this is not optimal
         // TODO find an efficient way to get all values that match the wildcard
         Set<String> values = StreamSupport.stream(Configuration.getPropertyNames().spliterator(), false)
-                .filter(this::matchesWildcardOptionName)
+                .map(n -> getWildcardValue(n, false))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .collect(Collectors.toSet());
 
         if (wildcardValuesTransformer != null) {
@@ -203,7 +205,7 @@ public class PropertyMapper<T> {
         return values;
     }
 
-    public Set<String> getMappedWildcardValues() {
+    public Set<String> getMappedWildcardOptionNames() {
         if (toWildcardMatcher == null) {
             return Set.of();
         }
@@ -336,7 +338,7 @@ public class PropertyMapper<T> {
      * E.g. for the option "log-level-<category>" and the option name "log-level-io.quarkus",
      * the wildcard value would be "io.quarkus".
      */
-    public Optional<String> getWildcardValue(String option) {
+    private Optional<String> getWildcardValue(String option, boolean includeMappedToOptions) {
         if (!hasWildcard()) {
             throw new IllegalStateException("Option does not have wildcard");
         }
@@ -353,13 +355,22 @@ public class PropertyMapper<T> {
             return Optional.of(value);
         }
 
-        if (toWildcardPattern != null && (matcher = toWildcardPattern.matcher(option)).matches()) {
+        if (includeMappedToOptions && toWildcardPattern != null && (matcher = toWildcardPattern.matcher(option)).matches()) {
             if (matcher.matches()) {
                 return Optional.of(matcher.group(1));
             }
         }
 
         return Optional.empty();
+    }
+
+    /**
+     * Extracts the wildcard value from the given option name.
+     * E.g. for the option "log-level-<category>" and the option name "log-level-io.quarkus",
+     * the wildcard value would be "io.quarkus".
+     */
+    public Optional<String> getWildcardValue(String option) {
+        return getWildcardValue(option, true);
     }
 
     private ConfigValue transformValue(String name, ConfigValue configValue, ConfigSourceInterceptorContext context, boolean parentValue) {
@@ -369,7 +380,8 @@ public class PropertyMapper<T> {
         boolean mapped = false;
         var theMapper = parentValue ? this.parentMapper : this.mapper;
         if (theMapper != null && (!name.equals(getFrom()) || parentValue)) {
-            mappedValue = theMapper.apply(value, context);
+            String nameForMapper = hasWildcard() ? getWildcardValue(name).orElse(name) : name;
+            mappedValue = theMapper.map(nameForMapper, value, context);
             mapped = true;
         }
 
@@ -380,7 +392,8 @@ public class PropertyMapper<T> {
                     name).getValue();
         }
 
-        if (value == null && mappedValue == null) {
+        // Quarkus cannot have a config value with a null value
+        if (mappedValue == null) {
             return null;
         }
 
@@ -398,6 +411,11 @@ public class PropertyMapper<T> {
         }
 
         return configValue.withValue(ofNullable(configValue.getValue()).map(String::trim).orElse(null));
+    }
+
+    @FunctionalInterface
+    public interface ValueMapper {
+        String map(String name, String value, ConfigSourceInterceptorContext context);
     }
 
     private final class ContextWrapper implements ConfigSourceInterceptorContext {
@@ -432,9 +450,9 @@ public class PropertyMapper<T> {
 
         private final Option<T> option;
         private String to;
-        private BiFunction<String, ConfigSourceInterceptorContext, String> mapper;
+        private ValueMapper mapper;
         private String mapFrom = null;
-        private BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper;
+        private ValueMapper parentMapper;
         private boolean isMasked = false;
         private BooleanSupplier isEnabled = () -> true;
         private String enabledWhen = "";
@@ -458,13 +476,17 @@ public class PropertyMapper<T> {
         /**
          * NOTE: This transformer will not apply to the mapFrom value. When using
          * {@link #mapFrom} you generally need a transformer specifically for the parent
-         * value, see {@link #mapFrom(Option, BiFunction)}
+         * value, see {@link #mapFrom(Option, ValueMapper)}
          * <p>
          * The value passed into the transformer may be null if the property has no value set, and no default
          */
-        public Builder<T> transformer(BiFunction<String, ConfigSourceInterceptorContext, String> mapper) {
+        public Builder<T> transformer(ValueMapper mapper) {
             this.mapper = mapper;
             return this;
+        }
+
+        public Builder<T> transformer(BiFunction<String, ConfigSourceInterceptorContext, String> mapper) {
+            return transformer((name, value, context) -> mapper.apply(value, context));
         }
 
         public Builder<T> paramLabel(String label) {
@@ -477,10 +499,14 @@ public class PropertyMapper<T> {
             return this;
         }
 
-        public Builder<T> mapFrom(Option<?> mapFrom, BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper) {
+        public Builder<T> mapFrom(Option<?> mapFrom, ValueMapper parentMapper) {
             this.mapFrom = mapFrom.getKey();
             this.parentMapper = parentMapper;
             return this;
+        }
+
+        public Builder<T> mapFrom(Option<?> mapFrom, BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper) {
+            return mapFrom(mapFrom, (name, value, context) -> parentMapper.apply(value, context));
         }
 
         public Builder<T> isMasked(boolean isMasked) {
@@ -568,7 +594,7 @@ public class PropertyMapper<T> {
             return this;
         }
 
-        public Builder<T> addWildcardValuesTransformer(Function<Set<String>, Set<String>> wildcardValuesTransformer) {
+        public Builder<T> wildcardValuesTransformer(Function<Set<String>, Set<String>> wildcardValuesTransformer) {
             this.wildcardValuesTransformer = wildcardValuesTransformer;
             return this;
         }

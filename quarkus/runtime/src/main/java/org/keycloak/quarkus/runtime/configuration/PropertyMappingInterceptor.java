@@ -76,10 +76,18 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
 
     @Override
     public Iterator<String> iterateNames(ConfigSourceInterceptorContext context) {
-        List<String> mappedWildcardNames = PropertyMappers.getWildcardMappers().stream()
-                .map(PropertyMapper::getMappedWildcardValues)
-                .flatMap(Set::stream)
-                .toList();
+        List<String> mappedWildcardNames = List.of();
+        if (!Boolean.TRUE.equals(disable.get())) {
+            disable();
+            try {
+                mappedWildcardNames = PropertyMappers.getWildcardMappers().stream()
+                        .map(PropertyMapper::getMappedWildcardOptionNames)
+                        .flatMap(Set::stream)
+                        .toList();
+            } finally {
+                enable();
+            }
+        }
 
         // this could be optimized by filtering the wildcard names in the stream above
         return filterRuntime(IteratorUtils.chainedIterator(mappedWildcardNames.iterator(), context.iterateNames()));

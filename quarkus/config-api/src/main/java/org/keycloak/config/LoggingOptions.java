@@ -62,7 +62,7 @@ public class LoggingOptions {
 
     public static final Option<Level> LOG_LEVEL_CATEGORY = new OptionBuilder<>("log-level-<category>", Level.class)
             .category(OptionCategory.LOGGING)
-            .description("The log level of a category.")
+            .description("The log level of a category. Takes precedence over the 'log-level' option.")
             .strictExpectedValues(false)
             .build();
 

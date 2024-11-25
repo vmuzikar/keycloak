@@ -39,8 +39,6 @@ public abstract class AbstractStartCommand extends AbstractCommand implements Ru
     @Override
     public void run() {
         doBeforeRun();
-        HttpPropertyMappers.validateConfig();
-        HostnameV2PropertyMappers.validateConfig();
         validateConfig();
 
         if (isDevProfile()) {
@@ -54,6 +52,13 @@ public abstract class AbstractStartCommand extends AbstractCommand implements Ru
     
     protected void doBeforeRun() {
 
+    }
+
+    @Override
+    protected void validateConfig() {
+        super.validateConfig(); // need to run generic validation first as it also verifies unknown options
+        HttpPropertyMappers.validateConfig();
+        HostnameV2PropertyMappers.validateConfig();
     }
 
     @Override

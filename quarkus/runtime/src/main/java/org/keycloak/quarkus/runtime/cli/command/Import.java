@@ -43,8 +43,8 @@ public final class Import extends AbstractNonServerCommand implements Runnable {
 
     @Override
     public void validateConfig() {
-        super.validateConfig();
         ImportPropertyMappers.validateConfig();
+        super.validateConfig();
     }
 
     @Override

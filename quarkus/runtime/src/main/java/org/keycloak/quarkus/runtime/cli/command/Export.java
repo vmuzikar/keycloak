@@ -40,8 +40,8 @@ public final class Export extends AbstractNonServerCommand implements Runnable {
 
     @Override
     public void validateConfig() {
-        super.validateConfig();
         ExportPropertyMappers.validateConfig();
+        super.validateConfig();
     }
 
     @Override

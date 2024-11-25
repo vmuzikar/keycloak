@@ -26,6 +26,7 @@ public final class LoggingPropertyMappers {
     private static final String CONSOLE_ENABLED_MSG = "Console log handler is activated";
     private static final String FILE_ENABLED_MSG = "File log handler is activated";
     private static final String SYSLOG_ENABLED_MSG = "Syslog is activated";
+    private static final String DEFAULT_ROOT_LOG_LEVEL = LoggingOptions.LOG_LEVEL.getDefaultValue().orElseThrow().get(0);
 
     private LoggingPropertyMappers() {
     }
@@ -227,7 +228,7 @@ public final class LoggingPropertyMappers {
                 return categoryLevel.levelName;
             }
         }
-        return LoggingOptions.LOG_LEVEL.getDefaultValue().orElseThrow().get(0); // defaults are not resolved in the mapper if transformer is present, so doing it explicitly here
+        return DEFAULT_ROOT_LOG_LEVEL; // defaults are not resolved in the mapper if transformer is present, so doing it explicitly here
     }
 
     private static Set<String> getConfiguredLogCategories(Set<String> categories) {
@@ -240,12 +241,15 @@ public final class LoggingPropertyMappers {
     }
 
     private static String resolveCategoryLogLevel(String category, String parentLogLevelValue, ConfigSourceInterceptorContext context) {
+        String rootLevel = DEFAULT_ROOT_LOG_LEVEL;
         for (CategoryLevel categoryLevel : parseLogLevels(parentLogLevelValue)) {
             if (category.equals(categoryLevel.category)) {
                 return categoryLevel.levelName;
+            } else if (categoryLevel.category == null) {
+                rootLevel = categoryLevel.levelName;
             }
         }
-        return null;
+        return rootLevel;
     }
 
     private static List<CategoryLevel> parseLogLevels(String value) {

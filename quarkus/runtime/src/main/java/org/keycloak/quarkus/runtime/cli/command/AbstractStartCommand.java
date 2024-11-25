@@ -56,7 +56,7 @@ public abstract class AbstractStartCommand extends AbstractCommand implements Ru
 
     @Override
     protected void validateConfig() {
-        super.validateConfig(); // need to run generic validation first as it also verifies unknown options
+        super.validateConfig(); // we want to run the generic validation here first to check for unknown options
         HttpPropertyMappers.validateConfig();
         HostnameV2PropertyMappers.validateConfig();
     }

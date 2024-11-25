@@ -77,7 +77,8 @@ public class PropertyMapper<T> {
     private final String description;
     private final BooleanSupplier required;
     private final String requiredWhen;
-    private Pattern optionNameWildcardPattern;
+    private Matcher fromWildcardMatcher;
+    private Pattern fromWildcardPattern;
     private Pattern envVarNameWildcardPattern;
     private Matcher toWildcardMatcher;
     private Pattern toWildcardPattern;
@@ -107,10 +108,10 @@ public class PropertyMapper<T> {
 
         // The wildcard pattern (e.g. log-level-<category>) is matching only a-z, 0-0 and dots. For env vars, dots are replaced by underscores.
         if (option.getKey() != null) {
-            Matcher matcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(option.getKey());
-            if (matcher.find()) {
+            fromWildcardMatcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(option.getKey());
+            if (fromWildcardMatcher.find()) {
                 // Includes handling for both "--" prefix for CLI options and "kc." prefix
-                this.optionNameWildcardPattern = Pattern.compile("(?:" + ARG_PREFIX + "|kc\\.)" + matcher.replaceFirst("([\\\\\\\\.a-zA-Z0-9]+)"));
+                this.fromWildcardPattern = Pattern.compile("(?:" + ARG_PREFIX + "|kc\\.)" + fromWildcardMatcher.replaceFirst("([\\\\\\\\.a-zA-Z0-9]+)"));
 
                 // Not using toEnvVarFormat because it would process the whole string incl the <...> wildcard.
                 Matcher envVarMatcher = WILDCARD_PLACEHOLDER_PATTERN.matcher(option.getKey().toUpperCase().replace("-", "_"));
@@ -135,7 +136,7 @@ public class PropertyMapper<T> {
     }
 
     ConfigValue getConfigValue(String name, ConfigSourceInterceptorContext context) {
-        String from = getFrom();
+        String from = getFrom(name);
 
         if (to != null && to.endsWith(OPTION_PART_SEPARATOR)) {
             // in case mapping is based on prefixes instead of full property names
@@ -251,8 +252,19 @@ public class PropertyMapper<T> {
         return this.option.getType();
     }
 
+    public String getFrom(String keyWithWildcardValue) {
+        String from = this.option.getKey();
+        if (hasWildcard() && keyWithWildcardValue != null) {
+            Optional<String> wildcardValue = getWildcardValue(keyWithWildcardValue);
+            if (wildcardValue.isPresent()) {
+                from = fromWildcardMatcher.replaceFirst(wildcardValue.get());
+            }
+        }
+        return MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX + from;
+    }
+
     public String getFrom() {
-        return MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX + this.option.getKey();
+        return getFrom(null);
     }
 
     public String getDescription() {
@@ -289,8 +301,19 @@ public class PropertyMapper<T> {
         return !this.option.isBuildTime();
     }
 
-    public String getTo() {
+    public String getTo(String keyWithWildcardValue) {
+        String to = this.to;
+        if (hasWildcard() && keyWithWildcardValue != null) {
+            Optional<String> wildcardValue = getWildcardValue(keyWithWildcardValue);
+            if (wildcardValue.isPresent()) {
+                to = toWildcardMatcher.replaceFirst(wildcardValue.get());
+            }
+        }
         return to;
+    }
+
+    public String getTo() {
+        return getTo(null);
     }
 
     public String getParamLabel() {
@@ -318,7 +341,7 @@ public class PropertyMapper<T> {
      * The placeholder must be denoted by the '<' and '>' characters.
      */
     public boolean hasWildcard() {
-        return optionNameWildcardPattern != null && envVarNameWildcardPattern != null;
+        return fromWildcardPattern != null;
     }
 
     /**
@@ -329,7 +352,7 @@ public class PropertyMapper<T> {
         if (!hasWildcard()) {
             throw new IllegalStateException("Option does not have wildcard");
         }
-        return optionNameWildcardPattern.matcher(name).matches() || envVarNameWildcardPattern.matcher(name).matches()
+        return fromWildcardPattern.matcher(name).matches() || envVarNameWildcardPattern.matcher(name).matches()
                 || (toWildcardPattern != null && toWildcardPattern.matcher(name).matches());
     }
 
@@ -343,7 +366,7 @@ public class PropertyMapper<T> {
             throw new IllegalStateException("Option does not have wildcard");
         }
 
-        Matcher matcher = optionNameWildcardPattern.matcher(option);
+        Matcher matcher = fromWildcardPattern.matcher(option);
         if (matcher.matches()) {
             return Optional.of(matcher.group(1));
         }
@@ -392,8 +415,7 @@ public class PropertyMapper<T> {
                     name).getValue();
         }
 
-        // Quarkus cannot have a config value with a null value
-        if (mappedValue == null) {
+        if (value == null && mappedValue == null) {
             return null;
         }
 
@@ -402,7 +424,7 @@ public class PropertyMapper<T> {
         }
 
         // by unsetting the ordinal this will not be seen as directly modified by the user
-        return configValue.from().withValue(mappedValue).withRawValue(value).withConfigSourceOrdinal(0).build();
+        return configValue.from().withName(name).withValue(mappedValue).withRawValue(value).withConfigSourceOrdinal(0).build();
     }
 
     private ConfigValue convertValue(ConfigValue configValue) {

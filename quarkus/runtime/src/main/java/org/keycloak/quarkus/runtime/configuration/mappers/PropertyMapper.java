@@ -136,7 +136,7 @@ public class PropertyMapper<T> {
     }
 
     ConfigValue getConfigValue(String name, ConfigSourceInterceptorContext context) {
-        String from = getFrom(name);
+        String from = getFrom(getWildcardValue(name).orElse(null));
 
         if (to != null && to.endsWith(OPTION_PART_SEPARATOR)) {
             // in case mapping is based on prefixes instead of full property names

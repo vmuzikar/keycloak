@@ -54,7 +54,7 @@ public class LoggingDistTest {
     @Test
     @Launch({ "start-dev", "--log-level=warn" })
     void testSetRootLevel(CLIResult cliResult) {
-        assertFalse(cliResult.getOutput().contains("INFO [io.quarkus]"));
+        assertFalse(cliResult.getOutput().contains("INFO  [io.quarkus]"));
         assertFalse(cliResult.getOutput().contains("Listening on:"));
         cliResult.assertStartedDevMode();
     }
@@ -226,8 +226,8 @@ public class LoggingDistTest {
 
         // log contains DB migration status + build time logs
         assertThat(output, not(containsString("DEBUG [org.hibernate")));
-        assertThat(output, not(containsString("INFO [org.keycloak")));
-        assertThat(output, not(containsString("INFO [io.quarkus")));
+        assertThat(output, not(containsString("INFO  [org.keycloak")));
+        assertThat(output, not(containsString("INFO  [io.quarkus")));
 
         var fileLog = readDefaultFileLog(path);
         assertThat(fileLog, notNullValue());
@@ -242,7 +242,7 @@ public class LoggingDistTest {
         assertThat(output, containsString("DEBUG [org.hibernate"));
         assertThat(output, not(containsString("TRACE [org.hibernate")));
         assertThat(output, containsString("TRACE [org.keycloak"));
-        assertThat(output, not(containsString("INFO [io.quarkus")));
+        assertThat(output, not(containsString("INFO  [io.quarkus")));
     }
 
     protected static String readDefaultFileLog(RawDistRootPath path) {

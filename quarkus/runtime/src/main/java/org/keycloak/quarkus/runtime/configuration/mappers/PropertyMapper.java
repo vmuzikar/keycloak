@@ -175,20 +175,9 @@ public class PropertyMapper<T> {
         return context.proceed(name);
     }
 
-    /**
-     * Get all Keycloak multivalued config values for the mapper. A multivalued config option is a config option that
-     * has a wildcard in its name, e.g. log-level-<category>.
-     *
-     * @return a map of config values where the key is the resolved wildcard (e.g. category) and the value is the config value
-     */
-    public Map<String, ConfigValue> getWildcardConfigValues() {
-        return getWildcardValues().stream()
-                .collect(Collectors.toMap(v -> v, Configuration::getKcConfigValue));
-    }
-
     public Set<String> getWildcardValues() {
         if (!hasWildcard()) {
-            throw new IllegalArgumentException("Option does not have wildcard");
+            return Set.of();
         }
 
         // this is not optimal
@@ -252,13 +241,10 @@ public class PropertyMapper<T> {
         return this.option.getType();
     }
 
-    public String getFrom(String keyWithWildcardValue) {
+    public String getFrom(String wildcardValue) {
         String from = this.option.getKey();
-        if (hasWildcard() && keyWithWildcardValue != null) {
-            Optional<String> wildcardValue = getWildcardValue(keyWithWildcardValue);
-            if (wildcardValue.isPresent()) {
-                from = fromWildcardMatcher.replaceFirst(wildcardValue.get());
-            }
+        if (hasWildcard() && wildcardValue != null) {
+            from = fromWildcardMatcher.replaceFirst(wildcardValue);
         }
         return MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX + from;
     }
@@ -301,13 +287,10 @@ public class PropertyMapper<T> {
         return !this.option.isBuildTime();
     }
 
-    public String getTo(String keyWithWildcardValue) {
+    public String getTo(String wildcardValue) {
         String to = this.to;
-        if (hasWildcard() && keyWithWildcardValue != null) {
-            Optional<String> wildcardValue = getWildcardValue(keyWithWildcardValue);
-            if (wildcardValue.isPresent()) {
-                to = toWildcardMatcher.replaceFirst(wildcardValue.get());
-            }
+        if (hasWildcard() && wildcardValue != null) {
+            to = toWildcardMatcher.replaceFirst(wildcardValue);
         }
         return to;
     }
@@ -350,7 +333,7 @@ public class PropertyMapper<T> {
      */
     public boolean matchesWildcardOptionName(String name) {
         if (!hasWildcard()) {
-            throw new IllegalStateException("Option does not have wildcard");
+            return false;
         }
         return fromWildcardPattern.matcher(name).matches() || envVarNameWildcardPattern.matcher(name).matches()
                 || (toWildcardPattern != null && toWildcardPattern.matcher(name).matches());
@@ -363,7 +346,7 @@ public class PropertyMapper<T> {
      */
     private Optional<String> getWildcardValue(String option, boolean includeMappedToOptions) {
         if (!hasWildcard()) {
-            throw new IllegalStateException("Option does not have wildcard");
+            return Optional.empty();
         }
 
         Matcher matcher = fromWildcardPattern.matcher(option);

@@ -48,6 +48,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.keycloak.common.profile.ProfileException;
 import org.keycloak.config.DeprecatedMetadata;
@@ -379,17 +380,33 @@ public class Picocli {
                 Optional.ofNullable(PropertyMappers.getRuntimeMappers().get(category)).ifPresent(mappers::addAll);
                 Optional.ofNullable(PropertyMappers.getBuildTimeMappers().get(category)).ifPresent(mappers::addAll);
                 for (PropertyMapper<?> mapper : mappers) {
-                    ConfigValue configValue = Configuration.getConfigValue(mapper.getFrom());
-                    String configValueStr = configValue.getValue();
+                    ConfigValue firstConfigValue;
+                    Map<String, ConfigValue> configValues;
+
+                    if (mapper.hasWildcard()) {
+                        // filter out null values
+                        // this might happen when we're generating some values in wildcardValuesTransformer,
+                        // but mappers are now disabled so such values will be null
+                        // but that's fine, we don't care about these for validation
+                        configValues = Configuration.getKcConfigValues(mapper).entrySet().stream()
+                                .filter(e -> e.getValue().getValue() != null)
+                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                        firstConfigValue = !configValues.isEmpty() ? configValues.values().iterator().next() : ConfigValue.builder().build();
+                    } else {
+                        firstConfigValue = Configuration.getConfigValue(mapper.getFrom());
+                        configValues = Map.of(mapper.getFrom(), firstConfigValue);
+                    }
+
+                    String firstConfigValueStr = firstConfigValue.getValue();
 
                     // don't consider missing or anything below standard env properties
-                    if (configValueStr == null) {
+                    if (firstConfigValueStr == null) {
                         if (Environment.isRuntimeMode() && mapper.isEnabled() && mapper.isRequired()) {
                             handleRequired(missingOption, mapper);
                         }
                         continue;
                     }
-                    if (!isUserModifiable(configValue)) {
+                    if (!isUserModifiable(firstConfigValue)) {
                         continue;
                     }
 
@@ -400,7 +417,7 @@ public class Picocli {
 
                         // only check build-time for a rebuild, we'll check the runtime later
                         if (!mapper.isRunTime() || !isRebuild()) {
-                            if (PropertyMapper.isCliOption(configValue)) {
+                            if (PropertyMapper.isCliOption(firstConfigValue)) {
                                 throw new KcUnmatchedArgumentException(abstractCommand.getCommandLine().orElseThrow(), List.of(mapper.getCliFormat()));
                             } else {
                                 handleDisabled(mapper.isRunTime() ? disabledRunTime : disabledBuildTime, mapper);
@@ -411,7 +428,7 @@ public class Picocli {
 
                     if (mapper.isBuildTime() && !options.includeBuildTime) {
                         String currentValue = getRawPersistedProperty(mapper.getFrom()).orElse(null);
-                        if (!configValueStr.equals(currentValue)) {
+                        if (!firstConfigValueStr.equals(currentValue)) {
                             ignoredBuildTime.add(mapper.getFrom());
                             continue;
                         }
@@ -421,10 +438,10 @@ public class Picocli {
                         continue;
                     }
 
-                    mapper.validate(configValue);
+                    configValues.forEach((k, v) -> mapper.validate(v));
 
                     mapper.getDeprecatedMetadata().ifPresent(metadata -> {
-                        handleDeprecated(deprecatedInUse, mapper, configValueStr, metadata);
+                        handleDeprecated(deprecatedInUse, mapper, firstConfigValueStr, metadata);
                     });
                 }
             }

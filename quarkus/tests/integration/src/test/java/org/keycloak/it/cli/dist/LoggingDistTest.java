@@ -178,7 +178,7 @@ public class LoggingDistTest {
     @Launch({"start-dev", "--log-level-org.keycloak=wrong"})
     @DryRun
     void wrongLevelForCategory(CLIResult cliResult) {
-        cliResult.assertError("Invalid value for option '--log-level-org.keycloak': wrong. Expected values are (case insensitive): off, fatal, error, warn, info, debug, trace, all");
+        cliResult.assertError("Invalid log level: wrong. Possible values are: warn, trace, debug, error, fatal, info.");
     }
 
     @Test

@@ -26,7 +26,7 @@ public final class LoggingPropertyMappers {
     private static final String CONSOLE_ENABLED_MSG = "Console log handler is activated";
     private static final String FILE_ENABLED_MSG = "File log handler is activated";
     private static final String SYSLOG_ENABLED_MSG = "Syslog is activated";
-    private static final String DEFAULT_ROOT_LOG_LEVEL = LoggingOptions.LOG_LEVEL.getDefaultValue().orElseThrow().get(0);
+    private static final String DEFAULT_ROOT_LOG_LEVEL = toLevel(LoggingOptions.LOG_LEVEL.getDefaultValue().orElseThrow().get(0)).getName();
 
     private LoggingPropertyMappers() {
     }
@@ -109,8 +109,10 @@ public final class LoggingPropertyMappers {
                         .build(),
                 fromOption(LoggingOptions.LOG_LEVEL_CATEGORY)
                         .to("quarkus.log.category.\"<categories>\".level")
+                        .validator(LoggingPropertyMappers::validateCategoryLogLevel)
                         .wildcardValuesTransformer(LoggingPropertyMappers::getConfiguredLogCategories)
-                        .mapFrom(LoggingOptions.LOG_LEVEL, LoggingPropertyMappers::resolveCategoryLogLevel) // a fallback to log-level
+                        .transformer((v,c) -> toLevel(v).getName())
+                        .mapFrom(LoggingOptions.LOG_LEVEL, LoggingPropertyMappers::resolveCategoryLogLevelFromParentLogLevelOption) // a fallback to log-level
                         .paramLabel("level")
                         .build(),
                 // Syslog
@@ -240,7 +242,15 @@ public final class LoggingPropertyMappers {
         return categories;
     }
 
-    private static String resolveCategoryLogLevel(String category, String parentLogLevelValue, ConfigSourceInterceptorContext context) {
+    private static void validateCategoryLogLevel(String logLevel) {
+        try {
+            toLevel(logLevel);
+        } catch (IllegalArgumentException iae) {
+            throw new PropertyException(Messages.invalidLogLevel(logLevel));
+        }
+    }
+
+    private static String resolveCategoryLogLevelFromParentLogLevelOption(String category, String parentLogLevelValue, ConfigSourceInterceptorContext context) {
         String rootLevel = DEFAULT_ROOT_LOG_LEVEL;
         for (CategoryLevel categoryLevel : parseLogLevels(parentLogLevelValue)) {
             if (category.equals(categoryLevel.category)) {

@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.keycloak.config.LoggingOptions;
 import org.keycloak.it.junit5.extension.CLIResult;
 import org.keycloak.it.junit5.extension.DistributionTest;
+import org.keycloak.it.junit5.extension.DryRun;
 import org.keycloak.it.junit5.extension.RawDistOnly;
 import org.keycloak.it.utils.KeycloakDistribution;
 import org.keycloak.it.utils.RawDistRootPath;
@@ -168,8 +169,16 @@ public class LoggingDistTest {
 
     @Test
     @Launch({"start-dev", "--log-console-level=wrong"})
+    @DryRun
     void wrongLevelForHandlers(CLIResult cliResult) {
         cliResult.assertError("Invalid value for option '--log-console-level': wrong. Expected values are (case insensitive): off, fatal, error, warn, info, debug, trace, all");
+    }
+
+    @Test
+    @Launch({"start-dev", "--log-level-org.keycloak=wrong"})
+    @DryRun
+    void wrongLevelForCategory(CLIResult cliResult) {
+        cliResult.assertError("Invalid value for option '--log-level-org.keycloak': wrong. Expected values are (case insensitive): off, fatal, error, warn, info, debug, trace, all");
     }
 
     @Test
@@ -223,6 +232,17 @@ public class LoggingDistTest {
         var fileLog = readDefaultFileLog(path);
         assertThat(fileLog, notNullValue());
         assertTrue(fileLog.isBlank());
+    }
+
+    @Test
+    @Launch({"start-dev", "--log-level=error,org.keycloak:warn,org.hibernate:debug", "--log-level-org.keycloak=trace"})
+    void categoryLogLevel(CLIResult cliResult) {
+        var output = cliResult.getOutput();
+
+        assertThat(output, containsString("DEBUG [org.hibernate"));
+        assertThat(output, not(containsString("TRACE [org.hibernate")));
+        assertThat(output, containsString("TRACE [org.keycloak"));
+        assertThat(output, not(containsString("INFO [io.quarkus")));
     }
 
     protected static String readDefaultFileLog(RawDistRootPath path) {

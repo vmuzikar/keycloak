@@ -82,7 +82,7 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
             disableAdditionalWildcardNames.set(true);
             try {
                 mappedWildcardNames = PropertyMappers.getWildcardMappers().stream()
-                        .map(m -> m.getMappedWildcardOptionNames(context.iterateNames()))
+                        .map(PropertyMapper::getMappedWildcardOptionNames)
                         .flatMap(Set::stream)
                         .toList();
             } finally {

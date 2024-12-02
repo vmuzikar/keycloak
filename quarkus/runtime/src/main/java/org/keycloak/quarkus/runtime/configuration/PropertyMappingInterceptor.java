@@ -53,6 +53,7 @@ import static org.keycloak.quarkus.runtime.Environment.isRebuild;
 public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
 
     private static ThreadLocal<Boolean> disable = new ThreadLocal<>();
+    private static ThreadLocal<Boolean> disableAdditionalWildcardNames = new ThreadLocal<>();
 
     public static void disable() {
         disable.set(true);
@@ -77,15 +78,15 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
     @Override
     public Iterator<String> iterateNames(ConfigSourceInterceptorContext context) {
         List<String> mappedWildcardNames = List.of();
-        if (!Boolean.TRUE.equals(disable.get())) {
-            disable();
+        if (!Boolean.TRUE.equals(disableAdditionalWildcardNames.get())) {
+            disableAdditionalWildcardNames.set(true);
             try {
                 mappedWildcardNames = PropertyMappers.getWildcardMappers().stream()
                         .map(m -> m.getMappedWildcardOptionNames(context.iterateNames()))
                         .flatMap(Set::stream)
                         .toList();
             } finally {
-                enable();
+                disableAdditionalWildcardNames.remove();
             }
         }
 

@@ -273,7 +273,7 @@ jobs:
       # kc.quarkus.tests.groups acts as the tag filter
       - name: Run Quarkus integration Tests
         run: |
-          ./mvnw test -pl quarkus/tests/integration -Dtest=StartDevCommandDistTest -Dkc.quarkus.tests.groups=win 2>&1 | misc/log/trimmer.sh
+          ./mvnw test -pl quarkus/tests/integration -Dtest=StartDevCommandDistTest -Dkc.quarkus.tests.groups=win 2>&1
 
       - name: Upload JVM Heapdumps
         if: always()

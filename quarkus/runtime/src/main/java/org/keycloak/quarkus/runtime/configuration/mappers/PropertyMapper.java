@@ -27,10 +27,11 @@ import static org.keycloak.quarkus.runtime.configuration.Configuration.toEnvVarF
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
@@ -175,14 +176,23 @@ public class PropertyMapper<T> {
         return context.proceed(name);
     }
 
-    public Set<String> getWildcardValues() {
+    public Set<String> getWildcardValues(Iterator<String> allPropertyNamesIterator) {
         if (!hasWildcard()) {
             return Set.of();
         }
 
+        Stream<String> allPropertyNamesStream;
+
+        if (allPropertyNamesIterator == null) {
+            allPropertyNamesStream = StreamSupport.stream(Configuration.getPropertyNames().spliterator(), false);
+        } else {
+            allPropertyNamesStream = StreamSupport.stream(
+                    Spliterators.spliteratorUnknownSize(allPropertyNamesIterator, 0), false);
+        }
+
         // this is not optimal
         // TODO find an efficient way to get all values that match the wildcard
-        Set<String> values = StreamSupport.stream(Configuration.getPropertyNames().spliterator(), false)
+        Set<String> values = allPropertyNamesStream
                 .map(n -> getWildcardValue(n, false))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
@@ -195,12 +205,16 @@ public class PropertyMapper<T> {
         return values;
     }
 
-    public Set<String> getMappedWildcardOptionNames() {
+    public Set<String> getWildcardValues() {
+        return getWildcardValues(null);
+    }
+
+    public Set<String> getMappedWildcardOptionNames(Iterator<String> allPropertyNamesIterator) {
         if (toWildcardMatcher == null) {
             return Set.of();
         }
 
-        return getWildcardValues().stream()
+        return getWildcardValues(allPropertyNamesIterator).stream()
                 .map(v -> toWildcardMatcher.replaceFirst(v))
                 .collect(Collectors.toSet());
     }

@@ -82,7 +82,7 @@ public class StartDevCommandDistTest {
     @Test
     @DisabledOnOs(value = { OS.LINUX, OS.MAC }, disabledReason = "A drive letter in URI can cause a problem.")
     void testConfigKeystoreAbsolutePath(KeycloakDistribution dist) {
-        CLIResult cliResult = dist.run("start-dev", "--config-keystore=" + Paths.get("src/test/resources/keystore").toAbsolutePath().normalize(),
+        CLIResult cliResult = dist.run("start-dev", "--config-keystore=" + Paths.get("src/test/resources/keystore").toAbsolutePath().normalize().toString().replace("\\", "\\\\"),
                 "--config-keystore-password=secret");
 
         cliResult.assertMessage("DEBUG [org.hibernate");

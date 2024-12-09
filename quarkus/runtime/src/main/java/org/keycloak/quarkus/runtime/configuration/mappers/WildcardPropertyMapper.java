@@ -15,14 +15,16 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.keycloak.config.DeprecatedMetadata;
 import org.keycloak.config.Option;
+import org.keycloak.config.OptionCategory;
 import org.keycloak.quarkus.runtime.configuration.Configuration;
 import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
 
-public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
+public class WildcardPropertyMapper<T> extends PropertyMapperImpl<T> {
 
     private Matcher fromWildcardMatcher;
     private Pattern fromWildcardPattern;
@@ -64,11 +66,11 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
         return true;
     }
 
-    String getTo(String wildcardKey) {
+    private String getTo(String wildcardKey) {
         return toWildcardMatcher.replaceFirst(wildcardKey);
     }
 
-    String getFrom(String wildcardKey) {
+    private String getFrom(String wildcardKey) {
         return MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX + fromWildcardMatcher.replaceFirst(wildcardKey);
     }
 
@@ -81,7 +83,7 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
         // this is not optimal
         // TODO find an efficient way to get all values that match the wildcard
         Set<String> values = StreamSupport.stream(Configuration.getPropertyNames().spliterator(), false)
-                .map(n -> getMappedKey(n, true, false))
+                .map(n -> getMappedKey(n, false))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());
@@ -99,16 +101,14 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
      * E.g. for the option "log-level-<category>" and the option name "log-level-io.quarkus",
      * the wildcard value would be "io.quarkus".
      */
-    private Optional<String> getMappedKey(String originalKey, boolean tryFrom, boolean tryTo) {
-        if (tryFrom) {
-            Matcher matcher = fromWildcardPattern.matcher(originalKey);
-            if (matcher.matches()) {
-                return Optional.of(matcher.group(1));
-            }
+    private Optional<String> getMappedKey(String originalKey, boolean tryTo) {
+        Matcher matcher = fromWildcardPattern.matcher(originalKey);
+        if (matcher.matches()) {
+            return Optional.of(matcher.group(1));
         }
 
         if (tryTo && toWildcardPattern != null) {
-            Matcher matcher = toWildcardPattern.matcher(originalKey);
+            matcher = toWildcardPattern.matcher(originalKey);
             if (matcher.matches()) {
                 return Optional.of(matcher.group(1));
             }
@@ -136,24 +136,181 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
                 || (toWildcardPattern != null && toWildcardPattern.matcher(name).matches());
     }
 
-    @Override
-    public PropertyMapper<?> forEnvKey(String key) {
-        Matcher matcher = envVarNameWildcardPattern.matcher(key);
-        String value = matcher.group(1);
-        final String wildcardValue = value.toLowerCase().replace("_", "."); // we opiniotatedly convert env var names to CLI format with dots
-        return forWildcardValue(wildcardValue);
-    }
+    public static class KeyAwareWildcardMapper implements PropertyMapper {
+        private final String wildcardKey;
+        private final WildcardPropertyMapper<?> delegate;
 
-    private PropertyMapper<?> forWildcardValue(final String wildcardValue) {
-        String to = getTo(wildcardValue);
-        String from = getFrom(wildcardValue);
-        return new PropertyMapper<T>(this, from, to, wildcardMapFrom == null ? null : (v, context) -> wildcardMapFrom.map(wildcardValue, v, context));
-    }
+        public KeyAwareWildcardMapper(String key, boolean keyIsEnvVar, WildcardPropertyMapper<?> delegate) {
+            if (!keyIsEnvVar) {
+                wildcardKey = delegate.getMappedKey(key, true).orElseThrow();
+            } else {
+                Matcher matcher = delegate.envVarNameWildcardPattern.matcher(key);
+                String value = matcher.group(1);
+                wildcardKey = value.toLowerCase().replace("_", "."); // we opiniotatedly convert env var names to CLI format with dots
+            }
 
-    @Override
-    public PropertyMapper<?> forKey(String key) {
-        final String wildcardValue = getMappedKey(key, true, true).orElseThrow();
-        return forWildcardValue(wildcardValue);
+            this.delegate = delegate;
+        }
+
+        @Override
+        public ConfigValue getConfigValue(ConfigSourceInterceptorContext context) {
+            return delegate.getConfigValue(context);
+        }
+
+        @Override
+        public ConfigValue getConfigValue(String name, ConfigSourceInterceptorContext context) {
+            return delegate.getConfigValue(name, context);
+        }
+
+        @Override
+        public Option<?> getOption() {
+            return delegate.getOption();
+        }
+
+        @Override
+        public void setEnabled(BooleanSupplier enabled) {
+            delegate.setEnabled(enabled);
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return delegate.isEnabled();
+        }
+
+        @Override
+        public Optional<String> getEnabledWhen() {
+            return delegate.getEnabledWhen();
+        }
+
+        @Override
+        public void setEnabledWhen(String enabledWhen) {
+            delegate.setEnabledWhen(enabledWhen);
+        }
+
+        @Override
+        public boolean isRequired() {
+            return delegate.isRequired();
+        }
+
+        @Override
+        public Optional<String> getRequiredWhen() {
+            return delegate.getRequiredWhen();
+        }
+
+        @Override
+        public Class<?> getType() {
+            return delegate.getType();
+        }
+
+        @Override
+        public String getFrom() {
+            return delegate.getFrom(wildcardKey);
+        }
+
+        @Override
+        public String getDescription() {
+            return delegate.getDescription();
+        }
+
+        @Override
+        public List<String> getExpectedValues() {
+            return delegate.getExpectedValues();
+        }
+
+        @Override
+        public boolean isStrictExpectedValues() {
+            return delegate.isStrictExpectedValues();
+        }
+
+        @Override
+        public Optional<?> getDefaultValue() {
+            return delegate.getDefaultValue();
+        }
+
+        @Override
+        public OptionCategory getCategory() {
+            return delegate.getCategory();
+        }
+
+        @Override
+        public boolean isHidden() {
+            return delegate.isHidden();
+        }
+
+        @Override
+        public boolean isBuildTime() {
+            return delegate.isBuildTime();
+        }
+
+        @Override
+        public boolean isRunTime() {
+            return delegate.isRunTime();
+        }
+
+        @Override
+        public String getTo() {
+            return delegate.getTo(wildcardKey);
+        }
+
+        @Override
+        public String getParamLabel() {
+            return delegate.getParamLabel();
+        }
+
+        @Override
+        public String getCliFormat() {
+            return delegate.getCliFormat();
+        }
+
+        @Override
+        public String getEnvVarFormat() {
+            return delegate.getEnvVarFormat();
+        }
+
+        @Override
+        public boolean isMask() {
+            return delegate.isMask();
+        }
+
+        @Override
+        public Optional<DeprecatedMetadata> getDeprecatedMetadata() {
+            return delegate.getDeprecatedMetadata();
+        }
+
+        @Override
+        public boolean hasWildcard() {
+            return delegate.hasWildcard();
+        }
+
+        @Override
+        public void validate(ConfigValue value) {
+            delegate.validate(value);
+        }
+
+        @Override
+        public boolean isList() {
+            return delegate.isList();
+        }
+
+        @Override
+        public void validateValues(ConfigValue configValue, BiConsumer<ConfigValue, String> singleValidator) {
+            delegate.validateValues(configValue, singleValidator);
+        }
+
+        @Override
+        public void validateExpectedValues(ConfigValue configValue, String v) {
+            delegate.validateExpectedValues(configValue, v);
+        }
+
+        @Override
+        public String getOptionAndSourceMessage(ConfigValue configValue) {
+            return delegate.getOptionAndSourceMessage(configValue);
+        }
+
+        @Override
+        public List<ConfigValue> getKcConfigValues() {
+            return delegate.getKcConfigValues();
+        }
     }
 
 }

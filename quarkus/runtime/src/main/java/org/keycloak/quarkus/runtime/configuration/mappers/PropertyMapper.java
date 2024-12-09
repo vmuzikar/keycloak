@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Red Hat, Inc. and/or its affiliates
+ * Copyright 2024 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,17 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.keycloak.quarkus.runtime.configuration.mappers;
 
-import static java.util.Optional.ofNullable;
-import static org.keycloak.config.Option.WILDCARD_PLACEHOLDER_PATTERN;
-import static org.keycloak.quarkus.runtime.Environment.isRebuild;
-import static org.keycloak.quarkus.runtime.configuration.Configuration.OPTION_PART_SEPARATOR;
-import static org.keycloak.quarkus.runtime.configuration.Configuration.OPTION_PART_SEPARATOR_CHAR;
-import static org.keycloak.quarkus.runtime.configuration.Configuration.toCliFormat;
-import static org.keycloak.quarkus.runtime.configuration.Configuration.toEnvVarFormat;
+import io.smallrye.config.ConfigSourceInterceptorContext;
+import io.smallrye.config.ConfigValue;
+import org.keycloak.config.DeprecatedMetadata;
+import org.keycloak.config.Option;
+import org.keycloak.config.OptionCategory;
+import org.keycloak.quarkus.runtime.cli.PropertyException;
+import org.keycloak.quarkus.runtime.configuration.ConfigArgsConfigSource;
+import org.keycloak.quarkus.runtime.configuration.KcEnvConfigSource;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,294 +37,94 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import io.smallrye.config.ConfigSourceInterceptorContext;
-import io.smallrye.config.ConfigValue;
-import io.smallrye.config.ConfigValue.ConfigValueBuilder;
-import io.smallrye.config.ExpressionConfigSourceInterceptor;
-import io.smallrye.config.Expressions;
-import org.keycloak.config.DeprecatedMetadata;
-import org.keycloak.config.Option;
-import org.keycloak.config.OptionCategory;
-import org.keycloak.quarkus.runtime.Environment;
-import org.keycloak.quarkus.runtime.cli.PropertyException;
-import org.keycloak.quarkus.runtime.cli.ShortErrorMessageHandler;
-import org.keycloak.quarkus.runtime.configuration.ConfigArgsConfigSource;
-import org.keycloak.quarkus.runtime.configuration.Configuration;
-import org.keycloak.quarkus.runtime.configuration.KcEnvConfigSource;
-import org.keycloak.quarkus.runtime.configuration.KeycloakConfigSourceProvider;
-import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
-import org.keycloak.utils.StringUtil;
+import static org.keycloak.config.Option.WILDCARD_PLACEHOLDER_PATTERN;
 
-public class PropertyMapper<T> {
-
-    protected final Option<T> option;
-    private final String to;
-    private BooleanSupplier enabled;
-    private String enabledWhen;
-    private final BiFunction<String, ConfigSourceInterceptorContext, String> mapper;
-    private final String mapFrom;
-    private final BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper;
-    private final boolean mask;
-    private final String paramLabel;
-    private final String envVarFormat;
-    private final String cliFormat;
-    private final BiConsumer<PropertyMapper<T>, ConfigValue> validator;
-    private final String description;
-    private final BooleanSupplier required;
-    private final String requiredWhen;
-    private final String from;
-
-    PropertyMapper(PropertyMapper<T> mapper, String from, String to, BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper) {
-        this(mapper.option, to, mapper.enabled, mapper.enabledWhen, mapper.mapper, mapper.mapFrom, parentMapper,
-                mapper.paramLabel, mapper.mask, mapper.validator, mapper.description, mapper.required,
-                mapper.requiredWhen, from);
+/**
+ * @author Vaclav Muzikar <vmuzikar@redhat.com>
+ */
+public interface PropertyMapper<T> {
+    static <T> Builder<T> fromOption(Option<T> opt) {
+        return new Builder<>(opt);
     }
 
-    PropertyMapper(Option<T> option, String to, BooleanSupplier enabled, String enabledWhen,
-                   BiFunction<String, ConfigSourceInterceptorContext, String> mapper,
-                   String mapFrom, BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper,
-                   String paramLabel, boolean mask, BiConsumer<PropertyMapper<T>, ConfigValue> validator,
-                   String description, BooleanSupplier required, String requiredWhen, String from) {
-        this.option = option;
-        this.from = from == null ? MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX + this.option.getKey() : from;
-        this.to = to == null ? getFrom() : to;
-        this.enabled = enabled;
-        this.enabledWhen = enabledWhen;
-        this.mapper = mapper;
-        this.mapFrom = mapFrom;
-        this.paramLabel = paramLabel;
-        this.mask = mask;
-        this.cliFormat = toCliFormat(option.getKey());
-        this.required = required;
-        this.requiredWhen = requiredWhen;
-        this.envVarFormat = toEnvVarFormat(getFrom());
-        this.validator = validator;
-        this.description = description;
-        this.parentMapper = parentMapper;
+    static boolean isCliOption(ConfigValue configValue) {
+        return Optional.ofNullable(configValue.getConfigSourceName()).filter(name -> name.contains(ConfigArgsConfigSource.NAME)).isPresent();
     }
 
-    ConfigValue getConfigValue(ConfigSourceInterceptorContext context) {
-        return getConfigValue(to, context);
+    static boolean isEnvOption(ConfigValue configValue) {
+        return Optional.ofNullable(configValue.getConfigSourceName()).filter(name -> name.contains(KcEnvConfigSource.NAME)).isPresent();
     }
 
-    ConfigValue getConfigValue(String name, ConfigSourceInterceptorContext context) {
-        String from = getFrom();
+    ConfigValue getConfigValue(ConfigSourceInterceptorContext context);
 
-        if (to != null && to.endsWith(OPTION_PART_SEPARATOR)) {
-            // in case mapping is based on prefixes instead of full property names
-            from = name.replace(to.substring(0, to.lastIndexOf('.')), from.substring(0, from.lastIndexOf(OPTION_PART_SEPARATOR_CHAR)));
-        }
+    ConfigValue getConfigValue(String name, ConfigSourceInterceptorContext context);
 
-        if ((isRebuild() || Environment.isRebuildCheck()) && isRunTime()) {
-            // during re-aug do not resolve the server runtime properties and avoid they included by quarkus in the default value config source
-            return ConfigValue.builder().withName(name).build();
-        }
+    Option<T> getOption();
 
-        // try to obtain the value for the property we want to map first
-        ConfigValue config = convertValue(context.proceed(from));
+    void setEnabled(BooleanSupplier enabled);
 
-        boolean parentValue = false;
-        if (mapFrom != null && (config == null || config.getValue() == null)) {
-            // if the property we want to map depends on another one, we use the value from the other property to call the mapper
-            config = Configuration.getKcConfigValue(mapFrom);
-            parentValue = true;
-        }
+    boolean isEnabled();
 
-        if (config != null && config.getValue() != null) {
-            config = transformValue(name, config, context, parentValue);
-        } else {
-            String defaultValue = this.option.getDefaultValue().map(Option::getDefaultValueString).orElse(null);
-            config = transformValue(name, new ConfigValueBuilder().withName(name)
-                    .withValue(defaultValue).withRawValue(defaultValue).build(),
-                    context, false);
-        }
+    Optional<String> getEnabledWhen();
 
-        if (config != null) {
-            return config;
-        }
+    void setEnabledWhen(String enabledWhen);
 
-        // now try any defaults from quarkus
-        return context.proceed(name);
-    }
+    boolean isRequired();
 
-    public Option<T> getOption() {
-        return this.option;
-    }
+    Optional<String> getRequiredWhen();
 
-    public void setEnabled(BooleanSupplier enabled) {
-        this.enabled = enabled;
-    }
+    Class<T> getType();
 
-    public boolean isEnabled() {
-        return enabled.getAsBoolean();
-    }
+    String getFrom();
 
-    public Optional<String> getEnabledWhen() {
-        return Optional.of(enabledWhen)
-                .filter(StringUtil::isNotBlank)
-                .map(e -> "Available only when " + e);
-    }
+    String getDescription();
 
-    public void setEnabledWhen(String enabledWhen) {
-        this.enabledWhen = enabledWhen;
-    }
+    List<String> getExpectedValues();
 
-    public boolean isRequired() {
-        return required.getAsBoolean();
-    }
+    boolean isStrictExpectedValues();
 
-    public Optional<String> getRequiredWhen() {
-        return Optional.of(requiredWhen)
-                .filter(StringUtil::isNotBlank)
-                .map(e -> "Required when " + e);
-    }
+    Optional<T> getDefaultValue();
 
-    public Class<T> getType() {
-        return this.option.getType();
-    }
+    OptionCategory getCategory();
 
-    public String getFrom() {
-        return MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX + this.option.getKey();
-    }
+    boolean isHidden();
 
-    public String getDescription() {
-        return this.description;
-    }
+    boolean isBuildTime();
 
-    /**
-     * If {@link #isStrictExpectedValues()} is false, custom values can be provided
-     * Otherwise, only specified expected values can be used.
-     *
-     * @return expected values
-     */
-    public List<String> getExpectedValues() {
-        return this.option.getExpectedValues();
-    }
+    boolean isRunTime();
 
-    public boolean isStrictExpectedValues() {
-        return this.option.isStrictExpectedValues();
-    }
+    String getTo();
 
-    public Optional<T> getDefaultValue() { return this.option.getDefaultValue(); }
+    String getParamLabel();
 
-    public OptionCategory getCategory() {
-        return this.option.getCategory();
-    }
+    String getCliFormat();
 
-    public boolean isHidden() { return this.option.isHidden(); }
+    String getEnvVarFormat();
 
-    public boolean isBuildTime() {
-        return this.option.isBuildTime();
-    }
+    boolean isMask();
 
-    public boolean isRunTime() {
-        return !this.option.isBuildTime();
-    }
+    Optional<DeprecatedMetadata> getDeprecatedMetadata();
 
-    public String getTo() {
-        return to;
-    }
+    boolean hasWildcard();
 
-    public String getParamLabel() {
-        return paramLabel;
-    }
+    void validate(ConfigValue value);
 
-    public String getCliFormat() {
-        return cliFormat;
-    }
+    boolean isList();
 
-    public String getEnvVarFormat() {
-        return envVarFormat;
-    }
+    void validateValues(ConfigValue configValue, BiConsumer<ConfigValue, String> singleValidator);
 
-    boolean isMask() {
-        return mask;
-    }
+    void validateExpectedValues(ConfigValue configValue, String v);
 
-    public Optional<DeprecatedMetadata> getDeprecatedMetadata() {
-        return option.getDeprecatedMetadata();
-    }
+    String getOptionAndSourceMessage(ConfigValue configValue);
 
-    /**
-     * An option is considered a wildcard option if its key contains a wildcard placeholder (e.g. log-level-<category>).
-     * The placeholder must be denoted by the '<' and '>' characters.
-     */
-    public boolean hasWildcard() {
-        return false;
-    }
-
-    private ConfigValue transformValue(String name, ConfigValue configValue, ConfigSourceInterceptorContext context, boolean parentValue) {
-        String value = configValue.getValue();
-        String mappedValue = value;
-
-        boolean mapped = false;
-        var theMapper = parentValue ? this.parentMapper : this.mapper;
-        if (theMapper != null && (!name.equals(getFrom()) || parentValue)) {
-            mappedValue = theMapper.apply(value, context);
-            mapped = true;
-        }
-
-        // defaults and values from transformers may not have been subject to expansion
-        if ((mapped || configValue.getConfigSourceName() == null) && mappedValue != null && Expressions.isEnabled() && mappedValue.contains("$")) {
-            mappedValue = new ExpressionConfigSourceInterceptor().getValue(
-                    new ContextWrapper(context, new ConfigValueBuilder().withName(name).withValue(mappedValue).build()),
-                    name).getValue();
-        }
-
-        if (value == null && mappedValue == null) {
-            return null;
-        }
-
-        if (!mapped && name.equals(configValue.getName())) {
-            return configValue;
-        }
-
-        // by unsetting the ordinal this will not be seen as directly modified by the user
-        return configValue.from().withName(name).withValue(mappedValue).withRawValue(value).withConfigSourceOrdinal(0).build();
-    }
-
-    private ConfigValue convertValue(ConfigValue configValue) {
-        if (configValue == null) {
-            return null;
-        }
-
-        return configValue.withValue(ofNullable(configValue.getValue()).map(String::trim).orElse(null));
-    }
+    List<ConfigValue> getKcConfigValues();
 
     @FunctionalInterface
-    public interface ValueMapper {
+    interface ValueMapper {
         String map(String name, String value, ConfigSourceInterceptorContext context);
     }
 
-    private final class ContextWrapper implements ConfigSourceInterceptorContext {
-        private final ConfigSourceInterceptorContext context;
-        private final ConfigValue value;
-
-        private ContextWrapper(ConfigSourceInterceptorContext context, ConfigValue value) {
-            this.context = context;
-            this.value = value;
-        }
-
-        @Override
-        public ConfigValue restart(String name) {
-            return context.restart(name);
-        }
-
-        @Override
-        public ConfigValue proceed(String name) {
-            if (name.equals(value.getName())) {
-                return value;
-            }
-            return context.proceed(name);
-        }
-
-        @Override
-        public Iterator<String> iterateNames() {
-            return context.iterateNames();
-        }
-    }
-
-    public static class Builder<T> {
+    class Builder<T> {
 
         private final Option<T> option;
         private String to;
@@ -386,7 +187,7 @@ public class PropertyMapper<T> {
 
         public Builder<T> isEnabled(BooleanSupplier isEnabled, String enabledWhen) {
             this.isEnabled = isEnabled;
-            this.enabledWhen=enabledWhen;
+            this.enabledWhen = enabledWhen;
             return this;
         }
 
@@ -434,13 +235,13 @@ public class PropertyMapper<T> {
             var current = this.validator;
             this.validator = (mapper, value) -> {
                 Stream.of(current, validator).map(v -> {
-                    try {
-                        v.accept(mapper, value);
-                        return Optional.<PropertyException>empty();
-                    } catch (PropertyException e) {
-                        return Optional.of(e);
-                    }
-                }).flatMap(Optional::stream)
+                            try {
+                                v.accept(mapper, value);
+                                return Optional.<PropertyException>empty();
+                            } catch (PropertyException e) {
+                                return Optional.of(e);
+                            }
+                        }).flatMap(Optional::stream)
                         .reduce((e1, e2) -> new PropertyException(String.format("%s.\n%s", e1.getMessage(), e2.getMessage())))
                         .ifPresent(e -> {
                             throw e;
@@ -452,6 +253,7 @@ public class PropertyMapper<T> {
         /**
          * Similar to {@link #enabledWhen}, but uses the condition as a validator that is added to the current one. This allows the option
          * to appear in help.
+         *
          * @return
          */
         public Builder<T> addValidateEnabled(BooleanSupplier isEnabled, String enabledWhen) {
@@ -487,104 +289,7 @@ public class PropertyMapper<T> {
             if (wildcardKeysTransformer != null || wildcardMapFrom != null) {
                 throw new AssertionError("wildcardKeysTransformer not expected with non-wildcard mapper");
             }
-            return new PropertyMapper<>(option, to, isEnabled, enabledWhen, mapper, mapFrom, parentMapper, paramLabel, isMasked, validator, description, isRequired, requiredWhen, null);
+            return new PropertyMapperImpl<>(option, to, isEnabled, enabledWhen, mapper, mapFrom, parentMapper, paramLabel, isMasked, validator, description, isRequired, requiredWhen, null);
         }
     }
-
-    public static <T> PropertyMapper.Builder<T> fromOption(Option<T> opt) {
-        return new PropertyMapper.Builder<>(opt);
-    }
-
-    public void validate(ConfigValue value) {
-        if (validator != null) {
-            validator.accept(this, value);
-        }
-    }
-
-    public boolean isList() {
-        return getOption().getType() == java.util.List.class;
-    }
-
-    public void validateValues(ConfigValue configValue, BiConsumer<ConfigValue, String> singleValidator) {
-        String value = configValue.getValue();
-
-        boolean multiValued = isList();
-        StringBuilder result = new StringBuilder();
-
-        String[] values = multiValued ? value.split(",") : new String[] { value };
-        for (String v : values) {
-            if (multiValued && !v.trim().equals(v)) {
-                if (!result.isEmpty()) {
-                    result.append(".\n");
-                }
-                result.append("Invalid value for multivalued option ")
-                        .append(getOptionAndSourceMessage(configValue))
-                        .append(": list value '")
-                        .append(v)
-                        .append("' should not have leading nor trailing whitespace");
-                continue;
-            }
-            try {
-                singleValidator.accept(configValue, v);
-            } catch (PropertyException e) {
-                if (!result.isEmpty()) {
-                    result.append(".\n");
-                }
-                result.append(e.getMessage());
-            }
-        }
-
-        if (!result.isEmpty()) {
-            throw new PropertyException(result.toString());
-        }
-    }
-
-    public static boolean isCliOption(ConfigValue configValue) {
-        return Optional.ofNullable(configValue.getConfigSourceName()).filter(name -> name.contains(ConfigArgsConfigSource.NAME)).isPresent();
-    }
-
-    public static boolean isEnvOption(ConfigValue configValue) {
-        return Optional.ofNullable(configValue.getConfigSourceName()).filter(name -> name.contains(KcEnvConfigSource.NAME)).isPresent();
-    }
-
-    void validateExpectedValues(ConfigValue configValue, String v) {
-        List<String> expectedValues = getExpectedValues();
-        if (!expectedValues.isEmpty() && getOption().isStrictExpectedValues() && !expectedValues.contains(v)
-                && (!getOption().isCaseInsensitiveExpectedValues()
-                        || !expectedValues.stream().anyMatch(v::equalsIgnoreCase))) {
-            throw new PropertyException(
-                    String.format("Invalid value for option %s: %s.%s", getOptionAndSourceMessage(configValue), v,
-                            ShortErrorMessageHandler.getExpectedValuesMessage(expectedValues, getOption().isCaseInsensitiveExpectedValues())));
-        }
-    }
-
-    String getOptionAndSourceMessage(ConfigValue configValue) {
-        if (isCliOption(configValue)) {
-            return String.format("'%s'", this.getCliFormat());
-        }
-        if (isEnvOption(configValue)) {
-            return String.format("'%s'", this.getEnvVarFormat());
-        }
-        return String.format("'%s' in %s", getFrom(),
-                KeycloakConfigSourceProvider.getConfigSourceDisplayName(configValue.getConfigSourceName()));
-    }
-
-    /**
-     * Get all Keycloak config values for the mapper. A multivalued config option is a config option that
-     * has a wildcard in its name, e.g. log-level-<category>.
-     *
-     * @return a list of config values where the key is the resolved wildcard (e.g. category) and the value is the config value
-     */
-    public List<ConfigValue> getKcConfigValues() {
-        return List.of(Configuration.getConfigValue(getFrom()));
-    }
-
-    public PropertyMapper<?> forEnvKey(String key) {
-        return this;
-    }
-
-    public PropertyMapper<?> forKey(String key) {
-        return this;
-    }
-
 }

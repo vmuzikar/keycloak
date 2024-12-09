@@ -84,7 +84,7 @@ public final class PropertyMappers {
         if (mapper == null) {
             return context.proceed(name);
         }
-        return mapper.forKey(name).getConfigValue(name, context);
+        return mapper.getConfigValue(name, context);
     }
 
     public static boolean isSpiBuildTimeProperty(String name) {
@@ -150,14 +150,14 @@ public final class PropertyMappers {
         return property;
     }
 
-    private static PropertyMapper<?> getMapperOrDefault(String property, PropertyMapper<?> defaultMapper, OptionCategory category) {
+    private static PropertyMapper<?> getMapperOrDefault(String property, boolean propertyIsEnvVar, PropertyMapper<?> defaultMapper, OptionCategory category) {
         property = removeProfilePrefixIfNeeded(property);
         final var mappers = new ArrayList<>(MAPPERS.getOrDefault(property, Collections.emptyList()));
         if (category != null) {
             mappers.removeIf(m -> !m.getCategory().equals(category));
         }
 
-        return switch (mappers.size()) {
+        PropertyMapper<?> mapper = switch (mappers.size()) {
             case 0 -> defaultMapper;
             case 1 -> mappers.get(0);
             default -> {
@@ -165,14 +165,28 @@ public final class PropertyMappers {
                 yield mappers.get(0);
             }
         };
+
+        if (mapper instanceof WildcardPropertyMapper) {
+            mapper = new WildcardPropertyMapper.KeyAwareWildcardMapper(property, propertyIsEnvVar, (WildcardPropertyMapper<?>) mapper);
+        }
+
+        return mapper;
     }
 
     public static PropertyMapper<?> getMapper(String property, OptionCategory category) {
-        return getMapperOrDefault(property, null, category);
+        return getMapper(property, false, category);
+    }
+
+    public static PropertyMapper<?> getMapper(String property, boolean propertyIsEnvVar, OptionCategory category) {
+        return getMapperOrDefault(property, propertyIsEnvVar, null, category);
     }
 
     public static PropertyMapper<?> getMapper(String property) {
         return getMapper(property, null);
+    }
+
+    public static PropertyMapper<?> getMapper(String property, boolean propertyIsEnvVar) {
+        return getMapper(property, propertyIsEnvVar, null);
     }
 
     public static Set<PropertyMapper<?>> getMappers() {

@@ -43,7 +43,7 @@ import io.smallrye.config.common.utils.ConfigSourceUtil;
 public final class QuarkusPropertiesConfigSource extends AbstractLocationConfigSourceLoader implements ConfigSourceProvider {
 
     private static final String FILE_NAME = "quarkus.properties";
-    public static final String NAME = "KeycloakQuarkusProperties";
+    public static final String NAME = "KcQuarkusPropertiesConfigSource";
 
     public static Path getConfigurationFile() {
         String homeDir = Environment.getHomeDir();

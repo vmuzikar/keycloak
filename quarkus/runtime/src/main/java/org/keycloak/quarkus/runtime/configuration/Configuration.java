@@ -77,7 +77,7 @@ public final class Configuration {
 
     public static synchronized SmallRyeConfig getConfig() {
         if (config == null) {
-            config = ConfigUtils.emptyConfigBuilder().withSources(KeycloakConfigSourceProvider.getConfigSources()).build();
+            config = ConfigUtils.emptyConfigBuilder().addDiscoveredSources().build();
         }
         return config;
     }

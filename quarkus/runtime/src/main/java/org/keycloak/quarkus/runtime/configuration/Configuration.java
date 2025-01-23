@@ -82,6 +82,10 @@ public final class Configuration {
         return config;
     }
 
+    public static void resetConfig() {
+        config = null;
+    }
+
     /**
      * Raw persisted keycloak properties will match the resolved value of what was originally specified by the user
      */

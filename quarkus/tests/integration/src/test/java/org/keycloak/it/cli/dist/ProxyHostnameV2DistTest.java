@@ -78,7 +78,7 @@ public class ProxyHostnameV2DistTest {
     @Launch({ "start-dev", "--hostname-strict=false", "--proxy-headers=xforwarded", "--proxy-trusted-addresses=1.0.0.0" })
     public void testProxyNotTrusted() {
         assertForwardedHeaderIsIgnored();
-        assertForwardedHeaderIsIgnored();
+        assertXForwardedHeadersAreIgnored();
     }
 
     @Test
@@ -122,6 +122,7 @@ public class ProxyHostnameV2DistTest {
         given().header("X-Forwarded-Host", "test").when().get("https://localhost:8443").then().header(HttpHeaders.LOCATION, containsString("https://test:8443/admin"));
         given().header("X-Forwarded-Proto", "https").when().get("http://localhost:8080").then().header(HttpHeaders.LOCATION, containsString("https://localhost/admin"));
         given().header("X-Forwarded-Proto", "https").header("X-Forwarded-Port", "8443").when().get("http://localhost:8080").then().header(HttpHeaders.LOCATION, containsString("https://localhost:8443/admin"));
+        given().header("X-Forwarded-Prefix", "/my/path").when().get("https://localhost:8443").then().header(HttpHeaders.LOCATION, containsString("https://localhost:8443/my/path/admin"));
     }
 
     private void assertXForwardedHeadersAreIgnored() {
@@ -130,6 +131,7 @@ public class ProxyHostnameV2DistTest {
         given().header("X-Forwarded-Host", "test").when().get("https://localhost:8443").then().header(HttpHeaders.LOCATION, containsString("https://localhost:8443/admin"));
         given().header("X-Forwarded-Proto", "https").when().get("http://localhost:8080").then().header(HttpHeaders.LOCATION, containsString("http://localhost:8080/admin"));
         given().header("X-Forwarded-Proto", "https").header("X-Forwarded-Port", "8443").when().get("http://localhost:8080").then().header(HttpHeaders.LOCATION, containsString("http://localhost:8080/admin"));
+        given().header("X-Forwarded-Prefix", "/my/path").when().get("https://localhost:8443").then().header(HttpHeaders.LOCATION, containsString("https://localhost:8443/admin"));
     }
 
     private OIDCConfigurationRepresentation getServerMetadata(String baseUrl) {

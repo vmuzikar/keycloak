@@ -34,6 +34,11 @@ public class ProxyOptions {
             .category(OptionCategory.PROXY)
             .defaultValue(Boolean.FALSE)
             .build();
+
+    public static final Option<Boolean> PROXY_X_FORWARDED_PREFIX_ENABLED = new OptionBuilder<>("proxy-enable-forwarded-prefix", Boolean.class)
+            .category(OptionCategory.PROXY)
+            .defaultValue(Boolean.FALSE)
+            .build();
     
     public static final Option<List<String>> PROXY_TRUSTED_ADDRESSES = OptionBuilder.listOptionBuilder("proxy-trusted-addresses", String.class)
             .category(OptionCategory.PROXY)

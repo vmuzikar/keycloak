@@ -34,6 +34,10 @@ final class ProxyPropertyMappers {
                         .to("quarkus.http.proxy.allow-x-forwarded")
                         .mapFrom(ProxyOptions.PROXY_HEADERS, (v, c) -> proxyEnabled(ProxyOptions.Headers.xforwarded, v, c))
                         .build(),
+                fromOption(ProxyOptions.PROXY_X_FORWARDED_PREFIX_ENABLED)
+                        .to("quarkus.http.proxy.enable-forwarded-prefix")
+                        .mapFrom(ProxyOptions.PROXY_HEADERS, (v, c) -> proxyEnabled(ProxyOptions.Headers.xforwarded, v, c))
+                        .build(),
                 fromOption(ProxyOptions.PROXY_TRUSTED_ADDRESSES)
                         .to("quarkus.http.proxy.trusted-proxies")
                         .validator(ProxyPropertyMappers::validateAddress)

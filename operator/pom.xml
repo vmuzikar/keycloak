@@ -28,7 +28,7 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>io.quarkus.platform</groupId>
+                <groupId>com.redhat.quarkus.platform</groupId>
                 <artifactId>quarkus-operator-sdk-bom</artifactId>
                 <version>${quarkus.version}</version>
                 <type>pom</type>

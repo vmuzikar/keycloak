@@ -45,8 +45,8 @@
         <jboss.snapshots.repo.id>jboss-snapshots-repository</jboss.snapshots.repo.id>
         <jboss.snapshots.repo.url>https://s01.oss.sonatype.org/content/repositories/snapshots/</jboss.snapshots.repo.url>
 
-        <quarkus.version>3.8.6</quarkus.version>
-        <quarkus.build.version>3.8.5</quarkus.build.version>
+        <quarkus.version>3.8.6.SP3-redhat-00002</quarkus.version>
+        <quarkus.build.version>3.8.6.redhat-00006</quarkus.build.version>
 
         <project.build-time>${timestamp}</project.build-time>
 
@@ -89,6 +89,19 @@
         <!-- 1.0.2.4 exhibits class loading issues -->
         <bouncycastle.bcfips.version>1.0.2.3</bouncycastle.bcfips.version>
 
+        <!--
+            Avoid a bug (likely at the JDK side) with signed JARs that RHBQ uses.
+            There's a timing issue than randomly causes a deadlock when logging is initialized during verifying the signature.
+            The deadlock happens when Surefire is starting and it seems that it's reproducible in GHA private repo runners.
+
+            Hence we need to use upstream version of Bouncy Castle that doesn't have signed JARs.
+            We revert back to the prod version in dist.
+
+            Needs to be aligned with the RHBQ BOM.
+        -->
+        <bouncycastle.version>1.78.1.redhat-00002</bouncycastle.version>
+        <bouncycastle.version.unsigned>1.78.1</bouncycastle.version.unsigned>
+
         <cxf.version>3.3.10</cxf.version>
         <cxf.jetty.version>3.3.10</cxf.jetty.version>
         <cxf.jaxrs.version>3.3.10</cxf.jaxrs.version>
@@ -113,7 +126,7 @@
         <jboss.spec.javax.servlet.jsp.jboss-jsp-api_2.3_spec.version>2.0.0.Final</jboss.spec.javax.servlet.jsp.jboss-jsp-api_2.3_spec.version>
         <log4j.version>1.2.17</log4j.version>
         <resteasy-legacy.version>4.7.7.Final</resteasy-legacy.version>
-        <resteasy.version>6.2.7.Final</resteasy.version>
+        <resteasy.version>6.2.7.Final-redhat-00002</resteasy.version>
         <resteasy.undertow.version>${resteasy.version}</resteasy.undertow.version>
         <owasp.html.sanitizer.version>20220608.1</owasp.html.sanitizer.version>
         <slf4j.version>2.0.6</slf4j.version>
@@ -126,7 +139,7 @@
         <undertow.version>${undertow-legacy.version}</undertow.version>
         <undertow-legacy.version>2.2.24.Final</undertow-legacy.version>
         <undertow-jakarta.version>2.3.2.Final</undertow-jakarta.version>
-        <wildfly-elytron.version>2.2.3.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.2.3.Final-redhat-00001</wildfly-elytron.version>
         <elytron.undertow-server.version>1.9.0.Final</elytron.undertow-server.version>
         <jetty94.version>9.4.40.v20210413</jetty94.version>
         <woodstox.version>6.0.3</woodstox.version>
@@ -148,7 +161,7 @@
         <freemarker.version>2.3.32</freemarker.version>
 
         <jetty9.version>${jetty94.version}</jetty9.version>
-        <liquibase.version>4.25.1</liquibase.version>
+        <liquibase.version>4.25.1.redhat-00001</liquibase.version>
         <!-- matches quarkus 3.7.1 version and but also the pax.web.version, hence we can't rely on quarkus bom -->
         <osgi.version>6.0.0</osgi.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
@@ -158,13 +171,13 @@
 
         <!-- Databases - also published to db.adoc as "Tested Version" -->
         <mysql.version>8.0</mysql.version>
-        <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
+        <mysql-jdbc.version>8.3.0.redhat-00001</mysql-jdbc.version>
         <postgresql.version>16</postgresql.version>
         <aurora-postgresql.version>16.1</aurora-postgresql.version>
         <aws-jdbc-wrapper.version>2.3.1</aws-jdbc-wrapper.version>
-        <postgresql-jdbc.version>42.7.2</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.7.2.redhat-00001</postgresql-jdbc.version>
         <mariadb.version>10.11</mariadb.version>
-        <mariadb-jdbc.version>3.3.3</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.3.3.redhat-00001</mariadb-jdbc.version>
         <mssql.version>2022-latest</mssql.version>
         <!-- this is the mssql driver version also used in the Quarkus BOM -->
         <mssql-jdbc.version>12.4.2.jre11</mssql-jdbc.version>
@@ -350,7 +363,7 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.quarkus.platform</groupId>
+                <groupId>com.redhat.quarkus.platform</groupId>
                 <artifactId>quarkus-bom</artifactId>
                 <version>${quarkus.version}</version>
                 <type>pom</type>
@@ -430,6 +443,22 @@
             <artifactId>bc-fips</artifactId>
             <version>${bouncycastle.bcfips.version}</version>
           </dependency>
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version.unsigned}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version.unsigned}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcutil-jdk18on</artifactId>
+                <version>${bouncycastle.version.unsigned}</version>
+            </dependency>
             
             <dependency>
                 <groupId>com.github.ua-parser</groupId>
@@ -2098,4 +2127,19 @@
         </profile>
 
     </profiles>
+
+    <repositories>
+        <repository>
+            <id>rh-ga</id>
+            <name>RH GA</name>
+            <url>https://maven.repository.redhat.com/ga</url>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>rh-ga</id>
+            <name>RH GA</name>
+            <url>https://maven.repository.redhat.com/ga</url>
+        </pluginRepository>
+    </pluginRepositories>
 </project>

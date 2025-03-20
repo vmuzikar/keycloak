@@ -89,6 +89,19 @@
         <!-- 1.0.2.4 exhibits class loading issues -->
         <bouncycastle.bcfips.version>1.0.2.3</bouncycastle.bcfips.version>
 
+        <!--
+            Avoid a bug (likely at the JDK side) with signed JARs that RHBQ uses.
+            There's a timing issue than randomly causes a deadlock when logging is initialized during verifying the signature.
+            The deadlock happens when Surefire is starting and it seems that it's reproducible in GHA private repo runners.
+
+            Hence we need to use upstream version of Bouncy Castle that doesn't have signed JARs.
+            We revert back to the prod version in dist.
+
+            Needs to be aligned with the RHBQ BOM.
+        -->
+        <bouncycastle.version>1.78.1.redhat-00002</bouncycastle.version>
+        <bouncycastle.version.unsigned>1.78.1</bouncycastle.version.unsigned>
+
         <cxf.version>3.3.10</cxf.version>
         <cxf.jetty.version>3.3.10</cxf.jetty.version>
         <cxf.jaxrs.version>3.3.10</cxf.jaxrs.version>
@@ -430,7 +443,23 @@
             <artifactId>bc-fips</artifactId>
             <version>${bouncycastle.bcfips.version}</version>
           </dependency>
-            
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version.unsigned}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version.unsigned}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcutil-jdk18on</artifactId>
+                <version>${bouncycastle.version.unsigned}</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.github.ua-parser</groupId>
                 <artifactId>uap-java</artifactId>

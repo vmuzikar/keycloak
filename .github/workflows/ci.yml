@@ -628,11 +628,14 @@ jobs:
         name: Integration test setup
         uses: ./.github/actions/integration-test-setup
 
+      - run: sudo apt-get remove google-chrome-stabl
+
       - id: setup-chrome
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: 132
           install-chromedriver: true
+          install-dependencies: truee
 
       - name: Run Forms IT
         run: |

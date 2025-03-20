@@ -631,7 +631,7 @@ jobs:
       - id: setup-chrome
         uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 133.0.6943.126
+          chrome-version: 132
           install-chromedriver: true
 
       - name: Run Forms IT

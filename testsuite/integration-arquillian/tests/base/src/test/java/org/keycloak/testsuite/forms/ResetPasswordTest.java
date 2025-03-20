@@ -59,6 +59,8 @@ import org.keycloak.testsuite.util.MailUtils;
 import org.keycloak.testsuite.util.OAuthClient;
 import org.keycloak.testsuite.util.RealmBuilder;
 import org.keycloak.testsuite.util.SecondBrowser;
+import org.keycloak.testsuite.util.UIUtils;
+import org.keycloak.testsuite.util.URLUtils;
 import org.keycloak.testsuite.util.UserActionTokenBuilder;
 import org.keycloak.testsuite.util.UserBuilder;
 import org.keycloak.testsuite.util.WaitUtils;
@@ -639,12 +641,12 @@ public class ResetPasswordTest extends AbstractTestRealmKeycloakTest {
 
             String changePasswordUrl = MailUtils.getPasswordResetEmailLink(message).replace("&amp;", "&");
 
+            log.debug("Removing cookies."); // This is necessary to delete KC_RESTART cookie that is restricted to /auth/realms/test path
+            driver.manage().deleteAllCookies();
+
             setTimeOffset(70);
 
             log.debug("Going to reset password URI.");
-            driver.navigate().to(oauth.AUTH_SERVER_ROOT + "/realms/test/login-actions/reset-credentials"); // This is necessary to delete KC_RESTART cookie that is restricted to /auth/realms/test path
-            log.debug("Removing cookies.");
-            driver.manage().deleteAllCookies();
             driver.navigate().to(changePasswordUrl.trim());
 
             errorPage.assertCurrent();
@@ -682,13 +684,13 @@ public class ResetPasswordTest extends AbstractTestRealmKeycloakTest {
 
             String changePasswordUrl = MailUtils.getPasswordResetEmailLink(message).replace("&amp;", "&");
 
+            log.debug("Removing cookies."); // This is necessary to delete KC_RESTART cookie that is restricted to /auth/realms/test path
+            driver.manage().deleteAllCookies();
+
             setTimeOffset(70);
 
             log.debug("Going to reset password URI.");
-            driver.navigate().to(oauth.AUTH_SERVER_ROOT + "/realms/test/login-actions/reset-credentials"); // This is necessary to delete KC_RESTART cookie that is restricted to /auth/realms/test path
-            log.debug("Removing cookies.");
-            driver.manage().deleteAllCookies();
-            driver.navigate().to(changePasswordUrl.trim());
+            URLUtils.navigateToUri(changePasswordUrl.trim());
 
             errorPage.assertCurrent();
             Assert.assertEquals("Action expired.", errorPage.getError());
@@ -726,12 +728,12 @@ public class ResetPasswordTest extends AbstractTestRealmKeycloakTest {
 
             String changePasswordUrl = MailUtils.getPasswordResetEmailLink(message).replace("&amp;", "&");
 
+            log.debug("Removing cookies."); // This is necessary to delete KC_RESTART cookie that is restricted to /auth/realms/test path
+            driver.manage().deleteAllCookies();
+
             setTimeOffset(70);
 
             log.debug("Going to reset password URI.");
-            driver.navigate().to(oauth.AUTH_SERVER_ROOT + "/realms/test/login-actions/reset-credentials"); // This is necessary to delete KC_RESTART cookie that is restricted to /auth/realms/test path
-            log.debug("Removing cookies.");
-            driver.manage().deleteAllCookies();
             driver.navigate().to(changePasswordUrl.trim());
 
             errorPage.assertCurrent();
@@ -1316,7 +1318,7 @@ public class ResetPasswordTest extends AbstractTestRealmKeycloakTest {
         confirmPassword.sendKeys("resetPassword");
         final WebElement submit = driver.findElement(By.cssSelector("input[type=\"submit\"]"));
 
-        submit.click();
+        UIUtils.clickLink(submit);
     }
 
     private void resetPasswordInNewTab(UserRepresentation user, String clientId, String redirectUri) throws IOException {

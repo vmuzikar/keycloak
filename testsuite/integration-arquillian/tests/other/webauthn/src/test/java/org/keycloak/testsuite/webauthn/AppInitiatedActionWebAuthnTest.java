@@ -225,7 +225,7 @@ public class AppInitiatedActionWebAuthnTest extends AbstractAppInitiatedActionTe
     }
 
     private EventRepresentation loginUser() {
-        usernamePage.open();
+        oauth.openLoginForm();
         usernamePage.assertCurrent();
         usernamePage.login(DEFAULT_USERNAME);
 

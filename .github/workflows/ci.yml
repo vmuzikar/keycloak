@@ -628,7 +628,10 @@ jobs:
         name: Integration test setup
         uses: ./.github/actions/integration-test-setup
 
-      - run: sudo apt-get remove google-chrome-stable
+      - run:  |
+          sudo apt-get remove google-chrome-stable
+          wget http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_132.0.6834.159-1_amd64.deb -O /tmp/google-chrome-stable.deb
+          sudo apt-get install -y /tmp/google-chrome-stable.deb
 
       - id: setup-chrome
         uses: browser-actions/setup-chrome@v1
@@ -641,7 +644,7 @@ jobs:
         run: |
           TESTS=`testsuite/integration-arquillian/tests/base/testsuites/suite.sh forms`
           echo "Tests: $TESTS"
-          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=$TESTS -Dbrowser=${{ matrix.browser }} "-Dwebdriver.chrome.driver=${{ steps.setup-chrome.outputs.chromedriver-path }}" "-DchromeBinary=${{ steps.setup-chrome.outputs.chrome-path }}" "-Dwebdriver.gecko.driver=$GECKOWEBDRIVER/geckodriver" -f testsuite/integration-arquillian/tests/base/pom.xml 2>&1 | misc/log/trimmer.sh
+          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=$TESTS -Dbrowser=${{ matrix.browser }} "-Dwebdriver.chrome.driver=${{ steps.setup-chrome.outputs.chromedriver-path }}" "-Dwebdriver.gecko.driver=$GECKOWEBDRIVER/geckodriver" -f testsuite/integration-arquillian/tests/base/pom.xml 2>&1 | misc/log/trimmer.sh
 
       - name: Upload JVM Heapdumps
         if: always()

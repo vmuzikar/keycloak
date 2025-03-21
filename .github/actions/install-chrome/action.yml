@@ -25,6 +25,6 @@ runs:
       shell: bash
       run: |
         wget https://storage.googleapis.com/chrome-for-testing-public/${{ inputs.version }}/linux64/chromedriver-linux64.zip -O /tmp/chromedriver.zip --no-verbose
-        unzip /tmp/chromedriver.zip -d /tmp -j
+        unzip /tmp/chromedriver.zip -j -d /tmp
         sudo mv -f /tmp/chromedriver $CHROMEWEBDRIVER/chromedriver
         sudo chmod +x $CHROMEWEBDRIVER/chromedriver

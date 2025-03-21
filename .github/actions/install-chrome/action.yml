@@ -5,12 +5,13 @@ inputs:
   version:
     description: The version of Chrome and Chromedriver to install.
     required: false
-    default: 132.0.6834.159
+    default: 132.0.6834.159 # Ensures compatibility with the testsuite
 
 runs:
   using: composite
   steps:
 
+    # Cannot use Chrome for Testing. Acts weirdly and would probably require some changes in the testsuite.
     - id: install-chrome
       name: Install Chrome
       shell: bash

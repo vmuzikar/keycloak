@@ -1,0 +1,12 @@
+name: Update /etc/hosts
+description: Update /etc/hosts file to hardcode known nip.io hostnames. This is to avoid test instability due to DNS resolution issues.
+
+runs:
+  using: composite
+  steps:
+
+    - id: update-hosts
+      name: Update /etc/hosts
+      shell: bash
+      run: |
+        printf "\n\n$(cat .github/actions/update-hosts/nipio-hosts)" | sudo tee -a /etc/hosts

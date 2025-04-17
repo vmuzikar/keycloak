@@ -1,0 +1,21 @@
+name: Test
+
+on:
+  push:
+
+jobs:
+
+  build:
+    name: Test win
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update /etc/hosts
+        uses: ./.github/actions/update-hosts
+
+      - name: Test hosts
+        shell: powershell
+        run: |
+          Get-Content C:\Windows\System32\drivers\etc\hosts
+          ping admin.127.0.0.1.nip.io

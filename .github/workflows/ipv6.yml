@@ -7,21 +7,8 @@ on:
 jobs:
 
   build:
-    name: Test IPv6 configuration
+    name: tmate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-#      - name: Setup tmate session
-#        uses: mxschmitt/action-tmate@v3
-
-      - name: Configure IPv6 single-stack
-        run: |
-          curl ipv4.nebezi.cz
-          ifconfig
-          sudo netplan set ethernets.eth0.dhcp4=false
-          sudo netplan get
-          sudo netplan apply
-          echo "After disabling IPv4"
-          ifconfig
-          curl ipv4.nebezi.cz || true
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3

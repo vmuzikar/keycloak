@@ -23,8 +23,8 @@ jobs:
         run: |
           curl ipv4.nebezi.cz
           ifconfig
-          sudo netplan set ethernets.eth0.dhcp4=false
-          sudo netplan set ethernets.eth0.link-local=[ ipv6 ]
+#          sudo netplan set ethernets.eth0.dhcp4=false
+#          sudo netplan set ethernets.eth0.link-local=[ipv6]
           sudo netplan get
           sudo netplan apply
           echo "After disabling IPv4"

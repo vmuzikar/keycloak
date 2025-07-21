@@ -3,6 +3,7 @@ package org.keycloak.services.util;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * Provides support for filtering result sets by a String query.
+ *
+ * The query format is a space-separated list of field:value pairs, where value can have four formats:
+ * - a single word (e.g. `foo:bar`)
+ * - a quoted string with support for spaces and special characters (e.g. `foo:"bar baz"`)
+ * - a list of values (e.g. `foo:[bar, baz]`); if the target field is a map, this checks if given keys are present (ignoring values)
+ * - a map of key-value pairs (e.g. `foo:[bar:baz, qux:quux]`)
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class ResourceQueryFilter<T> {
@@ -78,7 +87,7 @@ public class ResourceQueryFilter<T> {
                     }
                 }
 
-                // this is some shitty code
+                // TODO fix this code, it's a mess
                 if (actualValue instanceof List || actualValue instanceof Set) {
                     if (!(expectedValue instanceof List)) return false;
                     List<String> expectedList = (List<String>) expectedValue;
@@ -125,6 +134,9 @@ public class ResourceQueryFilter<T> {
 
     private Method findGetter(Class<?> clazz, String key) {
         String adjustedKey = Character.toUpperCase(key.charAt(0)) + key.substring(1);
+
+        // this is not optimal
+        // TODO at least cache the getters
         try {
             return clazz.getMethod("get" + adjustedKey);
         } catch (NoSuchMethodException e) {
@@ -137,6 +149,6 @@ public class ResourceQueryFilter<T> {
     }
 
     public Map<List<String>, Object> getParsedQuery() {
-        return parsedQuery;
+        return Collections.unmodifiableMap(parsedQuery);
     }
 }

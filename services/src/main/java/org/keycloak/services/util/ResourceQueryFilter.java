@@ -25,18 +25,16 @@ import java.util.stream.Stream;
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class ResourceQueryFilter<T> {
-    public static final Pattern singleFieldPattern = Pattern.compile("([a-zA-Z0-9]+(?:\\.[a-zA-Z0-9]+)*):(?:([\\S&&[^\\[\"\\]:]]+)|\"(.+)\"|\\[(.+)])");
+    public static final Pattern singleFieldPattern = Pattern.compile("([a-zA-Z0-9]+(?:\\.[a-zA-Z0-9]+)*):(?:([\\S&&[^\\[\"\\]:]]+)|\"([^\"]+)\"|\\[([^\\]]+)])");
     public static final Pattern fullQueryPattern = Pattern.compile(String.format("^%s(\\s+%s)*$", singleFieldPattern, singleFieldPattern));
-    public static final Pattern listPattern = Pattern.compile("^[\\S&&[^,]]+(,\\s*[\\S&&[^,]]+)*$");
-    public static final Pattern mapPattern = Pattern.compile("^[\\S&&[^,:]]+:[\\S&&[^,]]+(,\\s*[\\S&&[^,:]]+:[\\S&&[^,]]+)*$");
+    public static final Pattern listPattern = Pattern.compile("^[\\S&&[^,:]]+(,\\s*[\\S&&[^,:]]+)*$");
+    public static final Pattern mapPattern = Pattern.compile("^[\\S&&[^,:]]+:[\\S&&[^,]]+(,\\s*[\\S&&[^,:]]+:[\\S&&[^,:]]+)*$");
 
     private final String query;
-    private final Map<List<String>, Object> parsedQuery = new HashMap<>();
-    private final Class<T> clazz;
+    private final Map<String, Object> parsedQuery = new HashMap<>();
 
-    private ResourceQueryFilter(String q, Class<T> clazz) {
+    public ResourceQueryFilter(String q) {
         query = q.trim();
-        this.clazz = clazz;
         parseQuery();
     }
 
@@ -48,7 +46,7 @@ public class ResourceQueryFilter<T> {
 
         matcher = singleFieldPattern.matcher(query);
         while (matcher.find()) {
-            List<String> key = Arrays.asList(matcher.group(1).split("\\."));
+            String key = matcher.group(1);
             Object value = null;
 
             if (matcher.group(2) != null) { // foo:bar
@@ -56,14 +54,15 @@ public class ResourceQueryFilter<T> {
             } else if (matcher.group(3) != null) { // foo:"bar baz"
                 value = matcher.group(3);
             } else if (matcher.group(4) != null) { // foo:[bar, baz], or foo:[bar:baz, qux:quux]
+                String valueStr = matcher.group(4);
                 // No support for nested lists or maps, quotes (i.e. whitespace chars, commas, colons)
-                String[] values = matcher.group(4).split(",\\s*");
-                if (listPattern.matcher(matcher.group(4)).matches()) {
-                    value = Arrays.asList(values);
-                } else if (mapPattern.matcher(matcher.group(4)).matches()) {
+                String[] values = valueStr.split(",\\s*");
+                if (mapPattern.matcher(valueStr).matches()) {
                     value = Arrays.stream(values).collect(Collectors.toMap(v -> v.substring(0, v.indexOf(":")), v -> v.substring(v.indexOf(":") + 1)));
+                } else if (listPattern.matcher(valueStr).matches()) {
+                    value = Arrays.asList(values);
                 } else {
-                    throw new IllegalArgumentException("Invalid value format: " + matcher.group(4));
+                    throw new IllegalArgumentException("Invalid value format: " + valueStr);
                 }
             }
 
@@ -73,18 +72,23 @@ public class ResourceQueryFilter<T> {
 
     @SuppressWarnings("unchecked")
     public Stream<T> filterByQuery(Stream<T> stream) {
-        for (Map.Entry<List<String>, Object> expression : parsedQuery.entrySet()) {
-            List<String> key = expression.getKey();
+        for (Map.Entry<String, Object> expression : parsedQuery.entrySet()) {
+            String[] key = expression.getKey().split("\\.");
             Object expectedValue = expression.getValue();
 
             stream = stream.filter(r -> {
+
+                // iteratively go through the getters to get the final actual value
                 Object actualValue = r;
                 for (String fieldName : key) {
                     try {
-                        actualValue = findGetter(r.getClass(), fieldName).invoke(r);
+                        actualValue = findGetter(actualValue.getClass(), fieldName).invoke(actualValue);
+                    } catch (NoSuchMethodException e) {
+                        return false; // field not found, can't match
                     } catch (Exception e) {
                         throw new RuntimeException("Error invoking getter for field: " + fieldName, e);
                     }
+                    if (actualValue == null) return false; // field not set, can't match
                 }
 
                 // TODO fix this code, it's a mess
@@ -106,7 +110,8 @@ public class ResourceQueryFilter<T> {
                     if (expectedValue instanceof Map) {
                         Map<String, String> expectedMap = (Map<String, String>) expectedValue;
                         for (Map.Entry<String, ?> expectedEntry : expectedMap.entrySet()) {
-                            if (!expectedEntry.getValue().equals(actualMap.get(expectedEntry.getKey()).toString())) {
+                            Object actualMapValue = actualMap.get(expectedEntry.getKey());
+                            if (actualMapValue == null || !expectedEntry.getValue().equals(actualMapValue.toString())) {
                                 return false;
                             }
                         }
@@ -132,7 +137,7 @@ public class ResourceQueryFilter<T> {
         return stream;
     }
 
-    private Method findGetter(Class<?> clazz, String key) {
+    private Method findGetter(Class<?> clazz, String key) throws NoSuchMethodException {
         String adjustedKey = Character.toUpperCase(key.charAt(0)) + key.substring(1);
 
         // this is not optimal
@@ -140,15 +145,11 @@ public class ResourceQueryFilter<T> {
         try {
             return clazz.getMethod("get" + adjustedKey);
         } catch (NoSuchMethodException e) {
-            try {
-                return clazz.getMethod("is" + adjustedKey);
-            } catch (NoSuchMethodException e1) {
-                throw new IllegalArgumentException("No getter found for key: " + key, e);
-            }
+            return clazz.getMethod("is" + adjustedKey);
         }
     }
 
-    public Map<List<String>, Object> getParsedQuery() {
+    public Map<String, Object> getParsedQuery() {
         return Collections.unmodifiableMap(parsedQuery);
     }
 }

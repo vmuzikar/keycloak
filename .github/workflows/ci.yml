@@ -605,6 +605,7 @@ jobs:
         with:
           username: ${{ secrets.PRIVATE_DBS_DOCKER_NAME }}
           password: ${{ secrets.PRIVATE_DBS_DOCKER_TOKEN }}
+          registry: quay.io
 
       - id: run-store-tests
         name: Run Store Integration Tests - ${{ matrix.db }}

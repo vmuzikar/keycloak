@@ -18,7 +18,7 @@ runs:
 
     - name: Run new base tests
       run: |
-        KC_TEST_DATABASE=${{ db }} KC_TEST_DATABASE_REUSE=true TESTCONTAINERS_REUSE_ENABLE=true ./mvnw package -f tests/pom.xml -Dtest=DatabaseTestSuite -Dkeycloak.distribution.start.timeout=360
+        KC_TEST_DATABASE=${{ inputs.db }} KC_TEST_DATABASE_REUSE=true TESTCONTAINERS_REUSE_ENABLE=true ./mvnw package -f tests/pom.xml -Dtest=DatabaseTestSuite -Dkeycloak.distribution.start.timeout=360
 
     - name: Database container port
       run: |
@@ -35,7 +35,7 @@ runs:
         TESTS=`testsuite/integration-arquillian/tests/base/testsuites/suite.sh database`
         echo "Tests: $TESTS"
         ./mvnw test ${{ env.SUREFIRE_RETRY }} \
-          -Pauth-server-quarkus -Pdb-${{ db }} \
+          -Pauth-server-quarkus -Pdb-${{ inputs.db }} \
           "-Dwebdriver.chrome.driver=$CHROMEWEBDRIVER/chromedriver" \
           -Dtest=$TESTS \
           -Ddocker.database.skip=true \
@@ -48,7 +48,7 @@ runs:
       run: |
         ./mvnw test ${{ env.SUREFIRE_RETRY }} \
           -Pauth-server-cluster-quarkus \
-          -Pdb-${{ db }} \
+          -Pdb-${{ inputs.db }} \
           -Dtest=RealmInvalidationClusterTest \
           -Dsession.cache.owners=2 \
           -Dauth.server.quarkus.cluster.stack=jdbc-ping-udp \
@@ -62,7 +62,7 @@ runs:
       run: |
         ./mvnw test ${{ env.SUREFIRE_RETRY }} \
           -Pauth-server-cluster-quarkus \
-          -Pdb-${{ db }} \
+          -Pdb-${{ inputs.db }} \
           -Dtest=RealmInvalidationClusterTest \
           -Dsession.cache.owners=2 \
           -Dauth.server.quarkus.cluster.stack=jdbc-ping \

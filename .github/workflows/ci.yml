@@ -38,6 +38,7 @@ jobs:
       ci-webauthn: ${{ steps.conditional.outputs.ci-webauthn }}
       ci-aurora: ${{ steps.auroradb-tests.outputs.run-aurora-tests }}
       ci-compatibility-matrix: ${{ steps.version-compatibility.outputs.matrix }}
+      ci-additional-dbs: ${{ steps.auroradb-tests.outputs.run-additional-dbs-tests }}
     permissions:
       contents: read
       pull-requests: read
@@ -57,6 +58,15 @@ jobs:
             RUN_AURORADB_TESTS=true
           fi
           echo "run-aurora-tests=$RUN_AURORADB_TESTS" >> $GITHUB_OUTPUT
+
+      - name: Additional DBs conditional check
+        id: additional-dbs-tests
+        run: |
+          RUN_ADDITIONAL_DBS_TESTS=false
+          if [[ $GITHUB_EVENT_NAME != "pull_request" && -n "${{ secrets.PRIVATE_DBS_DOCKER_NAME }}" && -n "${{ secrets.PRIVATE_DBS_DOCKER_TOKEN }}" ]]; then
+            RUN_ADDITIONAL_DBS_TESTS=true
+          fi
+          echo "run-additional-dbs-tests=$RUN_ADDITIONAL_DBS_TESTS" >> $GITHUB_OUTPUT
 
       - name: Version Compatibility Matrix
         id: version-compatibility
@@ -580,7 +590,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 75
-    if: ${{ secrets.PRIVATE_DBS_DOCKER_NAME != '' && secrets.PRIVATE_DBS_DOCKER_TOKEN != '' }}
+    if: needs.conditional.outputs.ci-additional-dbs == 'true'
     strategy:
       matrix:
         db: [edb]

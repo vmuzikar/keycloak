@@ -580,7 +580,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 75
-    if: ${{ matrix.db == 'edb' && secrets.PRIVATE_DBS_DOCKER_NAME != '' && secrets.PRIVATE_DBS_DOCKER_TOKEN != '' }}
+    if: ${{ secrets.PRIVATE_DBS_DOCKER_NAME != '' && secrets.PRIVATE_DBS_DOCKER_TOKEN != '' }}
     strategy:
       matrix:
         db: [edb]

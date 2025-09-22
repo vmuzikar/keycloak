@@ -17,10 +17,12 @@ runs:
       uses: ./.github/actions/integration-test-setup
 
     - name: Run new base tests
+      shell: bash
       run: |
         KC_TEST_DATABASE=${{ inputs.db }} KC_TEST_DATABASE_REUSE=true TESTCONTAINERS_REUSE_ENABLE=true ./mvnw package -f tests/pom.xml -Dtest=DatabaseTestSuite -Dkeycloak.distribution.start.timeout=360
 
     - name: Database container port
+      shell: bash
       run: |
         # The Ryuk container process exists temporarily after the JVM terminates, wait for only the database container to remain
         while [ "$(docker ps -q | wc -l)" -ne 1 ]; do
@@ -31,6 +33,7 @@ runs:
         echo "DATABASE_PORT=$DATABASE_PORT" >> $GITHUB_ENV 
 
     - name: Run base tests
+      shell: bash
       run: |
         TESTS=`testsuite/integration-arquillian/tests/base/testsuites/suite.sh database`
         echo "Tests: $TESTS"
@@ -45,6 +48,7 @@ runs:
           -pl testsuite/integration-arquillian/tests/base 2>&1 | misc/log/trimmer.sh
 
     - name: Run cluster JDBC_PING2 UDP smoke test
+      shell: bash
       run: |
         ./mvnw test ${{ env.SUREFIRE_RETRY }} \
           -Pauth-server-cluster-quarkus \
@@ -59,6 +63,7 @@ runs:
           2>&1 | misc/log/trimmer.sh
 
     - name: Run cluster JDBC_PING2 TCP smoke test
+      shell: bash
       run: |
         ./mvnw test ${{ env.SUREFIRE_RETRY }} \
           -Pauth-server-cluster-quarkus \

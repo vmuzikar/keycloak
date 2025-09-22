@@ -16,10 +16,6 @@ RUN (curl -1sSLf "https://downloads.enterprisedb.com/${EDB_REPO_TOKEN}/enterpris
 USER enterprisedb
 WORKDIR /usr/edb/as${VERSION}/bin/
 
-CMD pwfile=$(mktemp) && \
-    echo "$PGPASSWORD" > "$pwfile" && \
-    PGSETUP_INITDB_OPTIONS="-E UTF-8" ./initdb -A md5 -U $PGUSER --pwfile="$pwfile" && \
-    echo "host all all 0.0.0.0/0 md5" >> "$PGDATA/pg_hba.conf"; \
-    (while ! (sleep 1 && ./createdb $PGDATABASE > /dev/null 2>&1); do echo "Retrying database creation..."; done; echo "Database $PGDATABASE created.") & \
-    exec ./edb-postgres -c port=$PGPORT -c logging_collector=off -c listen_addresses=*
+COPY init-and-start-db.sh .
+CMD ./init-and-start-db.sh
 EXPOSE ${PGPORT}

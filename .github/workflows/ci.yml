@@ -38,7 +38,7 @@ jobs:
       ci-webauthn: ${{ steps.conditional.outputs.ci-webauthn }}
       ci-aurora: ${{ steps.auroradb-tests.outputs.run-aurora-tests }}
       ci-compatibility-matrix: ${{ steps.version-compatibility.outputs.matrix }}
-      ci-additional-dbs: ${{ steps.auroradb-tests.outputs.run-additional-dbs-tests }}
+      ci-additional-dbs: ${{ steps.additional-dbs-tests.outputs.run-additional-dbs-tests }}
     permissions:
       contents: read
       pull-requests: read
@@ -579,6 +579,8 @@ jobs:
         db: [postgres, mysql, oracle, mssql, mariadb, tidb]
       fail-fast: false
     steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
       - id: run-store-tests
         name: Run Store Integration Tests - ${{ matrix.db }}
         uses: ./.github/actions/run-store-tests
@@ -596,6 +598,8 @@ jobs:
         db: [edb]
       fail-fast: false
     steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
       - name: Login to DockerHub
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:

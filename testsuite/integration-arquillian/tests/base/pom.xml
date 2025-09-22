@@ -395,6 +395,8 @@
                                             <ORACLE_PASSWORD>${keycloak.connectionsJpa.password}</ORACLE_PASSWORD>
                                             <APP_USER>${keycloak.connectionsJpa.user}</APP_USER>
                                             <APP_USER_PASSWORD>${keycloak.connectionsJpa.password}</APP_USER_PASSWORD>
+
+                                            <PGPORT>${docker.database.port}</PGPORT>
                                         </env>
                                         <cmd>${docker.database.cmd}</cmd>
                                         <wait>

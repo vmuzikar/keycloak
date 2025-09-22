@@ -566,14 +566,22 @@ jobs:
     timeout-minutes: 75
     strategy:
       matrix:
-        db: [postgres, mysql, oracle, mssql, mariadb, tidb]
+        db: [postgres, mysql, oracle, mssql, mariadb, tidb, edb]
       fail-fast: false
+    if: matrix.db != 'edb' || (secrets.PRIVATE_DBS_DOCKER_NAME_TOKEN != '' && secrets.PRIVATE_DBS_DOCKER_TOKEN != '')
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - id: integration-test-setup
         name: Integration test setup
         uses: ./.github/actions/integration-test-setup
+
+      - name: Login to DockerHub
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        if: secrets.PRIVATE_DBS_DOCKER_NAME_TOKEN != '' && secrets.PRIVATE_DBS_DOCKER_TOKEN != ''
+        with:
+          username: ${{ secrets.PRIVATE_DBS_DOCKER_NAME_TOKEN }}
+          password: ${{ secrets.PRIVATE_DBS_DOCKER_TOKEN }}
 
       - name: Run new base tests
         run: |

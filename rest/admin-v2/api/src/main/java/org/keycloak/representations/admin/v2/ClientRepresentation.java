@@ -1,11 +1,19 @@
 package org.keycloak.representations.admin.v2;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import org.keycloak.representations.admin.v2.validation.CreateClient;
 

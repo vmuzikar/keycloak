@@ -7,10 +7,19 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@JsonInclude(JsonInclude.Include.NON_ABSENT)
-public class BaseRepresentation {
-
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "type"
+)
+@JsonSubTypes(
+    @JsonSubTypes.Type(value = ClientRepresentation.class, name = "testicek")
+)
+public abstract class BaseRepresentation {
     @JsonIgnore
     protected Map<String, Object> additionalFields = new LinkedHashMap<String, Object>();
 
@@ -28,4 +37,11 @@ public class BaseRepresentation {
         this.additionalFields = additionalFields;
     }
 
+    public void setText(String text) {
+        // do nothing
+    }
+
+    public String getText() {
+        return "foobar";
+    }
 }

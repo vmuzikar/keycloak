@@ -12,6 +12,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.keycloak.representations.admin.v2.BaseRepresentation;
 import org.keycloak.representations.admin.v2.ClientRepresentation;
 import org.keycloak.services.resources.KeycloakOpenAPI;
 

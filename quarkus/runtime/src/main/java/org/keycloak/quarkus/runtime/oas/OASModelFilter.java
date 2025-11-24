@@ -19,9 +19,7 @@ public class OASModelFilter implements OASFilter {
 
   @Override
   public void filterOpenAPI(OpenAPI openAPI) {
-    // Filter Paths that have the '/admin/api/v2' prefix
     Map<String, PathItem> newPaths = openAPI.getPaths().getPathItems().entrySet().stream()
-        .filter(entry -> entry.getKey().startsWith("/admin/api/v2"))
         .collect(Collectors.toMap(
             Map.Entry::getKey,
             entry -> sortOperationsByMethod(entry.getValue())

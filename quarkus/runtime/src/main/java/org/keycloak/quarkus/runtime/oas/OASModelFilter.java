@@ -1,21 +1,23 @@
 package org.keycloak.quarkus.runtime.oas;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.eclipse.microprofile.openapi.models.Operation;
 import org.eclipse.microprofile.openapi.models.PathItem;
+import org.jboss.jandex.IndexView;
 
 @OpenApiFilter(OpenApiFilter.RunStage.BUILD)
 public class OASModelFilter implements OASFilter {
+
+    private final IndexView indexView;
+
+    public OASModelFilter(IndexView indexView) {
+        this.indexView = indexView;
+    }
 
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
@@ -25,24 +27,10 @@ public class OASModelFilter implements OASFilter {
                         entry -> sortOperationsByMethod(entry.getValue())
                 ));
 
-        // Replace ALL Paths with filtered Paths
+        // Replace ALL Paths with sorted Paths
         var paths = OASFactory.createPaths();
         newPaths.forEach(paths::addPathItem);
         openAPI.setPaths(paths);
-
-        // Compute tags that are actually used by remaining operations
-        Set<String> usedTags = newPaths.values().stream()
-                .flatMap(pi -> operationsOf(pi).stream())
-                .flatMap(op -> Optional.ofNullable(op.getTags()).orElseGet(List::of).stream())
-                .collect(Collectors.toSet());
-
-        // Drop top-level tags not used anywhere
-        if (openAPI.getTags() != null) {
-            var filteredTags = openAPI.getTags().stream()
-                    .filter(t -> t.getName() != null && usedTags.contains(t.getName()))
-                    .collect(Collectors.toList());
-            openAPI.setTags(filteredTags.isEmpty() ? null : filteredTags);
-        }
     }
 
     private PathItem sortOperationsByMethod(PathItem pathItem) {
@@ -80,18 +68,5 @@ public class OASModelFilter implements OASFilter {
         sortedPathItem.setParameters(pathItem.getParameters());
 
         return sortedPathItem;
-    }
-
-    private List<Operation> operationsOf(PathItem pi) {
-        List<Operation> ops = new ArrayList<>(8);
-        if (pi.getGET() != null) ops.add(pi.getGET());
-        if (pi.getPOST() != null) ops.add(pi.getPOST());
-        if (pi.getPUT() != null) ops.add(pi.getPUT());
-        if (pi.getPATCH() != null) ops.add(pi.getPATCH());
-        if (pi.getDELETE() != null) ops.add(pi.getDELETE());
-        if (pi.getHEAD() != null) ops.add(pi.getHEAD());
-        if (pi.getOPTIONS() != null) ops.add(pi.getOPTIONS());
-        if (pi.getTRACE() != null) ops.add(pi.getTRACE());
-        return ops;
     }
 }

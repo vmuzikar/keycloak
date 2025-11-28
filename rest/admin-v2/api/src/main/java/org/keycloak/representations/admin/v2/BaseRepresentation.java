@@ -12,12 +12,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
+    use = JsonTypeInfo.Id.SIMPLE_NAME,
     include = JsonTypeInfo.As.PROPERTY,
     property = "type"
 )
 @JsonSubTypes(
-    @JsonSubTypes.Type(value = ClientRepresentation.class, name = "testicek")
+    @JsonSubTypes.Type(value = ClientRepresentation.class)
 )
 public abstract class BaseRepresentation {
     @JsonIgnore

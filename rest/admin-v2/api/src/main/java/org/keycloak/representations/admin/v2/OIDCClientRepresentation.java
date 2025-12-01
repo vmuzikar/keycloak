@@ -1,19 +1,12 @@
 package org.keycloak.representations.admin.v2;
 
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import org.keycloak.representations.admin.v2.validation.CreateClient;
 
@@ -22,9 +15,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.hibernate.validator.constraints.URL;
 
-public class ClientRepresentation extends BaseRepresentation {
+public class OIDCClientRepresentation extends BaseClientRepresentation {
 
     public static final String OIDC = "openid-connect";
+
+    public enum Flow {
+        STANDARD,
+        IMPLICIT,
+        DIRECT_GRANT,
+        SERVICE_ACCOUNT,
+        TOKEN_EXCHANGE,
+        DEVICE,
+        CIBA
+    }
 
     @NotBlank(groups = CreateClient.class)
     @JsonPropertyDescription("ID uniquely identifying this client")
@@ -48,12 +51,12 @@ public class ClientRepresentation extends BaseRepresentation {
     private String appUrl;
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    @JsonPropertyDescription("URLs that the browser can redirect to after login")
-    private Set<@NotBlank @URL(message = "Each redirect URL must be valid") String> appRedirectUrls = new LinkedHashSet<String>();
+    @JsonPropertyDescription("URIs that the browser can redirect to after login")
+    private Set<@NotBlank @URL(message = "Each redirect URL must be valid") String> redirectUris = new LinkedHashSet<>();
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonPropertyDescription("Login flows that are enabled for this client")
-    private Set<@NotBlank String> loginFlows = new LinkedHashSet<String>();
+    private Set<@NotBlank Flow> loginFlows = new LinkedHashSet<>();
 
     @Valid
     @JsonPropertyDescription("Authentication configuration for this client")
@@ -61,20 +64,19 @@ public class ClientRepresentation extends BaseRepresentation {
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonPropertyDescription("Web origins that are allowed to make requests to this client")
-    private Set<@NotBlank String> webOrigins = new LinkedHashSet<String>();
+    private Set<@NotBlank String> webOrigins = new LinkedHashSet<>();
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonPropertyDescription("Roles associated with this client")
-    private Set<@NotBlank String> roles = new LinkedHashSet<String>();
+    private Set<@NotBlank String> roles = new LinkedHashSet<>();
 
-    @Valid
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    @JsonPropertyDescription("Service account configuration for this client")
-    private ServiceAccount serviceAccount;
+    @JsonPropertyDescription("Roles assigned to the service account")
+    private Set<@NotBlank String> serviceAccountRoles = new LinkedHashSet<>();
 
-    public ClientRepresentation() {}
+    public OIDCClientRepresentation() {}
 
-    public ClientRepresentation(String clientId) {
+    public OIDCClientRepresentation(String clientId) {
         this.clientId = clientId;
     }
 
@@ -126,19 +128,19 @@ public class ClientRepresentation extends BaseRepresentation {
         this.appUrl = appUrl;
     }
 
-    public Set<String> getAppRedirectUrls() {
-        return appRedirectUrls;
+    public Set<String> getRedirectUris() {
+        return redirectUris;
     }
 
-    public void setAppRedirectUrls(Set<String> appRedirectUrls) {
-        this.appRedirectUrls = appRedirectUrls;
+    public void setRedirectUris(Set<String> redirectUris) {
+        this.redirectUris = redirectUris;
     }
 
-    public Set<String> getLoginFlows() {
+    public Set<Flow> getLoginFlows() {
         return loginFlows;
     }
 
-    public void setLoginFlows(Set<String> loginFlows) {
+    public void setLoginFlows(Set<Flow> loginFlows) {
         this.loginFlows = loginFlows;
     }
 
@@ -166,19 +168,16 @@ public class ClientRepresentation extends BaseRepresentation {
         this.roles = roles;
     }
 
-    public ServiceAccount getServiceAccount() {
-        return serviceAccount;
+    public Set<String> getServiceAccountRoles() {
+        return serviceAccountRoles;
     }
 
-    public void setServiceAccount(ServiceAccount serviceAccount) {
-        this.serviceAccount = serviceAccount;
+    public void setServiceAccountRoles(Set<String> serviceAccountRoles) {
+        this.serviceAccountRoles = serviceAccountRoles;
     }
 
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
     public static class Auth {
-
-        @JsonPropertyDescription("Whether authentication is enabled for this client")
-        private Boolean enabled;
 
         @JsonPropertyDescription("Which authentication method is used for this client")
         private String method;
@@ -188,14 +187,6 @@ public class ClientRepresentation extends BaseRepresentation {
 
         @JsonPropertyDescription("Public key used to authenticate this client with Signed JWT authentication")
         private String certificate;
-
-        public Boolean getEnabled() {
-            return enabled;
-        }
-
-        public void setEnabled(Boolean enabled) {
-            this.enabled = enabled;
-        }
 
         public String getMethod() {
             return method;

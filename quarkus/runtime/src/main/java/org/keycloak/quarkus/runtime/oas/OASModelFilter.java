@@ -1,15 +1,12 @@
 package org.keycloak.quarkus.runtime.oas;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -17,11 +14,9 @@ import io.quarkus.smallrye.openapi.OpenApiFilter;
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.eclipse.microprofile.openapi.models.Operation;
 import org.eclipse.microprofile.openapi.models.PathItem;
 import org.eclipse.microprofile.openapi.models.media.Content;
 import org.eclipse.microprofile.openapi.models.media.Discriminator;
-import org.eclipse.microprofile.openapi.models.media.MediaType;
 import org.eclipse.microprofile.openapi.models.media.Schema;
 import org.eclipse.microprofile.openapi.models.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.models.responses.APIResponses;
@@ -108,7 +103,7 @@ public class OASModelFilter implements OASFilter {
         // Normally, this is handled by Jackson
         discriminatorPropertiesToBeAdded.forEach((propertyName, schemas) -> {
             schemas.forEach(schema -> {
-                if (!schema.getProperties().containsKey(propertyName)) {
+                if (schema.getProperties() == null || !schema.getProperties().containsKey(propertyName)) {
                     Schema discriminatorPropertySchema = OASFactory.createSchema().addType(Schema.SchemaType.STRING);
                     schema.addProperty(propertyName, discriminatorPropertySchema);
                 }
@@ -207,31 +202,33 @@ public class OASModelFilter implements OASFilter {
 
         Schema newSchema = OASFactory.createSchema();
 
+        // Add discriminator
+
+        Discriminator discriminator = OASFactory.createDiscriminator().propertyName(discriminatorPropertyName);
+        newSchema.setDiscriminator(discriminator);
+
         // Create new schema with anyOf for each subclass
 
         for (AnnotationInstance typeAnnotation : typeAnnotations) {
-            if (typeAnnotation.value("name") != null) {
-                throw new IllegalArgumentException(parentClassInfo.simpleName() + ": We do not support named subtypes in OpenAPI generation, rely on class names instead.");
-            }
-
             String simpleSubClassName = typeAnnotation.value("value").asClass().name().withoutPackagePrefix();
 
             // Add schema ref as anyOf to the new schema
             Schema subSchema = openAPI.getComponents().getSchemas().get(simpleSubClassName); // This won't work with inner classes due to '$' in the name
             if (subSchema == null) {
-                throw new IllegalStateException(parentClassInfo.simpleName() + ": Could not find schema for subclass: " + simpleSubClassName);
+                throw new IllegalStateException(parentClassInfo.simpleName() + ": Could not find schema for subclass: " + simpleSubClassName + ". Make sure the subclass has the @Schema annotation.");
             }
             String ref = REF_PREFIX + simpleSubClassName;
             Schema schemaRef = OASFactory.createSchema().ref(ref);
             newSchema.addOneOf(schemaRef);
 
+            // Add mapping to discriminator
+            String typeName = Optional.of(typeAnnotation.value("name")).map(AnnotationValue::asString).orElse("");
+            if (!typeName.isEmpty()) {
+                discriminator.addMapping(typeName, ref);
+            }
+
             discriminatorPropertiesToBeAdded.computeIfAbsent(discriminatorPropertyName, k -> new HashSet<>()).add(subSchema);
         }
-
-        // Add discriminator
-
-        Discriminator discriminator = OASFactory.createDiscriminator().propertyName(discriminatorPropertyName);
-        newSchema.setDiscriminator(discriminator);
 
         return newSchema;
     }

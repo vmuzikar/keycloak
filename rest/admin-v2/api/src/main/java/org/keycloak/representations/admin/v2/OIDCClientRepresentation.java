@@ -8,16 +8,12 @@ import java.util.Set;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
-import org.keycloak.representations.admin.v2.validation.CreateClient;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.hibernate.validator.constraints.URL;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+@Schema
 public class OIDCClientRepresentation extends BaseClientRepresentation {
-
-    public static final String OIDC = "openid-connect";
 
     public enum Flow {
         STANDARD,
@@ -28,31 +24,6 @@ public class OIDCClientRepresentation extends BaseClientRepresentation {
         DEVICE,
         CIBA
     }
-
-    @NotBlank(groups = CreateClient.class)
-    @JsonPropertyDescription("ID uniquely identifying this client")
-    private String clientId;
-
-    @JsonPropertyDescription("Human readable name of the client")
-    private String displayName;
-
-    @JsonPropertyDescription("Human readable description of the client")
-    private String description;
-
-    @JsonProperty(defaultValue = OIDC)
-    @JsonPropertyDescription("The protocol used to communicate with the client")
-    private String protocol;
-
-    @JsonPropertyDescription("Whether this client is enabled")
-    private Boolean enabled;
-
-    @URL
-    @JsonPropertyDescription("URL to the application's homepage that is represented by this client")
-    private String appUrl;
-
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    @JsonPropertyDescription("URIs that the browser can redirect to after login")
-    private Set<@NotBlank @URL(message = "Each redirect URL must be valid") String> redirectUris = new LinkedHashSet<>();
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonPropertyDescription("Login flows that are enabled for this client")
@@ -67,10 +38,6 @@ public class OIDCClientRepresentation extends BaseClientRepresentation {
     private Set<@NotBlank String> webOrigins = new LinkedHashSet<>();
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    @JsonPropertyDescription("Roles associated with this client")
-    private Set<@NotBlank String> roles = new LinkedHashSet<>();
-
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonPropertyDescription("Roles assigned to the service account")
     private Set<@NotBlank String> serviceAccountRoles = new LinkedHashSet<>();
 
@@ -78,62 +45,6 @@ public class OIDCClientRepresentation extends BaseClientRepresentation {
 
     public OIDCClientRepresentation(String clientId) {
         this.clientId = clientId;
-    }
-
-    public String getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getProtocol() {
-        return protocol;
-    }
-
-    public void setProtocol(String protocol) {
-        this.protocol = protocol;
-    }
-
-    public Boolean getEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public String getAppUrl() {
-        return appUrl;
-    }
-
-    public void setAppUrl(String appUrl) {
-        this.appUrl = appUrl;
-    }
-
-    public Set<String> getRedirectUris() {
-        return redirectUris;
-    }
-
-    public void setRedirectUris(Set<String> redirectUris) {
-        this.redirectUris = redirectUris;
     }
 
     public Set<Flow> getLoginFlows() {
@@ -158,14 +69,6 @@ public class OIDCClientRepresentation extends BaseClientRepresentation {
 
     public void setWebOrigins(Set<String> webOrigins) {
         this.webOrigins = webOrigins;
-    }
-
-    public Set<String> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(Set<String> roles) {
-        this.roles = roles;
     }
 
     public Set<String> getServiceAccountRoles() {

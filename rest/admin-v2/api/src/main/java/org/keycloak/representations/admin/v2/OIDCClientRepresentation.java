@@ -13,6 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema
 public class OIDCClientRepresentation extends BaseClientRepresentation {
+    public static final String PROTOCOL = "openid-connect";
 
     public enum Flow {
         STANDARD,
@@ -76,6 +77,11 @@ public class OIDCClientRepresentation extends BaseClientRepresentation {
 
     public void setServiceAccountRoles(Set<String> serviceAccountRoles) {
         this.serviceAccountRoles = serviceAccountRoles;
+    }
+
+    @Override
+    public String getProtocol() {
+        return PROTOCOL;
     }
 
     @JsonInclude(JsonInclude.Include.NON_ABSENT)

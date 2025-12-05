@@ -2,50 +2,59 @@ package org.keycloak.models.mapper;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.representations.admin.v2.OIDCClientRepresentation;
-import org.keycloak.services.ServiceException;
 
-import org.mapstruct.Context;
-import org.mapstruct.InheritConfiguration;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.Named;
-import org.mapstruct.SubclassExhaustiveStrategy;
+/**
+ * @author Vaclav Muzikar <vmuzikar@redhat.com>
+ */
+public class OIDCClientModelMapper extends BaseClientModelMapper<OIDCClientRepresentation> {
+    public OIDCClientModelMapper(KeycloakSession session) {
+        super(session);
+    }
 
-@Mapper(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
-public interface OIDCClientModelMapper extends ClientModelMapper {
+    @Override
+    protected OIDCClientRepresentation createClientRepresentation() {
+        return new OIDCClientRepresentation();
+    }
 
-    @ModelToBaseRep
-    @Mapping(target = "loginFlows", source = ".", qualifiedByName = "createLoginFlows")
-    @Mapping(target = "auth", source = ".", qualifiedByName = "createAuth")
-    @Mapping(target = "auth.method", source = "clientAuthenticatorType")
-    @Mapping(target = "auth.secret", source = "secret")
-    // TODO: auth.certificate
-    OIDCClientRepresentation fromModel(@Context KeycloakSession session, ClientModel model) throws ServiceException;
+    @Override
+    protected void fromModelSpecific(ClientModel model, OIDCClientRepresentation rep) {
+        rep.setLoginFlows(createLoginFlows(model));
 
-    @BaseRepToModel
-    @Mapping(target = "publicClient", source = "auth", qualifiedByName = "isPublicClient")
-    @Mapping(target = "clientAuthenticatorType", source = "auth.method")
-    @Mapping(target = "secret", source = "auth.secret")
-    @Mapping(target = "standardFlowEnabled", source = "loginFlows", qualifiedByName = "isStandardFlowEnabled")
-    @Mapping(target = "implicitFlowEnabled", source = "loginFlows", qualifiedByName = "isImplicitFlowEnabled")
-    @Mapping(target = "directAccessGrantsEnabled", source = "loginFlows", qualifiedByName = "isDirectGrantFlowEnabled")
-    ClientModel toExistingModel(@Context KeycloakSession session, @Context RealmModel realm, @MappingTarget ClientModel existingModel, OIDCClientRepresentation rep) throws ServiceException;
+        if (!model.isPublicClient()) {
+            rep.getAuth().setMethod(model.getClientAuthenticatorType());
+            rep.getAuth().setSecret(model.getSecret());
+            // TODO: auth.certificate
+        }
 
-    @InheritConfiguration(name = "toExistingModel")
-    ClientModel toModel(@Context KeycloakSession session, @Context RealmModel realm, OIDCClientRepresentation rep) throws ServiceException;
+        rep.setWebOrigins(new HashSet<>(model.getWebOrigins()));
+        rep.setServiceAccountRoles(getServiceAccountRoles(model));
+    }
 
-    @Named("createLoginFlows")
-    default Set<OIDCClientRepresentation.Flow> createLoginFlows(ClientModel model) {
+    @Override
+    protected void toModelSpecific(OIDCClientRepresentation rep, ClientModel model) {
+        if (rep.getAuth() != null) {
+            model.setPublicClient(false);
+            model.setClientAuthenticatorType(rep.getAuth().getMethod());
+            model.setSecret(rep.getAuth().getSecret());
+        } else {
+            model.setPublicClient(true);
+        }
+
+        setModelFromFlows(rep.getLoginFlows(), model);
+
+        model.setWebOrigins(new HashSet<>(rep.getWebOrigins()));
+
+        // Service account roles are not handled here
+    }
+
+    private Set<OIDCClientRepresentation.Flow> createLoginFlows(ClientModel model) {
         Set<OIDCClientRepresentation.Flow> flows = new HashSet<>();
         if (model.isStandardFlowEnabled()) {
             flows.add(OIDCClientRepresentation.Flow.STANDARD);
@@ -56,45 +65,22 @@ public interface OIDCClientModelMapper extends ClientModelMapper {
         if (model.isDirectAccessGrantsEnabled()) {
             flows.add(OIDCClientRepresentation.Flow.DIRECT_GRANT);
         }
-        // TODO: device flow
+        // TODO: device flow, token exchange, ciba
         if (model.isServiceAccountsEnabled()) {
             flows.add(OIDCClientRepresentation.Flow.SERVICE_ACCOUNT);
         }
         return flows;
     }
 
-    @Named("isStandardFlowEnabled")
-    default boolean isStandardFlowEnabled(Set<OIDCClientRepresentation.Flow> flows) {
-        return flows.contains(OIDCClientRepresentation.Flow.STANDARD);
+    private void setModelFromFlows(Set<OIDCClientRepresentation.Flow> flows, ClientModel model) {
+        model.setStandardFlowEnabled(flows.contains(OIDCClientRepresentation.Flow.STANDARD));
+        model.setImplicitFlowEnabled(flows.contains(OIDCClientRepresentation.Flow.IMPLICIT));
+        model.setDirectAccessGrantsEnabled(flows.contains(OIDCClientRepresentation.Flow.DIRECT_GRANT));
     }
 
-    @Named("isImplicitFlowEnabled")
-    default boolean isImplicitFlowEnabled(Set<OIDCClientRepresentation.Flow> flows) {
-        return flows.contains(OIDCClientRepresentation.Flow.IMPLICIT);
-    }
-
-    @Named("isDirectGrantFlowEnabled")
-    default boolean isDirectGrantFlowEnabled(Set<OIDCClientRepresentation.Flow> flows) {
-        return flows.contains(OIDCClientRepresentation.Flow.DIRECT_GRANT);
-    }
-
-    @Named("createAuth")
-    default OIDCClientRepresentation.Auth createAuth(ClientModel client) {
-        if (client.isPublicClient()) {
-            return new OIDCClientRepresentation.Auth();
-        }
-        return null;
-    }
-
-    @Named("isPublicClient")
-    default boolean isPublicClient(OIDCClientRepresentation.Auth auth) {
-        return auth != null;
-    }
-
-    @Named("getServiceAccountRoles")
-    default Set<String> getServiceAccountRoles(@Context KeycloakSession session, ClientModel client) {
+    private Set<String> getServiceAccountRoles(ClientModel client) {
         if (client.isServiceAccountsEnabled()) {
-            return session.users().getServiceAccount(client)
+            return getSession().users().getServiceAccount(client)
                     .getRoleMappingsStream()
                     .map(RoleModel::getName)
                     .collect(Collectors.toSet());

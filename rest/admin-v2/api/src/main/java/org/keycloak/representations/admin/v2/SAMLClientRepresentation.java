@@ -7,5 +7,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  */
 @Schema
 public class SAMLClientRepresentation extends BaseClientRepresentation {
-    // TODO
+    public static final String PROTOCOL = "saml";
+
+    @Override
+    public String getProtocol() {
+        return PROTOCOL;
+    }
 }

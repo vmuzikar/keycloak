@@ -15,7 +15,6 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.mapper.ClientModelMapper;
-import org.keycloak.models.mapper.MappersRegistry;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.admin.v2.BaseClientRepresentation;
 import org.keycloak.representations.admin.v2.OIDCClientRepresentation;
@@ -31,7 +30,6 @@ import org.keycloak.validation.jakarta.JakartaValidatorProvider;
 // TODO
 public class DefaultClientService implements ClientService {
     private final KeycloakSession session;
-    private final MappersRegistry mappersRegistry;
     private final JakartaValidatorProvider validator;
     private final RealmAdminResource realmAdminResource;
     private final ClientsResource clientsResource;
@@ -43,7 +41,6 @@ public class DefaultClientService implements ClientService {
         this.clientResource = clientResource;
 
         this.clientsResource = realmAdminResource.getClients();
-        this.mappersRegistry = new MappersRegistry();
         this.validator = new HibernateValidatorProvider();
     }
 
@@ -55,7 +52,7 @@ public class DefaultClientService implements ClientService {
     public Optional<BaseClientRepresentation> getClient(RealmModel realm, String clientId, ClientProjectionOptions projectionOptions) {
         // TODO: is the access map on the representation needed
         return Optional.ofNullable(clientResource).map(ClientResource::viewClientModel)
-                .map(model -> mappersRegistry.clients(model.getProtocol()).fromModel(session, model));
+                .map(model -> session.getProvider(ClientModelMapper.class, model.getProtocol()).fromModel(model));
     }
 
     @Override
@@ -63,27 +60,27 @@ public class DefaultClientService implements ClientService {
                                                    ClientSearchOptions searchOptions, ClientSortAndSliceOptions sortAndSliceOptions) {
         // TODO: is the access map on the representation needed
         return clientsResource.getClientModels(null, true, false, null, null, null)
-                .map(model -> mappersRegistry.clients(model.getProtocol()).fromModel(session, model));
+                .map(model -> session.getProvider(ClientModelMapper.class, model.getProtocol()).fromModel(model));
     }
 
     @Override
     public CreateOrUpdateResult createOrUpdate(RealmModel realm, BaseClientRepresentation client, boolean allowUpdate) throws ServiceException {
         boolean created = false;
         ClientModel model;
-        ClientModelMapper mapper = mappersRegistry.clients(client.getClass());
+        ClientModelMapper mapper = session.getProvider(ClientModelMapper.class, client.getProtocol());
 
         if (clientResource != null) {
             if (!allowUpdate) {
                 throw new ServiceException("Client already exists", Response.Status.CONFLICT);
             }
-            model = mapper.toModel(session, realm, clientResource.viewClientModel(), client);
+            model = mapper.toModel(client, clientResource.viewClientModel());
             var rep = ModelToRepresentation.toRepresentation(model, session);
             clientResource.update(rep);
         } else {
             created = true;
             validator.validate(client, CreateClientDefault.class); // TODO improve it to avoid second validation when we know it is create and not update
 
-            model = mapper.toModel(session, realm, client);
+            model = mapper.toModel(client);
             var rep = ModelToRepresentation.toRepresentation(model, session);
             model = clientsResource.createClientModel(rep);
             clientResource = clientsResource.getClient(model.getId());
@@ -93,7 +90,7 @@ public class DefaultClientService implements ClientService {
         if (client instanceof OIDCClientRepresentation oidcClient) {
             handleServiceAccount(model, oidcClient);
         }
-        var updated = mapper.fromModel(session, model);
+        var updated = mapper.fromModel(model);
 
         return new CreateOrUpdateResult(updated, created);
     }

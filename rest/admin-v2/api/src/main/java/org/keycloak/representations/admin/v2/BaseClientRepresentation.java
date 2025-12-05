@@ -114,6 +114,9 @@ public abstract class BaseClientRepresentation {
         this.roles = roles;
     }
 
+    @JsonIgnore
+    public abstract String getProtocol();
+
     @JsonAnyGetter
     public Map<String, Object> getAdditionalFields() {
         return additionalFields;

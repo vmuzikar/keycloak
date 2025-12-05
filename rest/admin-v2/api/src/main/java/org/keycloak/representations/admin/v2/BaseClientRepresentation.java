@@ -3,6 +3,7 @@ package org.keycloak.representations.admin.v2;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -125,5 +126,16 @@ public abstract class BaseClientRepresentation {
 
     public void setAdditionalFields(Map<String, Object> additionalFields) {
         this.additionalFields = additionalFields;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof BaseClientRepresentation that)) return false;
+        return Objects.equals(clientId, that.clientId) && Objects.equals(displayName, that.displayName) && Objects.equals(description, that.description) && Objects.equals(enabled, that.enabled) && Objects.equals(appUrl, that.appUrl) && Objects.equals(redirectUris, that.redirectUris) && Objects.equals(roles, that.roles) && Objects.equals(additionalFields, that.additionalFields);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(clientId, displayName, description, enabled, appUrl, redirectUris, roles, additionalFields);
     }
 }

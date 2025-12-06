@@ -159,7 +159,13 @@ public class OASModelFilter implements OASFilter {
      * @return the new schema or the original schema if no changes were made
      */
     private Schema replaceSchemaWithChildrenIfNeeded(Schema originalSchema, OpenAPI openAPI, Map<String, Set<Schema>> discriminatorPropertiesToBeAdded) {
-        if (originalSchema.getRef() == null) {
+        Schema arraySchema = null;
+        if (originalSchema.getType() != null && originalSchema.getType().size() == 1 && Schema.SchemaType.ARRAY.equals(originalSchema.getType().get(0))) {
+            arraySchema = originalSchema;
+            originalSchema = originalSchema.getItems();
+        }
+
+        if (originalSchema == null || originalSchema.getRef() == null) {
             return originalSchema;
         }
 
@@ -228,6 +234,11 @@ public class OASModelFilter implements OASFilter {
             }
 
             discriminatorPropertiesToBeAdded.computeIfAbsent(discriminatorPropertyName, k -> new HashSet<>()).add(subSchema);
+        }
+
+        if (arraySchema != null) {
+            arraySchema.setItems(newSchema);
+            newSchema = arraySchema;
         }
 
         return newSchema;

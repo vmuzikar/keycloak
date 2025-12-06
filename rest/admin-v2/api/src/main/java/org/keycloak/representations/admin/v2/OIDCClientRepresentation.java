@@ -27,7 +27,7 @@ public class OIDCClientRepresentation extends BaseClientRepresentation {
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonPropertyDescription("Login flows that are enabled for this client")
-    private Set<@NotBlank Flow> loginFlows = new LinkedHashSet<>();
+    private Set<Flow> loginFlows = new LinkedHashSet<>();
 
     @Valid
     @JsonPropertyDescription("Authentication configuration for this client")

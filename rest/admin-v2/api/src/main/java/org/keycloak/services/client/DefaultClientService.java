@@ -69,6 +69,10 @@ public class DefaultClientService implements ClientService {
         ClientModel model;
         ClientModelMapper mapper = session.getProvider(ClientModelMapper.class, client.getProtocol());
 
+        if (mapper == null) {
+            throw new ServiceException("Mapper not found, unsupported client protocol: " + client.getProtocol(), Response.Status.BAD_REQUEST);
+        }
+
         if (clientResource != null) {
             if (!allowUpdate) {
                 throw new ServiceException("Client already exists", Response.Status.CONFLICT);

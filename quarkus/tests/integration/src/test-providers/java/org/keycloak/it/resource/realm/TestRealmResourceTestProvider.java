@@ -34,6 +34,6 @@ public class TestRealmResourceTestProvider implements TestProvider {
 
     @Override
     public Map<String, String> getManifestResources() {
-        return Collections.singletonMap("org.keycloak.services.resource.RealmResourceProviderFactory", "services/org.keycloak.services.resource.RealmResourceProviderFactory");
+        return Collections.singletonMap("org.keycloak.services.resource.RealmResourceProviderFactory", "META-INF/services/org.keycloak.services.resource.RealmResourceProviderFactory");
     }
 }

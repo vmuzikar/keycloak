@@ -28,8 +28,10 @@ public class OIDCClientModelMapper extends BaseClientModelMapper<OIDCClientRepre
         rep.setLoginFlows(createLoginFlows(model));
 
         if (!model.isPublicClient()) {
-            rep.getAuth().setMethod(model.getClientAuthenticatorType());
-            rep.getAuth().setSecret(model.getSecret());
+            OIDCClientRepresentation.Auth auth = new OIDCClientRepresentation.Auth();
+            auth.setMethod(model.getClientAuthenticatorType());
+            auth.setSecret(model.getSecret());
+            rep.setAuth(auth);
             // TODO: auth.certificate
         }
 

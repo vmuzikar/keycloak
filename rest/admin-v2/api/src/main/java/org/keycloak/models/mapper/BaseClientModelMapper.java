@@ -23,6 +23,7 @@ public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> 
 
         T rep = createClientRepresentation();
 
+        rep.setEnabled(model.isEnabled());
         rep.setClientId(model.getClientId());
         rep.setDescription(model.getDescription());
         rep.setDisplayName(model.getName());
@@ -42,6 +43,7 @@ public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> 
             existingModel = createClientModel(rep);
         }
 
+        existingModel.setEnabled(Boolean.TRUE.equals(rep.getEnabled()));
         existingModel.setClientId(rep.getClientId());
         existingModel.setDescription(rep.getDescription());
         existingModel.setName(rep.getDisplayName());

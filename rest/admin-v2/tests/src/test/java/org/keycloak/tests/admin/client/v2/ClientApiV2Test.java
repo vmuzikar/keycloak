@@ -232,6 +232,7 @@ public class ClientApiV2Test {
 
         request.setEntity(new StringEntity("""
                 {
+                    "protocol": "openid-connect",
                     "displayName": "something",
                     "appUrl": "notUrl"
                 }
@@ -250,6 +251,7 @@ public class ClientApiV2Test {
 
         request.setEntity(new StringEntity("""
                 {
+                    "protocol": "openid-connect",
                     "clientId": "some-client",
                     "displayName": "something",
                     "appUrl": "notUrl",

@@ -30,6 +30,6 @@ public class CustomUserProvider implements TestProvider {
 
     @Override
     public Map<String, String> getManifestResources() {
-        return Collections.singletonMap("org.keycloak.models.UserProviderFactory", "services/org.keycloak.models.UserProviderFactory");
+        return Collections.singletonMap("org.keycloak.models.UserProviderFactory", "META-INF/services/org.keycloak.models.UserProviderFactory");
     }
 }

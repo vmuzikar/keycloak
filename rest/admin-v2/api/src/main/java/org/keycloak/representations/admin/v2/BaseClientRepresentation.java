@@ -23,13 +23,15 @@ import org.keycloak.representations.admin.v2.validation.CreateClient;
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.SIMPLE_NAME,
     include = JsonTypeInfo.As.PROPERTY,
-    property = "protocol"
+    property = BaseClientRepresentation.DISCRIMINATOR_FIELD
 )
 @JsonSubTypes({
     @JsonSubTypes.Type(value = OIDCClientRepresentation.class, name = "openid-connect"),
     @JsonSubTypes.Type(value = SAMLClientRepresentation.class, name = "saml")
 })
-public abstract class BaseClientRepresentation {
+public abstract class BaseClientRepresentation extends BaseRepresentation {
+    public static final String DISCRIMINATOR_FIELD = "protocol";
+
     @NotBlank(groups = CreateClient.class)
     @JsonPropertyDescription("ID uniquely identifying this client")
     protected String clientId;
@@ -54,9 +56,6 @@ public abstract class BaseClientRepresentation {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonPropertyDescription("Roles associated with this client")
     private Set<@NotBlank String> roles = new LinkedHashSet<>();
-
-    @JsonIgnore
-    protected Map<String, Object> additionalFields = new LinkedHashMap<String, Object>();
 
     public String getClientId() {
         return clientId;
@@ -120,15 +119,6 @@ public abstract class BaseClientRepresentation {
     @JsonAnyGetter
     public Map<String, Object> getAdditionalFields() {
         return additionalFields;
-    }
-
-    @JsonAnySetter
-    public void setAdditionalField(String name, Object value) {
-        this.additionalFields.put(name, value);
-    }
-
-    public void setAdditionalFields(Map<String, Object> additionalFields) {
-        this.additionalFields = additionalFields;
     }
 
     @Override

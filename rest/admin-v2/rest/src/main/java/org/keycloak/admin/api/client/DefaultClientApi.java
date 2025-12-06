@@ -105,7 +105,7 @@ public class DefaultClientApi implements ClientApi {
     }
 
     static void validateUnknownFields(BaseClientRepresentation rep) {
-        if (!rep.getAdditionalFields().isEmpty()) {
+        if (rep.getAdditionalFields().keySet().stream().anyMatch(k -> !k.equals(BaseClientRepresentation.DISCRIMINATOR_FIELD))) {
             throw new WebApplicationException("Payload contains unknown fields: " + rep.getAdditionalFields().keySet(), Response.Status.BAD_REQUEST);
         }
     }

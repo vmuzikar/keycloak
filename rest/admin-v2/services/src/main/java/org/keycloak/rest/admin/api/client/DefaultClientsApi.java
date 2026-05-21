@@ -21,7 +21,6 @@ import org.keycloak.admin.api.client.ClientsApi;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.representations.admin.v2.BaseClientRepresentation;
-import org.keycloak.services.ServiceException;
 import org.keycloak.services.client.ClientService;
 import org.keycloak.services.client.ClientService.ClientProjectionOptions;
 import org.keycloak.services.client.DefaultClientService;
@@ -59,13 +58,9 @@ public class DefaultClientsApi implements ClientsApi {
     @POST
     @Override
     public Response createClient(@Valid BaseClientRepresentation client) {
-        try {
-            return Response.status(Response.Status.CREATED)
-                    .entity(clientService.createClient(realm, client))
-                    .build();
-        } catch (ServiceException e) {
-            throw e.toWebApplicationException();
-        }
+        return Response.status(Response.Status.CREATED)
+                .entity(clientService.createClient(realm, client))
+                .build();
     }
 
     /**

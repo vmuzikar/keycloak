@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -480,11 +481,16 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
         }
     }
 
+    @Override
+    public boolean canViewScopeMapping(RoleModel role) {
+        return canView(role) || canMapClientScope(role);
+    }
+
 
     @Override
     public boolean canManage(RoleModel role) {
         if (role.getContainer() instanceof RealmModel) {
-            return root.realm().canManageRealm();
+            return root.realm().canManageRealm() && !isRealmAdminRole(role);
         } else if (role.getContainer() instanceof ClientModel) {
             ClientModel client = (ClientModel)role.getContainer();
             return root.clients().canConfigure(client);
@@ -512,12 +518,17 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
     @Override
     public boolean canView(RoleModel role) {
         if (role.getContainer() instanceof RealmModel) {
-            return root.realm().canViewRealm();
+            if (root.realm().canViewRealm()) {
+                return true;
+            }
         } else if (role.getContainer() instanceof ClientModel) {
             ClientModel client = (ClientModel)role.getContainer();
-            return root.clients().canView(client);
+            if (root.clients().canView(client)) {
+                return true;
+            }
         }
-        return false;
+        // an admin that can map the role is allowed to see it
+        return canMapRole(role);
     }
 
     @Override
@@ -681,5 +692,12 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
             resourceServer = session.getProvider(AuthorizationProvider.class).getStoreFactory().getResourceServerStore().findById(container.getId());
         }
         return resourceServer;
+    }
+    private boolean isRealmAdminRole(RoleModel role) {
+        if (!(role.getContainer() instanceof RealmModel)) {
+            return false;
+        }
+        RealmModel roleRealm = (RealmModel) role.getContainer();
+        return roleRealm.getName().equals(Config.getAdminRealm()) && List.of(AdminRoles.ADMIN, AdminRoles.CREATE_REALM).contains(role.getName());
     }
 }

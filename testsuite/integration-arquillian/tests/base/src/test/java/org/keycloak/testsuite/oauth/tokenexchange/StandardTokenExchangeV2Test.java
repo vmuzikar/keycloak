@@ -160,7 +160,7 @@ public abstract class StandardTokenExchangeV2Test extends AbstractClientPolicies
         oauth.client(clientId, secret).doLogin(user.getUsername(), password);
         consentPage.assertCurrent();
         consentPage.confirm();
-        assertNotNull(oauth.parseLoginResponse().getCode());
+        assertTrue(oauth.parseLoginResponse().isSuccess());
         AccessTokenResponse response = oauth.doAccessTokenRequest(oauth.parseLoginResponse().getCode());
         assertEquals(Response.Status.OK.getStatusCode(), response.getStatusCode());
         TokenVerifier<AccessToken> accessTokenVerifier = TokenVerifier.create(response.getAccessToken(), AccessToken.class);
@@ -797,7 +797,7 @@ public abstract class StandardTokenExchangeV2Test extends AbstractClientPolicies
 
             oauth.client("requester-client", "secret");
             response = oauth.doRefreshTokenRequest(response.getRefreshToken());
-            AccessToken exchangedToken = assertAudiencesAndScopes(response, List.of("requester-client", "target-client1"), List.of("default-scope1", "optional-scope2"));
+            AccessToken exchangedToken = assertAudiencesAndScopes(response, List.of("target-client1"), List.of("default-scope1", "optional-scope2"));
             EventAssertion.assertSuccess(events.poll()).type(EventType.REFRESH_TOKEN)
                     .details(Details.TOKEN_ID, exchangedToken.getId())
                     .hasTokenId(Details.REFRESH_TOKEN_ID)
@@ -807,7 +807,7 @@ public abstract class StandardTokenExchangeV2Test extends AbstractClientPolicies
 
             oauth.client("requester-client", "secret");
             response = oauth.doRefreshTokenRequest(response.getRefreshToken());
-            exchangedToken = assertAudiencesAndScopes(response, List.of("requester-client", "target-client1"), List.of("default-scope1", "optional-scope2"));
+            exchangedToken = assertAudiencesAndScopes(response, List.of("target-client1"), List.of("default-scope1", "optional-scope2"));
             EventAssertion.assertSuccess(events.poll()).type(EventType.REFRESH_TOKEN)
                     .details(Details.TOKEN_ID, exchangedToken.getId())
                     .hasTokenId(Details.REFRESH_TOKEN_ID)
@@ -1007,7 +1007,7 @@ public abstract class StandardTokenExchangeV2Test extends AbstractClientPolicies
 
             // SSO login to "requester-client". Will create client session for "requester-client"
             oauth.client("requester-client", "secret").openLoginForm();
-            assertNotNull(oauth.parseLoginResponse().getCode());
+            assertTrue(oauth.parseLoginResponse().isSuccess());
             response = oauth.doAccessTokenRequest(oauth.parseLoginResponse().getCode());
             assertEquals(Response.Status.OK.getStatusCode(), response.getStatusCode());
             String requesterClientToken = response.getAccessToken();

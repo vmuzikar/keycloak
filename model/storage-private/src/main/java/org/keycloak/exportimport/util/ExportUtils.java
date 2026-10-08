@@ -42,6 +42,7 @@ import org.keycloak.models.FederatedIdentityModel;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.GroupModel.Type;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.OrganizationIdentityProviderLinkModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleContainerModel;
 import org.keycloak.models.RoleModel;
@@ -55,6 +56,7 @@ import org.keycloak.representations.idm.FederatedIdentityRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.MemberRepresentation;
 import org.keycloak.representations.idm.MembershipType;
+import org.keycloak.representations.idm.OrganizationIdentityProviderLinkRepresentation;
 import org.keycloak.representations.idm.OrganizationRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
@@ -62,6 +64,7 @@ import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.ScopeMappingRepresentation;
 import org.keycloak.representations.idm.UserConsentRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.oid4vc.IssuedVerifiableCredentialRepresentation;
 import org.keycloak.representations.idm.oid4vc.UserVerifiableCredentialRepresentation;
 import org.keycloak.storage.UserStoragePrivateUtil;
 import org.keycloak.storage.federated.UserFederatedStorageProvider;
@@ -280,6 +283,13 @@ public class ExportUtils {
                         .map(b -> {
                             IdentityProviderRepresentation broker = new IdentityProviderRepresentation();
                             broker.setAlias(b.getAlias());
+                            OrganizationIdentityProviderLinkModel link = orgProvider.getIdentityProviderLink(model, b);
+                            if (link != null) {
+                                OrganizationIdentityProviderLinkRepresentation linkRep = new OrganizationIdentityProviderLinkRepresentation(model.getId());
+                                linkRep.setAutoMembership(link.isAutoMembership());
+                                linkRep.setMembershipType(link.getMembershipType().name());
+                                broker.setOrganizationLinks(List.of(linkRep));
+                            }
                             return broker;
                         }).forEach(org::addIdentityProvider);
 
@@ -445,10 +455,18 @@ public class ExportUtils {
 
         // Verifiable credentials
         List<UserVerifiableCredentialRepresentation> verifiableCredentialReps = session.users().getVerifiableCredentialsByUser(user.getId())
-                .map(ModelToRepresentation::toRepresentation)
+                .map(model -> ModelToRepresentation.toRepresentation(model, realm))
                 .toList();
         if (!verifiableCredentialReps.isEmpty()) {
             userRep.setVerifiableCredentials(verifiableCredentialReps);
+        }
+
+        // Issued verifiable credentials
+        List<IssuedVerifiableCredentialRepresentation> issuedCredentialReps = session.users().getIssuedVerifiableCredentialsStreamByUser(user.getId())
+                .map(model -> ModelToRepresentation.toRepresentation(model, session, realm))
+                .toList();
+        if (!issuedCredentialReps.isEmpty()) {
+            userRep.setIssuedVerifiableCredentials(issuedCredentialReps);
         }
 
         // Service account
